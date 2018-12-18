@@ -29,16 +29,16 @@ endif()
 
 option(LINUX_RELEASE_BINS "Set RPATH to \$ORIGIN/libs/ for Linux binary releases" OFF)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/sys/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/sys/cmake")
 
 if(LINUX_RELEASE_BINS)
-	message(STATUS "Setting RPATH to \$ORIGIN/libs/ so you can put dependencies in there")
-	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
-	set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-	set(CMAKE_INSTALL_RPATH "$ORIGIN/libs")
-	set(ldflags "${ldflags} -Wl,-z,origin") # not sure this is even needed, but shouldn't hurt
+    message(STATUS "Setting RPATH to \$ORIGIN/libs/ so you can put dependencies in there")
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/libs")
+    set(ldflags "${ldflags} -Wl,-z,origin") # not sure this is even needed, but shouldn't hurt
 else()
-	set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
+    set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
 endif()
 
 set(DHEWM3BINARY "dhewm3")
@@ -47,8 +47,8 @@ include(CheckCXXCompilerFlag)
 include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 
 option(CORE			"Build the core" ON)
-option(BASE			"Build the base game code" ON)
-option(D3XP			"Build the d3xp game code" ON)
+option(BASE			"Build the base game code" OFF)
+option(D3XP			"Build the d3xp game code" OFF)
 option(DEDICATED	"Build the dedicated server" OFF)
 option(ONATIVE		"Optimize for the host CPU" OFF)
 option(SDL2			"Use SDL2 instead of SDL1.2" ON)
@@ -106,8 +106,8 @@ include_directories(${ZLIB_INCLUDE_DIRS})
 find_package(JPEG REQUIRED)
 include_directories(${JPEG_INCLUDE_DIR})
 
-set(CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
-set(CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
+list(APPEND CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
+list(APPEND CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
 
 find_package(OGG REQUIRED)
 include_directories(${OGG_INCLUDE_DIR})
@@ -119,16 +119,20 @@ find_package(VorbisFile REQUIRED)
 include_directories(${VORBISFILE_INCLUDE_DIR})
 
 find_package(OpenAL REQUIRED)
-include_directories(${OPENAL_INCLUDE_DIR})
+if(EMSCRIPTEN)
+	include_directories("${OPENAL_INCLUDE_DIR}/AL")
+else()
+	include_directories(${OPENAL_INCLUDE_DIR})
+endif()
 
-if(NOT AROS)
+if(NOT AROS AND NOT EMSCRIPTEN)
 	find_package(X11 REQUIRED)
 	include_directories(${X11_INCLUDE_DIR})
 endif()
 
 if (SDL2)
 	# skip SDL2main
-	if(APPLE OR WIN32)
+	if(APPLE OR WIN32 OR EMSCRIPTEN)
 		set(SDL2_BUILDING_LIBRARY TRUE)
 	endif()
 	find_package(SDL2 REQUIRED)
@@ -159,17 +163,19 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-pipe)
 	add_compile_options(-Wall)
 
-	if(NOT CMAKE_CROSSCOMPILING AND ONATIVE)
-		add_compile_options(-march=native)
-	elseif(NOT APPLE AND cpu STREQUAL "x86")
-		add_compile_options(-march=pentium3)
+	if (NOT EMSCRIPTEN)
+		if(NOT CMAKE_CROSSCOMPILING AND ONATIVE)
+			add_compile_options(-march=native)
+		elseif(NOT APPLE AND cpu STREQUAL "x86")
+			add_compile_options(-march=pentium3)
+		endif()
 	endif()
 
-	set(CMAKE_C_FLAGS_DEBUG "-g -ggdb -D_DEBUG -O0")
-	set(CMAKE_C_FLAGS_DEBUGALL "-g -ggdb -D_DEBUG")
-	set(CMAKE_C_FLAGS_PROFILE "-g -ggdb -D_DEBUG -O1 -fno-omit-frame-pointer")
+	set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
+	set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
+	set(CMAKE_C_FLAGS_PROFILE "-g --D_DEBUG -O1 -fno-omit-frame-pointer")
 	set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-	set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -ggdb -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
+	set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
 	set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
 
 	set(CMAKE_CXX_FLAGS_DEBUGALL ${CMAKE_C_FLAGS_DEBUGALL})
@@ -258,6 +264,14 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO})
 set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
+
+if (EMSCRIPTEN)
+	set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
+	set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
+set(ldflags "${ldflags} -s TOTAL_MEMORY=536870912")
+set(ldflags "${ldflags} -s LEGACY_GL_EMULATION=1")
+endif()
+
 # mingw and msvc
 if(WIN32)
 	add_definitions(-DWINVER=0x0501)
@@ -342,7 +356,8 @@ set(src_renderer
 	renderer/RenderWorld_load.cpp
 	renderer/RenderWorld_portals.cpp
 	renderer/VertexCache.cpp
-	renderer/draw_arb2.cpp
+		renderer/draw_arb.cpp
+		renderer/draw_arb2.cpp
 	renderer/draw_common.cpp
 	renderer/tr_backend.cpp
 	renderer/tr_deform.cpp
@@ -809,11 +824,14 @@ if(CORE)
 		${src_core}
 		${src_sys_base}
 		${src_sys_core}
+		${src_game}
 	)
 
-	set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
-	set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
+	#set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
+	set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags} ")
+	set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
 	set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
+	set_target_properties(${DHEWM3BINARY} PROPERTIES INSTALL_NAME_DIR "@executable_path")
 
 	target_link_libraries(${DHEWM3BINARY}
 		idlib
@@ -874,6 +892,7 @@ if(BASE)
 		set_target_properties(base PROPERTIES OUTPUT_NAME "base.aros-${AROS_ARCH}")
 	else()
 		add_library(base SHARED ${src_game})
+
 	endif()
 	set_target_properties(base PROPERTIES PREFIX "")
 	set_target_properties(base PROPERTIES COMPILE_DEFINITIONS "GAME_DLL")
@@ -900,7 +919,7 @@ if(D3XP)
 		add_executable(d3xp sys/aros/dll/dllglue.c ${src_d3xp})
 		set_target_properties(d3xp PROPERTIES OUTPUT_NAME "d3xp.aros-${AROS_ARCH}")
 	else()
-		add_library(d3xp SHARED ${src_d3xp})
+		add_executable(d3xp ${src_d3xp})
 	endif()
 	set_target_properties(d3xp PROPERTIES PREFIX "")
 	set_target_properties(d3xp PROPERTIES COMPILE_DEFINITIONS "GAME_DLL;_D3XP;CTF")

@@ -2628,6 +2628,7 @@ void idFileSystemLocal::SetRestartChecksums( const int pureChecksums[ MAX_PURE_P
 	}
 }
 
+
 /*
 ================
 idFileSystemLocal::Init
@@ -2681,8 +2682,10 @@ void idFileSystemLocal::Init( void ) {
 	// graphics screen when the font fails to load
 	// Dedicated servers can run with no outside files at all
 	if ( ReadFile( "default.cfg", NULL, NULL ) <= 0 ) {
-		common->FatalError( "Couldn't load default.cfg" );
+		//common->FatalError( "Couldn't load default.cfg" );
 	}
+
+	//printf("ici\n");
 }
 
 /*

@@ -547,8 +547,10 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 
 	backEndRenderer = BE_BAD;
 
-	if ( idStr::Icmp( r_renderer.GetString(), "arb2" ) == 0 ) {
-		if ( glConfig.allowARB2Path ) {
+	if ( idStr::Icmp( r_renderer.GetString(), "arb" ) == 0 ) {
+		backEndRenderer = BE_ARB;
+	} else if ( idStr::Icmp( r_renderer.GetString(), "arb2" ) == 0 ) {
+		if (glConfig.allowARB2Path) {
 			backEndRenderer = BE_ARB2;
 		}
 	}
@@ -558,6 +560,9 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 		// choose the best
 		if ( glConfig.allowARB2Path ) {
 			backEndRenderer = BE_ARB2;
+		} else {
+			// the others are considered experimental
+			backEndRenderer = BE_ARB;
 		}
 	}
 
@@ -565,12 +570,15 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 	backEndRendererMaxLight = 1.0;
 
 	switch( backEndRenderer ) {
+		case BE_ARB:
+			common->Printf( "using ARB renderSystem\n" );
+			break;
 	case BE_ARB2:
 		common->Printf( "using ARB2 renderSystem\n" );
 		backEndRendererHasVertexPrograms = true;
 		backEndRendererMaxLight = 999;
 		break;
-	default:
+	default: ;
 		common->FatalError( "SetbackEndRenderer: bad back end" );
 	}
 
