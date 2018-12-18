@@ -230,7 +230,7 @@ void Sys_CreateThread(xthread_t function, void *parms, xthreadInfo& info, const 
 #endif
 
 	if (!t) {
-		common->Error("ERROR: SDL_thread for '%s' failed\n", name);
+		//common->Error("ERROR: SDL_thread for '%s' failed\n", name);
 		Sys_LeaveCriticalSection();
 		return;
 	}

@@ -50,6 +50,7 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 	listenerAreaName = "Undefined";
 
 	if (idSoundSystemLocal::useEFXReverb) {
+#ifndef __EMSCRIPTEN__
 		if (!soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
 			alGetError();
 
@@ -80,6 +81,7 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 				soundSystemLocal.alFilterf(listenerFilter, AL_LOWPASS_GAINHF, 0.266073f);
 			}
 		}
+#endif
 	}
 
 	gameMsec = 0;
@@ -141,6 +143,7 @@ void idSoundWorldLocal::Shutdown() {
 	AVIClose();
 
 	if (idSoundSystemLocal::useEFXReverb) {
+#ifndef __EMSCRIPTEN__
 		if (soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
 			soundSystemLocal.alAuxiliaryEffectSloti(listenerSlot, AL_EFFECTSLOT_EFFECT, AL_EFFECTSLOT_NULL);
 			soundSystemLocal.alDeleteAuxiliaryEffectSlots(1, &listenerSlot);
@@ -151,6 +154,7 @@ void idSoundWorldLocal::Shutdown() {
 			soundSystemLocal.alDeleteFilters(1, &listenerFilter);
 			listenerFilter = AL_FILTER_NULL;
 		}
+#endif
 	}
 
 	for ( i = 0; i < emitters.Num(); i++ ) {
@@ -496,6 +500,7 @@ void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *final
 	alListenerfv( AL_ORIENTATION, listenerOrientation );
 
 	if (idSoundSystemLocal::useEFXReverb && soundSystemLocal.efxloaded) {
+#ifndef __EMSCRIPTEN__
 		ALuint effect = 0;
 		idStr s(listenerArea);
 
@@ -515,6 +520,7 @@ void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *final
 			listenerEffect = effect;
 			soundSystemLocal.alAuxiliaryEffectSloti(listenerSlot, AL_EFFECTSLOT_EFFECT, effect);
 		}
+#endif
 	}
 
 	// debugging option to mute all but a single soundEmitter
@@ -1788,12 +1794,14 @@ void idSoundWorldLocal::AddChannelContribution( idSoundEmitterLocal *sound, idSo
 			alSourcef( chan->openalSource, AL_PITCH, ( slowmoActive && !chan->disallowSlow ) ? ( slowmoSpeed ) : ( 1.0f ) );
 
 			if (idSoundSystemLocal::useEFXReverb) {
+#ifndef __EMSCRIPTEN__
 				if (enviroSuitActive) {
 					alSourcei(chan->openalSource, AL_DIRECT_FILTER, listenerFilter);
 					alSource3i(chan->openalSource, AL_AUXILIARY_SEND_FILTER, listenerSlot, 0, listenerFilter);
 				} else {
 					alSource3i(chan->openalSource, AL_AUXILIARY_SEND_FILTER, listenerSlot, 0, AL_FILTER_NULL);
 				}
+#endif
 			}
 
 
