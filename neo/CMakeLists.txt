@@ -255,7 +255,8 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 
 if (EMSCRIPTEN)
-set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
+	set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
+	set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
 set(ldflags "${ldflags} -s TOTAL_MEMORY=536870912")
 set(ldflags "${ldflags} -s LEGACY_GL_EMULATION=1")
 endif()
