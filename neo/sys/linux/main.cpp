@@ -273,6 +273,16 @@ void idSysLocal::OpenURL( const char *url, bool quit ) {
 	sys->StartProcess( cmdline, quit );
 }
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+
+static void emloopcb()
+{
+	common->Frame();
+}
+
+#endif
+
 /*
 ===============
 main
@@ -301,8 +311,12 @@ int main(int argc, char **argv) {
 		common->Init( 0, NULL );
 	}
 
+#ifdef __EMSCRIPTEN__
+	emscripten_set_main_loop(emloopcb,0,true);
+#else
 	while (1) {
 		common->Frame();
 	}
+#endif
 	return 0;
 }
