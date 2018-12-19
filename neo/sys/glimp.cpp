@@ -186,7 +186,18 @@ bool GLimp_Init(glimpParms_t parms) {
 			continue;
 		}
 
+		#ifdef __EMSCRIPTEN__
+	    // Initialize ES 2.0 context profile on emscripten, and do not set any other context flags (it does not work otherwise)
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+	    #endif
+
 		context = SDL_GL_CreateContext(window);
+
+#if defined __EMSCRIPTEN__
+        RegalMakeCurrent((void*)1);
+#endif
 
 		if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
 			common->Warning("SDL_GL_SWAP_CONTROL not supported");
@@ -326,7 +337,11 @@ GLimp_ExtensionPointer
 GLExtension_t GLimp_ExtensionPointer(const char *name) {
 	assert(SDL_WasInit(SDL_INIT_VIDEO));
 
+#ifdef __EMSCRIPTEN__
+	return (GLExtension_t)glGetProcAddressREGAL(name);
+#else
 	return (GLExtension_t)SDL_GL_GetProcAddress(name);
+#endif
 }
 
 void GLimp_GrabInput(int flags) {
