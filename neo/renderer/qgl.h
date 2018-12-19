@@ -42,7 +42,32 @@ If you have questions concerning this license or the applicable additional terms
 	#endif
 #endif
 
+#ifdef __EMSCRIPTEN__
+#ifndef GLAPI
+#define GLAPI extern
+#endif
+
+#ifndef GLAPIENTRY
+#define GLAPIENTRY
+#endif
+
+#ifndef APIENTRY
+#define APIENTRY GLAPIENTRY
+#endif
+
+/* "P" suffix to be used for a pointer to a function */
+#ifndef APIENTRYP
+#define APIENTRYP APIENTRY *
+#endif
+
+#ifndef GLAPIENTRYP
+#define GLAPIENTRYP GLAPIENTRY *
+#endif
+#include <GL/Regal.h>
+
+#else
 #include <SDL_opengl.h>
+#endif
 
 #if defined( ID_DEDICATED ) && defined( _WIN32 )
 // restore WINGDIAPI
