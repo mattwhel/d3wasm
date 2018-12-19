@@ -195,6 +195,11 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-Wno-sign-compare)
 	add_compile_options(-Wno-switch)
 	add_compile_options(-Wno-format-security)
+    add_compile_options(-Wno-unused-variable)
+    add_compile_options(-Wno-unused-function)
+    add_compile_options(-Wno-unused-const-variable)
+    add_compile_options(-Wno-unused-private-field)
+
 
 	CHECK_CXX_COMPILER_FLAG("-Woverloaded-virtual" cxx_has_Woverload_virtual)
 	if(cxx_has_Woverload_virtual)
