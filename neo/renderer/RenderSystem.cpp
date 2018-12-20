@@ -889,6 +889,7 @@ void idRenderSystemLocal::CaptureRenderToImage( const char *imageName ) {
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
+	return;
 	guiModel->EmitFullScreen();
 	guiModel->Clear();
 
@@ -929,6 +930,7 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
+	return;
 
 	renderCrop_t *rc = &renderCrops[currentRenderCrop];
 
