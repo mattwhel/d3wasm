@@ -74,8 +74,10 @@ void Draw_ClearWindow( void ) {
 	glLoadIdentity();
 #endif
 	glColor3f (0,0,0);
+#ifndef __EMSCRIPTEN__
 //	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+#endif
 	glDisable (GL_DEPTH_TEST);
 //	glEnable (GL_BLEND);
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
