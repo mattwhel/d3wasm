@@ -67,7 +67,9 @@ void RB_SetDefaultGLState( void ) {
 	qglDisable( GL_LINE_STIPPLE );
 	qglDisable( GL_STENCIL_TEST );
 
+#ifndef __EMSCRIPTEN__
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+#endif
 	qglDepthMask( GL_TRUE );
 	qglDepthFunc( GL_ALWAYS );
 
@@ -343,11 +345,13 @@ void GL_State( int stateBits ) {
 	// fill/line mode
 	//
 	if ( diff & GLS_POLYMODE_LINE ) {
+#ifndef __EMSCRIPTEN__
 		if ( stateBits & GLS_POLYMODE_LINE ) {
 			qglPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		} else {
 			qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		}
+#endif
 	}
 
 	//
