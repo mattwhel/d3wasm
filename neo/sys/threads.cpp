@@ -253,7 +253,8 @@ Sys_DestroyThread
 ==================
 */
 void Sys_DestroyThread(xthreadInfo& info) {
-	assert(info.threadHandle);
+	return;
+    assert(info.threadHandle);
 
 	//SDL_WaitThread(info.threadHandle, NULL);
 
