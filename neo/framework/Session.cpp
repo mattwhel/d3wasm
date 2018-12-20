@@ -511,7 +511,12 @@ void idSessionLocal::CompleteWipe() {
 		UpdateScreen( true );
 		return;
 	}
+#ifdef __EMSCRIPTEN__
+	if ( com_ticNumber < wipeStopTic ) {
+	    wipeStopTic = 0;
+#else
 	while ( com_ticNumber < wipeStopTic ) {
+#endif
 #if ID_CONSOLE_LOCK
 		emptyDrawCount = 0;
 #endif
@@ -2595,7 +2600,8 @@ void idSessionLocal::Frame() {
 		if ( latchedTicNumber >= minTic ) {
 			break;
 		}
-		Sys_WaitForEvent( TRIGGER_EVENT_ONE );
+		//Sys_WaitForEvent( TRIGGER_EVENT_ONE );
+	    return;
 	}
 
 	if ( authEmitTimeout ) {

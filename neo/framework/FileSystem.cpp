@@ -329,6 +329,10 @@ private:
 	idStr				extension;
 };
 
+#ifdef __EMSCRIPTEN__
+int BackgroundDownloadThread( void *pexit );
+#endif
+
 class idFileSystemLocal : public idFileSystem {
 public:
 							idFileSystemLocal( void );
@@ -464,6 +468,13 @@ private:
 	static size_t			CurlWriteFunction( void *ptr, size_t size, size_t nmemb, void *stream );
 							// curl_progress_callback in curl.h
 	static int				CurlProgressFunction( void *clientp, double dltotal, double dlnow, double ultotal, double ulnow );
+
+#ifdef __EMSCRIPTEN__
+public:
+	virtual void 			RunThread() {
+		BackgroundDownloadThread(&backgroundThread_exit);
+	};
+#endif
 };
 
 idCVar	idFileSystemLocal::fs_restrict( "fs_restrict", "", CVAR_SYSTEM | CVAR_INIT | CVAR_BOOL, "" );
@@ -3402,13 +3413,17 @@ Reads part of a file from a background thread.
 int BackgroundDownloadThread( void *pexit ) {
 	bool *exit = (bool *)pexit;
 
+#ifdef __EMSCRIPTEN__
+	if (!(*exit)) {
+#else
 	while (!(*exit)) {
+#endif
 		Sys_EnterCriticalSection();
 		backgroundDownload_t	*bgl = fileSystemLocal.backgroundDownloads;
 		if ( !bgl ) {
 			Sys_LeaveCriticalSection();
-			Sys_WaitForEvent();
-			continue;
+			//Sys_WaitForEvent();
+			return 0;
 		}
 		// remove this from the list
 		fileSystemLocal.backgroundDownloads = bgl->next;
@@ -3542,7 +3557,7 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 			Sys_EnterCriticalSection();
 			bgl->next = backgroundDownloads;
 			backgroundDownloads = bgl;
-			Sys_TriggerEvent();
+			//Sys_TriggerEvent();
 			Sys_LeaveCriticalSection();
 		} else {
 			// read zipped file directly
@@ -3554,7 +3569,7 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 		Sys_EnterCriticalSection();
 		bgl->next = backgroundDownloads;
 		backgroundDownloads = bgl;
-		Sys_TriggerEvent();
+		//Sys_TriggerEvent();
 		Sys_LeaveCriticalSection();
 	}
 }
