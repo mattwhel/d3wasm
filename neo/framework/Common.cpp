@@ -82,7 +82,9 @@ idCVar com_memoryMarker( "com_memoryMarker", "-1", CVAR_INTEGER | CVAR_SYSTEM | 
 idCVar com_preciseTic( "com_preciseTic", "1", CVAR_BOOL|CVAR_SYSTEM, "run one game tick every async thread update" );
 idCVar com_asyncInput( "com_asyncInput", "0", CVAR_BOOL|CVAR_SYSTEM, "sample input from the async thread" );
 #define ASYNCSOUND_INFO "0: mix sound inline, 1: memory mapped async mix, 2: callback mixing, 3: write async mix"
-#if defined( __unix__ ) && !defined( MACOS_X )
+#if defined __EMSCRIPTEN__
+idCVar com_asyncSound( "com_asyncSound", "0", CVAR_INTEGER|CVAR_SYSTEM|CVAR_ROM, ASYNCSOUND_INFO );
+#elif defined( __unix__ ) && !defined( MACOS_X )
 idCVar com_asyncSound( "com_asyncSound", "3", CVAR_INTEGER|CVAR_SYSTEM|CVAR_ROM, ASYNCSOUND_INFO );
 #else
 idCVar com_asyncSound( "com_asyncSound", "1", CVAR_INTEGER|CVAR_SYSTEM, ASYNCSOUND_INFO, 0, 1 );
@@ -1392,6 +1394,7 @@ void OSX_GetVideoCard( int& outVendorId, int& outDeviceId );
 bool OSX_GetCPUIdentification( int& cpuId, bool& oldArchitecture );
 #endif
 void Com_ExecMachineSpec_f( const idCmdArgs &args ) {
+
 	if ( com_machineSpec.GetInteger() == 3 ) {
 		cvarSystem->SetCVarInteger( "image_anisotropy", 1, CVAR_ARCHIVE );
 		cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ARCHIVE );
@@ -2381,6 +2384,21 @@ void idCommonLocal::InitSIMD( void ) {
 	com_forceGenericSIMD.ClearModified();
 }
 
+
+static unsigned int AsyncTimer(unsigned int interval, void *) {
+    common->Async();
+    //Sys_TriggerEvent(TRIGGER_EVENT_ONE);
+
+    // calculate the next interval to get as close to 60fps as possible
+    unsigned int now = SDL_GetTicks();
+    unsigned int tick = com_ticNumber * USERCMD_MSEC;
+
+    if (now >= tick)
+        return 1;
+
+    return tick - now;
+}
+
 /*
 =================
 idCommonLocal::Frame
@@ -2388,6 +2406,11 @@ idCommonLocal::Frame
 */
 void idCommonLocal::Frame( void ) {
 	try {
+
+#ifdef __EMSCRIPTEN__
+		AsyncTimer(0,NULL);
+        fileSystem->RunThread();
+#endif
 
 		// pump all the events
 		Sys_GenerateEvents();
@@ -2745,20 +2768,6 @@ void idCommonLocal::SetMachineSpec( void ) {
 	}
 }
 
-static unsigned int AsyncTimer(unsigned int interval, void *) {
-	common->Async();
-	Sys_TriggerEvent(TRIGGER_EVENT_ONE);
-
-	// calculate the next interval to get as close to 60fps as possible
-	unsigned int now = SDL_GetTicks();
-	unsigned int tick = com_ticNumber * USERCMD_MSEC;
-
-	if (now >= tick)
-		return 1;
-
-	return tick - now;
-}
-
 #ifdef _WIN32
 #include "../sys/win32/win_local.h" // for Conbuf_AppendText()
 #endif // _WIN32
@@ -2863,7 +2872,7 @@ void idCommonLocal::Init( int argc, char **argv ) {
 #endif
 #endif
 
-	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK)) // init joystick to work around SDL 2.0.9 bug #4391
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))//| SDL_INIT_JOYSTICK)) // init joystick to work around SDL 2.0.9 bug #4391
 		Sys_Error("Error while initializing SDL: %s", SDL_GetError());
 
 	Sys_InitThreads();
@@ -2970,10 +2979,10 @@ void idCommonLocal::Init( int argc, char **argv ) {
 		Sys_Error( "Error during initialization" );
 	}
 
-	async_timer = SDL_AddTimer(USERCMD_MSEC, AsyncTimer, NULL);
+	//async_timer = SDL_AddTimer(USERCMD_MSEC, AsyncTimer, NULL);
 
-	if (!async_timer)
-		Sys_Error("Error while starting the async timer: %s", SDL_GetError());
+	//if (!async_timer)
+	//	Sys_Error("Error while starting the async timer: %s", SDL_GetError());
 }
 
 
