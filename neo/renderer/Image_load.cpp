@@ -90,6 +90,8 @@ int idImage::BitsForInternalFormat( int internalFormat ) const {
 		return 16;
 	case GL_RGB5:
 		return 16;
+	case GL_RGB5_A1:
+		return 16;
 	case GL_COLOR_INDEX8_EXT:
 		return 8;
 	case GL_COLOR_INDEX:
@@ -281,7 +283,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 		if ( glConfig.textureCompressionAvailable ) {
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 		} else {
-			return GL_RGB5;
+			return GL_RGB5_A1; //GL_RBG5
 		}
 	}
 	if ( minimumDepth == TD_DIFFUSE ) {
@@ -293,7 +295,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 				return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 			}
 		} else if ( ( aAnd == 255 || aOr == 0 ) ) {
-			return GL_RGB5;
+			return GL_RGB5_A1; //GL_RBG5
 		} else {
 			return GL_RGBA4;
 		}
@@ -318,7 +320,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 		if ( glConfig.textureCompressionAvailable ) {
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;	// half byte
 		}
-		return GL_RGB5;			// two bytes
+		return GL_RGB5_A1;			 //GL_RBG5
 	}
 
 	// cases with alpha
@@ -326,7 +328,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 		if ( minimumDepth != TD_HIGH_QUALITY && glConfig.textureCompressionAvailable ) {
 			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
 		}
-		return GL_INTENSITY8;	// single byte for all channels
+		return GL_LUMINANCE8_ALPHA8;	 // GL_INTENSITY8   1->2
 	}
 
 #if 0
@@ -348,7 +350,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	if ( !rgbDiffer ) {
 		return GL_LUMINANCE8_ALPHA8;	// two bytes, max quality
 	}
-	return GL_RGBA4;	// two bytes
+	return GL_RGBA4;
 }
 
 /*
@@ -1430,6 +1432,7 @@ has completed
 ===================
 */
 void idImage::UploadPrecompressedImage( byte *data, int len ) {
+	common->Printf("UploadPrecompressed\n");
 	ddsFileHeader_t	*header = (ddsFileHeader_t *)(data + 4);
 
 	// ( not byte swapping dwReserved1 dwReserved2 )
@@ -1484,18 +1487,36 @@ void idImage::UploadPrecompressedImage( byte *data, int len ) {
 			return;
 		}
 	} else if ( ( header->ddspf.dwFlags & DDSF_RGBA ) && header->ddspf.dwRGBBitCount == 32 ) {
+#ifdef __EMSCRIPTEN__
+		// Regal on WebGL backend don't properly handle BGRA (because some missing glPixelStorei flags)
+		common->Warning( "Invalid uncompressed internal format\n" );
+		return;
+#else
 		externalFormat = GL_BGRA_EXT;
 		internalFormat = GL_RGBA8;
+#endif
 	} else if ( ( header->ddspf.dwFlags & DDSF_RGB ) && header->ddspf.dwRGBBitCount == 32 ) {
+#ifdef __EMSCRIPTEN__
+		// Regal on WebGL backend don't properly handle BGRA (because some missing glPixelStorei flags)
+		common->Warning( "Invalid uncompressed internal format\n" );
+		return;
+#else
 		externalFormat = GL_BGRA_EXT;
 		internalFormat = GL_RGBA8;
+#endif
 	} else if ( ( header->ddspf.dwFlags & DDSF_RGB ) && header->ddspf.dwRGBBitCount == 24 ) {
 		if ( header->ddspf.dwFlags & DDSF_ID_INDEXCOLOR ) {
 			externalFormat = GL_COLOR_INDEX;
 			internalFormat = GL_COLOR_INDEX8_EXT;
 		} else {
+#ifdef __EMSCRIPTEN__
+			// Regal on WebGL backend don't properly handle BGRA (because some missing glPixelStorei flags)
+		common->Warning( "Invalid uncompressed internal format\n" );
+		return;
+#else
 			externalFormat = GL_BGR_EXT;
 			internalFormat = GL_RGB8;
+#endif
 		}
 	} else if ( header->ddspf.dwRGBBitCount == 8 ) {
 		externalFormat = GL_ALPHA;
@@ -1831,6 +1852,7 @@ CopyFramebuffer
 ====================
 */
 void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bool useOversizedBuffer ) {
+	common->Printf("CopyFrameBuffer\n");
 	Bind();
 
 	if ( cvarSystem->GetCVarBool( "g_lowresFullscreenFX" ) ) {
@@ -1905,6 +1927,7 @@ This should just be part of copyFramebuffer once we have a proper image type fie
 ====================
 */
 void idImage::CopyDepthbuffer( int x, int y, int imageWidth, int imageHeight ) {
+	common->Printf("CopyDepthbuffer\n");
 	Bind();
 
 	// if the size isn't a power of 2, the image must be increased in size
@@ -1945,6 +1968,7 @@ if rows = cols * 6, assume it is a cube map animation
 =============
 */
 void idImage::UploadScratch( const byte *data, int cols, int rows ) {
+	common->Printf("UploadScratch\n");
 	int			i;
 
 	// if rows = cols * 6, assume it is a cube map animation
@@ -2148,6 +2172,9 @@ void idImage::Print() const {
 	case GL_RGB5:
 		common->Printf( "RGB5  " );
 		break;
+		case GL_RGB5_A1:
+			common->Printf( "RGB5_A1  " );
+			break;
 	case GL_COLOR_INDEX8_EXT:
 		common->Printf( "CI8   " );
 		break;
