@@ -379,6 +379,7 @@ void idImage::SetImageFilterAndRepeat() const {
 
 	if ( glConfig.anisotropicAvailable ) {
 		// only do aniso filtering on mip mapped images
+		common->Printf("Anisotropy\n");
 		if ( filter == TF_DEFAULT ) {
 			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, globalImages->textureAnisotropy );
 		} else {
