@@ -2753,6 +2753,22 @@ void idCommonLocal::SetMachineSpec( void ) {
 
 	Printf( "Detected\n\t%i MB of System memory\n\n", sysRam );
 
+#ifdef __EMSCRIPTEN__
+	// GAB Note Dec 2018: Halves the system requirement for Emscripten
+	if ( sysRam >= 512 ) {
+		Printf( "This system qualifies for Ultra quality!\n" );
+		com_machineSpec.SetInteger( 3 );
+	} else if ( sysRam >= 256 ) {
+		Printf( "This system qualifies for High quality!\n" );
+		com_machineSpec.SetInteger( 2 );
+	} else if ( sysRam >= 192 ) {
+		Printf( "This system qualifies for Medium quality.\n" );
+		com_machineSpec.SetInteger( 1 );
+	} else {
+		Printf( "This system qualifies for Low quality.\n" );
+		com_machineSpec.SetInteger( 0 );
+	}
+#else
 	if ( sysRam >= 1024 ) {
 		Printf( "This system qualifies for Ultra quality!\n" );
 		com_machineSpec.SetInteger( 3 );
@@ -2766,6 +2782,7 @@ void idCommonLocal::SetMachineSpec( void ) {
 		Printf( "This system qualifies for Low quality.\n" );
 		com_machineSpec.SetInteger( 0 );
 	}
+#endif
 }
 
 #ifdef _WIN32
