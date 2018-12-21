@@ -2729,10 +2729,12 @@ void idFileSystemLocal::Shutdown( bool reloading ) {
 	searchpath_t *sp, *next, *loop;
 
 	backgroundThread_exit = true;
+#ifndef __EMSCRIPTEN__
+	// Emscripten: if we do this, this will restart the background thread code
 	Sys_TriggerEvent();
 	Sys_DestroyThread(backgroundThread);
 	backgroundThread_exit = false;
-
+#endif
 	gameFolder.Clear();
 
 	serverPaks.Clear();
@@ -3538,11 +3540,15 @@ idFileSystemLocal::StartBackgroundReadThread
 =================
 */
 void idFileSystemLocal::StartBackgroundDownloadThread() {
+#ifdef __EMSCRIPTEN__
+	backgroundThread_exit = false;
+#else
 	if ( !backgroundThread.threadHandle ) {
 		Sys_CreateThread( BackgroundDownloadThread, &backgroundThread_exit, backgroundThread, "backgroundDownload" );
 	} else {
 		common->Printf( "background thread already running\n" );
 	}
+#endif
 }
 
 /*
