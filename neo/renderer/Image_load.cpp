@@ -261,10 +261,18 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 
 	// catch normal maps first
 	if ( minimumDepth == TD_BUMP ) {
+#ifdef __EMSCRIPTEN__
+        if (false) {
+#else
 		if ( globalImages->image_useCompression.GetBool() && globalImages->image_useNormalCompression.GetInteger() == 1 && glConfig.sharedTexturePaletteAvailable ) {
-			// image_useNormalCompression should only be set to 1 on nv_10 and nv_20 paths
-			return GL_COLOR_INDEX8_EXT;
+#endif
+            // image_useNormalCompression should only be set to 1 on nv_10 and nv_20 paths
+            return GL_COLOR_INDEX8_EXT;
+#ifdef __EMSCRIPTEN__
+		} else if (false) {
+#else
 		} else if ( globalImages->image_useCompression.GetBool() && globalImages->image_useNormalCompression.GetInteger() && glConfig.textureCompressionAvailable ) {
+#endif
 			// image_useNormalCompression == 2 uses rxgb format which produces really good quality for medium settings
 			return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 		} else {
@@ -279,25 +287,33 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	}
 
 	if ( minimumDepth == TD_SPECULAR ) {
+#ifdef __EMSCRIPTEN__
+        if (false) {
+#else
 		// we are assuming that any alpha channel is unintentional
 		if ( glConfig.textureCompressionAvailable ) {
+#endif
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 		} else {
-			return GL_RGB5_A1; //GL_RBG5
+			return GL_RGBA8;	// GL_RGB5_A1
 		}
 	}
 	if ( minimumDepth == TD_DIFFUSE ) {
+#ifdef __EMSCRIPTEN__
+        if (false) {
+#else
 		// we might intentionally have an alpha channel for alpha tested textures
 		if ( glConfig.textureCompressionAvailable ) {
+#endif
 			if ( !needAlpha ) {
 				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			} else {
 				return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 			}
 		} else if ( ( aAnd == 255 || aOr == 0 ) ) {
-			return GL_RGB5_A1; //GL_RBG5
+			return GL_RGBA8;	// GL_RGB5_A1
 		} else {
-			return GL_RGBA4;
+			return GL_RGBA8;	// GL_RGBA4
 		}
 	}
 
@@ -315,20 +331,28 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	// cases without alpha
 	if ( !needAlpha ) {
 		if ( minimumDepth == TD_HIGH_QUALITY ) {
-			return GL_RGB8;			// four bytes
+			return GL_RGBA8;			// four bytes
 		}
+#ifdef __EMSCRIPTEN__
+        if (false) {
+#else
 		if ( glConfig.textureCompressionAvailable ) {
+#endif
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;	// half byte
 		}
-		return GL_RGB5_A1;			 //GL_RBG5
+		return GL_RGBA8; 	//GL_RGB5_A1
 	}
 
 	// cases with alpha
 	if ( !rgbaDiffer ) {
+#ifdef __EMSCRIPTEN__
+        if (false) {
+#else
 		if ( minimumDepth != TD_HIGH_QUALITY && glConfig.textureCompressionAvailable ) {
+#endif
 			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
 		}
-		return GL_LUMINANCE8_ALPHA8;	 // GL_INTENSITY8   1->2
+		return GL_RGBA8;	 // GL_INTENSITY8   1->2
 	}
 
 #if 0
@@ -344,13 +368,17 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	if ( minimumDepth == TD_HIGH_QUALITY ) {
 		return GL_RGBA8;	// four bytes
 	}
+#ifdef __EMSCRIPTEN__
+    if (false) {
+#else
 	if ( glConfig.textureCompressionAvailable ) {
+#endif
 		return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
 	}
 	if ( !rgbDiffer ) {
-		return GL_LUMINANCE8_ALPHA8;	// two bytes, max quality
+		return GL_RGBA8;	// two bytes, max quality
 	}
-	return GL_RGBA4;
+	return GL_RGBA8;
 }
 
 /*
@@ -379,7 +407,6 @@ void idImage::SetImageFilterAndRepeat() const {
 
 	if ( glConfig.anisotropicAvailable ) {
 		// only do aniso filtering on mip mapped images
-		common->Printf("Anisotropy\n");
 		if ( filter == TF_DEFAULT ) {
 			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, globalImages->textureAnisotropy );
 		} else {
@@ -1416,11 +1443,14 @@ bool idImage::CheckPrecompressedImage( bool fullLoad ) {
 	}
 
 	// upload all the levels
-	UploadPrecompressedImage( data, len );
-
-	R_StaticFree( data );
-
-	return true;
+	if (!UploadPrecompressedImage( data, len )) {
+		R_StaticFree(data);
+		return false;
+	}
+	else {
+		R_StaticFree(data);
+		return true;
+	}
 }
 
 /*
@@ -1432,7 +1462,7 @@ or by the backend after a background read of the file
 has completed
 ===================
 */
-void idImage::UploadPrecompressedImage( byte *data, int len ) {
+bool idImage::UploadPrecompressedImage( byte *data, int len ) {
 	common->Printf("UploadPrecompressed\n");
 	ddsFileHeader_t	*header = (ddsFileHeader_t *)(data + 4);
 
@@ -1466,65 +1496,51 @@ void idImage::UploadPrecompressedImage( byte *data, int len ) {
 	uploadWidth = header->dwWidth;
 	uploadHeight = header->dwHeight;
 	if ( header->ddspf.dwFlags & DDSF_FOURCC ) {
-		switch ( header->ddspf.dwFourCC ) {
-		case DDS_MAKEFOURCC( 'D', 'X', 'T', '1' ):
-			if ( header->ddspf.dwFlags & DDSF_ALPHAPIXELS ) {
-				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-			} else {
-				internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-			}
-			break;
-		case DDS_MAKEFOURCC( 'D', 'X', 'T', '3' ):
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			break;
-		case DDS_MAKEFOURCC( 'D', 'X', 'T', '5' ):
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-			break;
-		case DDS_MAKEFOURCC( 'R', 'X', 'G', 'B' ):
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-			break;
-		default:
-			common->Warning( "Invalid compressed internal format\n" );
-			return;
+		switch (header->ddspf.dwFourCC) {
+			case DDS_MAKEFOURCC('D', 'X', 'T', '1'):
+				if (header->ddspf.dwFlags & DDSF_ALPHAPIXELS) {
+					internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+				} else {
+					internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+				}
+				break;
+			case DDS_MAKEFOURCC('D', 'X', 'T', '3'):
+				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				break;
+			case DDS_MAKEFOURCC('D', 'X', 'T', '5'):
+				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				break;
+			case DDS_MAKEFOURCC('R', 'X', 'G', 'B'):
+				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				break;
+			default:
+				common->Warning("Invalid compressed internal format\n");
+				return false;
 		}
+#ifndef __EMSCRIPTEN__
+    // Regal on WebGL backend don't properly handle uncompressed textures coming from DDS
+        // For exampel: BGRA layout (because some missing glPixelStorei flags)
+
 	} else if ( ( header->ddspf.dwFlags & DDSF_RGBA ) && header->ddspf.dwRGBBitCount == 32 ) {
-#ifdef __EMSCRIPTEN__
-		// Regal on WebGL backend don't properly handle BGRA (because some missing glPixelStorei flags)
-		common->Warning( "Invalid uncompressed internal format\n" );
-		return;
-#else
 		externalFormat = GL_BGRA_EXT;
 		internalFormat = GL_RGBA8;
-#endif
 	} else if ( ( header->ddspf.dwFlags & DDSF_RGB ) && header->ddspf.dwRGBBitCount == 32 ) {
-#ifdef __EMSCRIPTEN__
-		// Regal on WebGL backend don't properly handle BGRA (because some missing glPixelStorei flags)
-		common->Warning( "Invalid uncompressed internal format\n" );
-		return;
-#else
 		externalFormat = GL_BGRA_EXT;
-		internalFormat = GL_RGBA8;
-#endif
 	} else if ( ( header->ddspf.dwFlags & DDSF_RGB ) && header->ddspf.dwRGBBitCount == 24 ) {
 		if ( header->ddspf.dwFlags & DDSF_ID_INDEXCOLOR ) {
 			externalFormat = GL_COLOR_INDEX;
 			internalFormat = GL_COLOR_INDEX8_EXT;
 		} else {
-#ifdef __EMSCRIPTEN__
-			// Regal on WebGL backend don't properly handle BGRA (because some missing glPixelStorei flags)
-		common->Warning( "Invalid uncompressed internal format\n" );
-		return;
-#else
 			externalFormat = GL_BGR_EXT;
 			internalFormat = GL_RGB8;
-#endif
 		}
+#endif
 	} else if ( header->ddspf.dwRGBBitCount == 8 ) {
 		externalFormat = GL_ALPHA;
 		internalFormat = GL_ALPHA8;
 	} else {
 		common->Warning( "Invalid uncompressed internal format\n" );
-		return;
+		return false;
 	}
 
 	type = TT_2D;			// FIXME: we may want to support pre-compressed cube maps in the future
@@ -1576,6 +1592,8 @@ void idImage::UploadPrecompressedImage( byte *data, int len ) {
 	}
 
 	SetImageFilterAndRepeat();
+
+	return true;
 }
 
 /*
@@ -1945,6 +1963,7 @@ void idImage::CopyDepthbuffer( int x, int y, int imageWidth, int imageHeight ) {
 		} else {
 			// we need to create a dummy image with power of two dimensions,
 			// then do a qglCopyTexSubImage2D of the data we want
+			// GAB TODO
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, potWidth, potHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL );
 			qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, x, y, imageWidth, imageHeight );
 		}
@@ -1969,7 +1988,6 @@ if rows = cols * 6, assume it is a cube map animation
 =============
 */
 void idImage::UploadScratch( const byte *data, int cols, int rows ) {
-	common->Printf("UploadScratch\n");
 	int			i;
 
 	// if rows = cols * 6, assume it is a cube map animation

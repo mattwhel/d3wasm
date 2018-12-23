@@ -361,7 +361,7 @@ static void R_CheckPortableExtensions( void ) {
 	// GL_ARB_texture_compression + GL_S3_s3tc
 	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
 #ifdef __EMSCRIPTEN__
-	if ( true ) {
+	if ( false ) {
         common->Printf( "...using %s\n", "GL_ARB_texture_compression" );
 	    common->Printf( "...using %s\n", "GL_EXT_texture_compression_s3tc" );
 #else
