@@ -291,67 +291,6 @@ static void RB_ARB_DrawThreeTextureInteraction( const drawInteraction_t *din ) {
     qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ), (void *)&ac->st );
     qglColor3f( 1, 1, 1 );
 
-    GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_DEPTHMASK
-             | backEnd.depthFunc);
-
-    GL_TexEnv(GL_MODULATE);
-
-    // texture 0 will get the surface color texture
-    GL_SelectTexture(0);
-
-    // select the vertex color source
-    if (din->vertexColor == SVC_IGNORE) {
-        qglColor4fv(din->diffuseColor.ToFloatPtr());
-    } else {
-        // FIXME: does this not get diffuseColor blended in?
-        qglColorPointer(4, GL_UNSIGNED_BYTE, sizeof(idDrawVert), (void *) &ac->color);
-        qglEnableClientState(GL_COLOR_ARRAY);
-
-        if (din->vertexColor == SVC_INVERSE_MODULATE) {
-            GL_TexEnv(GL_COMBINE_ARB);
-            qglTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-            qglTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-            qglTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PRIMARY_COLOR_ARB);
-            qglTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-            qglTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_ONE_MINUS_SRC_COLOR);
-            qglTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1);
-        }
-    }
-
-    qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    // FIXME: does this not get the texture matrix?
-//	RB_BindStageTexture( surfaceRegs, &surfaceStage->texture, surf );
-    din->diffuseImage->Bind();
-
-    // texture 1 will get the light projected texture
-    GL_SelectTexture(1);
-    qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    qglEnable(GL_TEXTURE_GEN_S);
-    qglEnable(GL_TEXTURE_GEN_T);
-    qglEnable(GL_TEXTURE_GEN_Q);
-    qglTexGenfv(GL_S, GL_OBJECT_PLANE, din->lightProjection[0].ToFloatPtr());
-    qglTexGenfv(GL_T, GL_OBJECT_PLANE, din->lightProjection[1].ToFloatPtr());
-    qglTexGenfv(GL_Q, GL_OBJECT_PLANE, din->lightProjection[2].ToFloatPtr());
-    din->lightImage->Bind();
-
-    RB_DrawElementsWithCounters(tri);
-
-    GL_SelectTexture(1);
-    qglDisable(GL_TEXTURE_GEN_S);
-    qglDisable(GL_TEXTURE_GEN_T);
-    qglDisable(GL_TEXTURE_GEN_Q);
-    globalImages->BindNull();
-
-    GL_SelectTexture(0);
-
-    if (din->vertexColor != SVC_IGNORE) {
-        qglDisableClientState(GL_COLOR_ARRAY);
-        GL_TexEnv(GL_MODULATE);
-    }
-
-
-    return;
-
     if (true) {
         //
         // bump map dot cubeMap into the alpha channel
