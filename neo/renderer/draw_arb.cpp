@@ -78,13 +78,13 @@ it is set to lessThan for blended transparent surfaces
 */
 static void RB_ARB_DrawInteraction( const drawInteraction_t *din ) {
     const drawSurf_t *surf = din->surf;
-    const srfTriangles_t *tri = din->surf->geo;
+    const srfTriangles_t	*tri = din->surf->geo;
 
     // set the vertex arrays, which may not all be enabled on a given pass
-    idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
-    qglVertexPointer(3, GL_FLOAT, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
-    GL_SelectTexture(0);
-    qglTexCoordPointer(2, GL_FLOAT, sizeof(idDrawVert), (void *) &ac->st);
+    idDrawVert *ac = (idDrawVert *)vertexCache.Position( tri->ambientCache );
+    qglVertexPointer( 3, GL_FLOAT, sizeof( idDrawVert ), ac->xyz.ToFloatPtr() );
+    GL_SelectTexture( 0 );
+    qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ), (void *)&ac->st );
 
     //-----------------------------------------------------
     //
@@ -96,51 +96,49 @@ static void RB_ARB_DrawInteraction( const drawInteraction_t *din ) {
     //
     // draw light falloff to the alpha channel
     //
-    if (false)
-    {
-        GL_State(GLS_COLORMASK | GLS_DEPTHMASK | backEnd.depthFunc);
+    GL_State( GLS_COLORMASK | GLS_DEPTHMASK | backEnd.depthFunc );
 
-    qglColor3f(1, 1, 1);
-    qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    qglEnable(GL_TEXTURE_GEN_S);
-    qglTexGenfv(GL_S, GL_OBJECT_PLANE, din->lightProjection[3].ToFloatPtr());
-    qglTexCoord2f(0, 0.5);
+    qglColor3f( 1, 1, 1 );
+    qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+    qglEnable( GL_TEXTURE_GEN_S );
+    qglTexGenfv( GL_S, GL_OBJECT_PLANE, din->lightProjection[3].ToFloatPtr() );
+    qglTexCoord2f( 0, 0.5 );
 
 // ATI R100 can't do partial texgens
-#define    NO_MIXED_TEXGEN
+#define	NO_MIXED_TEXGEN
 
 #ifdef NO_MIXED_TEXGEN
-    idVec4 plane;
+    idVec4	plane;
     plane[0] = 0;
     plane[1] = 0;
     plane[2] = 0;
     plane[3] = 0.5;
-    qglEnable(GL_TEXTURE_GEN_T);
-    qglTexGenfv(GL_T, GL_OBJECT_PLANE, plane.ToFloatPtr());
+    qglEnable( GL_TEXTURE_GEN_T );
+    qglTexGenfv( GL_T, GL_OBJECT_PLANE, plane.ToFloatPtr() );
 
     plane[0] = 0;
     plane[1] = 0;
     plane[2] = 0;
     plane[3] = 1;
-    qglEnable(GL_TEXTURE_GEN_Q);
-    qglTexGenfv(GL_Q, GL_OBJECT_PLANE, plane.ToFloatPtr());
+    qglEnable( GL_TEXTURE_GEN_Q );
+    qglTexGenfv( GL_Q, GL_OBJECT_PLANE, plane.ToFloatPtr() );
 
 #endif
 
     din->lightFalloffImage->Bind();
 
     // draw it
-    RB_DrawElementsWithCounters(tri);
+    RB_DrawElementsWithCounters( tri );
 
-    qglDisable(GL_TEXTURE_GEN_S);
+    qglDisable( GL_TEXTURE_GEN_S );
 #ifdef NO_MIXED_TEXGEN
-    qglDisable(GL_TEXTURE_GEN_T);
-    qglDisable(GL_TEXTURE_GEN_Q);
+    qglDisable( GL_TEXTURE_GEN_T );
+    qglDisable( GL_TEXTURE_GEN_Q );
 #endif
 
 #if 0
     GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_DEPTHMASK
-            | backEnd.depthFunc );
+			| backEnd.depthFunc );
 // the texccords are the non-normalized vector towards the light origin
 GL_SelectTexture( 0 );
 globalImages->normalCubeMapImage->Bind();
@@ -150,8 +148,6 @@ qglTexCoordPointer( 3, GL_FLOAT, sizeof( lightingCache_t ), ((lightingCache_t *)
 RB_DrawElementsWithCounters( tri );
 return;
 #endif
-
-    }
 
     // we can't do bump mapping with standard calls, so skip it
     if ( glConfig.envDot3Available && glConfig.cubeMapAvailable ) {
@@ -291,153 +287,145 @@ static void RB_ARB_DrawThreeTextureInteraction( const drawInteraction_t *din ) {
     qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ), (void *)&ac->st );
     qglColor3f( 1, 1, 1 );
 
-    if (true) {
-        //
-        // bump map dot cubeMap into the alpha channel
-        //
-        GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_COLORMASK | GLS_DEPTHMASK
-                 | backEnd.depthFunc);
+    //
+    // bump map dot cubeMap into the alpha channel
+    //
+    GL_State( GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_COLORMASK | GLS_DEPTHMASK
+              | backEnd.depthFunc );
 
-        // texture 0 will be the per-surface bump map
-        GL_SelectTexture(0);
-        qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    // texture 0 will be the per-surface bump map
+    GL_SelectTexture( 0 );
+    qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 //	FIXME: matrix work!	RB_BindStageTexture( surfaceRegs, &surfaceStage->texture, surf );
-        din->bumpImage->Bind();
+    din->bumpImage->Bind();
 
-        // texture 1 is the normalization cube map
-        // the texccords are the non-normalized vector towards the light origin
-        GL_SelectTexture(1);
-        if (din->ambientLight) {
-            globalImages->ambientNormalMap->Bind();    // fixed value
-        } else {
-            globalImages->normalCubeMapImage->Bind();
-        }
-        qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        qglTexCoordPointer(3, GL_FLOAT, sizeof(lightingCache_t), ((lightingCache_t *) vertexCache.Position(
-                tri->lightingCache))->localLightVector.ToFloatPtr());
+    // texture 1 is the normalization cube map
+    // the texccords are the non-normalized vector towards the light origin
+    GL_SelectTexture( 1 );
+    if ( din->ambientLight ) {
+        globalImages->ambientNormalMap->Bind();	// fixed value
+    } else {
+        globalImages->normalCubeMapImage->Bind();
+    }
+    qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+    qglTexCoordPointer( 3, GL_FLOAT, sizeof( lightingCache_t ), ((lightingCache_t *)vertexCache.Position(tri->lightingCache))->localLightVector.ToFloatPtr() );
 
-        // I just want alpha = Dot( texture0, texture1 )
-        GL_TexEnv(GL_COMBINE_ARB);
+    // I just want alpha = Dot( texture0, texture1 )
+    GL_TexEnv( GL_COMBINE_ARB );
 
-        qglTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGBA_ARB);
-        qglTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-        qglTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB);
-        qglTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-        qglTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
-        qglTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1);
-        qglTexEnvi(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1);
+    qglTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_DOT3_RGBA_ARB );
+    qglTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+    qglTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PREVIOUS_ARB );
+    qglTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
+    qglTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR );
+    qglTexEnvi( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1 );
+    qglTexEnvi( GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1 );
 
-        // draw it
-        RB_DrawElementsWithCounters(tri);
+    // draw it
+    RB_DrawElementsWithCounters( tri );
 
-        GL_TexEnv(GL_MODULATE);
+    GL_TexEnv( GL_MODULATE );
 
-        globalImages->BindNull();
-        qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    globalImages->BindNull();
+    qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 
-        GL_SelectTexture(0);
+    GL_SelectTexture( 0 );
 //		RB_FinishStageTexture( &surfaceStage->texture, surf );
 
+
+    //-----------------------------------------------------
+    //
+    // light falloff / projected light / surface color for diffuse maps
+    //
+    //-----------------------------------------------------
+    // multiply result by alpha, but don't trash alpha
+    GL_State( GLS_SRCBLEND_DST_ALPHA | GLS_DSTBLEND_ONE | GLS_ALPHAMASK | GLS_DEPTHMASK
+              | backEnd.depthFunc );
+
+    // texture 0 will get the surface color texture
+    GL_SelectTexture( 0 );
+
+    // select the vertex color source
+    if ( din->vertexColor == SVC_IGNORE ) {
+        qglColor4fv( din->diffuseColor.ToFloatPtr() );
+    } else {
+        // FIXME: does this not get diffuseColor blended in?
+        qglColorPointer( 4, GL_UNSIGNED_BYTE, sizeof( idDrawVert ), (void *)&ac->color );
+        qglEnableClientState( GL_COLOR_ARRAY );
+
+        if ( din->vertexColor == SVC_INVERSE_MODULATE ) {
+            GL_TexEnv( GL_COMBINE_ARB );
+            qglTexEnvi( GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE );
+            qglTexEnvi( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+            qglTexEnvi( GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PRIMARY_COLOR_ARB );
+            qglTexEnvi( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR );
+            qglTexEnvi( GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_ONE_MINUS_SRC_COLOR );
+            qglTexEnvi( GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1 );
+        }
     }
 
-    if (true) {
-        //-----------------------------------------------------
-        //
-        // light falloff / projected light / surface color for diffuse maps
-        //
-        //-----------------------------------------------------
-        // multiply result by alpha, but don't trash alpha
-        GL_State(GLS_SRCBLEND_DST_ALPHA | GLS_DSTBLEND_ONE | GLS_ALPHAMASK | GLS_DEPTHMASK
-                 | backEnd.depthFunc);
-
-        // texture 0 will get the surface color texture
-        GL_SelectTexture(0);
-
-        // select the vertex color source
-        if (din->vertexColor == SVC_IGNORE) {
-            qglColor4fv(din->diffuseColor.ToFloatPtr());
-        } else {
-            // FIXME: does this not get diffuseColor blended in?
-            qglColorPointer(4, GL_UNSIGNED_BYTE, sizeof(idDrawVert), (void *) &ac->color);
-            qglEnableClientState(GL_COLOR_ARRAY);
-
-            if (din->vertexColor == SVC_INVERSE_MODULATE) {
-                GL_TexEnv(GL_COMBINE_ARB);
-                qglTexEnvi(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-                qglTexEnvi(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE);
-                qglTexEnvi(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_PRIMARY_COLOR_ARB);
-                qglTexEnvi(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-                qglTexEnvi(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_ONE_MINUS_SRC_COLOR);
-                qglTexEnvi(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1);
-            }
-        }
-
-        qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        // FIXME: does this not get the texture matrix?
+    qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+    // FIXME: does this not get the texture matrix?
 //	RB_BindStageTexture( surfaceRegs, &surfaceStage->texture, surf );
-        din->diffuseImage->Bind();
+    din->diffuseImage->Bind();
 
-        // texture 1 will get the light projected texture
-        GL_SelectTexture(1);
-        qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        qglEnable(GL_TEXTURE_GEN_S);
-        qglEnable(GL_TEXTURE_GEN_T);
-        qglEnable(GL_TEXTURE_GEN_Q);
-        qglTexGenfv(GL_S, GL_OBJECT_PLANE, din->lightProjection[0].ToFloatPtr());
-        qglTexGenfv(GL_T, GL_OBJECT_PLANE, din->lightProjection[1].ToFloatPtr());
-        qglTexGenfv(GL_Q, GL_OBJECT_PLANE, din->lightProjection[2].ToFloatPtr());
-        din->lightImage->Bind();
+    // texture 1 will get the light projected texture
+    GL_SelectTexture( 1 );
+    qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+    qglEnable( GL_TEXTURE_GEN_S );
+    qglEnable( GL_TEXTURE_GEN_T );
+    qglEnable( GL_TEXTURE_GEN_Q );
+    qglTexGenfv( GL_S, GL_OBJECT_PLANE, din->lightProjection[0].ToFloatPtr() );
+    qglTexGenfv( GL_T, GL_OBJECT_PLANE, din->lightProjection[1].ToFloatPtr() );
+    qglTexGenfv( GL_Q, GL_OBJECT_PLANE, din->lightProjection[2].ToFloatPtr() );
+    din->lightImage->Bind();
 
-        if (false) {
-            // texture 2 will get the light falloff texture
-            GL_SelectTexture(2);
-            qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-            qglEnable(GL_TEXTURE_GEN_S);
-            qglEnable(GL_TEXTURE_GEN_T);
-            qglEnable(GL_TEXTURE_GEN_Q);
+    // texture 2 will get the light falloff texture
+    GL_SelectTexture( 2 );
+    qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+    qglEnable( GL_TEXTURE_GEN_S );
+    qglEnable( GL_TEXTURE_GEN_T );
+    qglEnable( GL_TEXTURE_GEN_Q );
 
-            qglTexGenfv(GL_S, GL_OBJECT_PLANE, din->lightProjection[3].ToFloatPtr());
+    qglTexGenfv( GL_S, GL_OBJECT_PLANE, din->lightProjection[3].ToFloatPtr() );
 
-            idVec4 plane;
-            plane[0] = 0;
-            plane[1] = 0;
-            plane[2] = 0;
-            plane[3] = 0.5;
-            qglTexGenfv(GL_T, GL_OBJECT_PLANE, plane.ToFloatPtr());
+    idVec4	plane;
+    plane[0] = 0;
+    plane[1] = 0;
+    plane[2] = 0;
+    plane[3] = 0.5;
+    qglTexGenfv( GL_T, GL_OBJECT_PLANE, plane.ToFloatPtr() );
 
-            plane[0] = 0;
-            plane[1] = 0;
-            plane[2] = 0;
-            plane[3] = 1;
-            qglTexGenfv(GL_Q, GL_OBJECT_PLANE, plane.ToFloatPtr());
+    plane[0] = 0;
+    plane[1] = 0;
+    plane[2] = 0;
+    plane[3] = 1;
+    qglTexGenfv( GL_Q, GL_OBJECT_PLANE, plane.ToFloatPtr() );
 
-            din->lightFalloffImage->Bind();
-        }
-            // draw it
-            RB_DrawElementsWithCounters(tri);
+    din->lightFalloffImage->Bind();
 
-        if (false) {
-            qglDisable(GL_TEXTURE_GEN_S);
-            qglDisable(GL_TEXTURE_GEN_T);
-            qglDisable(GL_TEXTURE_GEN_Q);
-            globalImages->BindNull();
-        }
+    // draw it
+    RB_DrawElementsWithCounters( tri );
 
-        GL_SelectTexture(1);
-        qglDisable(GL_TEXTURE_GEN_S);
-        qglDisable(GL_TEXTURE_GEN_T);
-        qglDisable(GL_TEXTURE_GEN_Q);
-        globalImages->BindNull();
+    qglDisable( GL_TEXTURE_GEN_S );
+    qglDisable( GL_TEXTURE_GEN_T );
+    qglDisable( GL_TEXTURE_GEN_Q );
+    globalImages->BindNull();
 
-        GL_SelectTexture(0);
+    GL_SelectTexture( 1 );
+    qglDisable( GL_TEXTURE_GEN_S );
+    qglDisable( GL_TEXTURE_GEN_T );
+    qglDisable( GL_TEXTURE_GEN_Q );
+    globalImages->BindNull();
 
-        if (din->vertexColor != SVC_IGNORE) {
-            qglDisableClientState(GL_COLOR_ARRAY);
-            GL_TexEnv(GL_MODULATE);
-        }
+    GL_SelectTexture( 0 );
+
+    if ( din->vertexColor != SVC_IGNORE ) {
+        qglDisableClientState( GL_COLOR_ARRAY );
+        GL_TexEnv( GL_MODULATE );
+    }
 
 //	RB_FinishStageTexture( &surfaceStage->texture, surf );
-    }
 }
 
 
