@@ -214,6 +214,13 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	int		rgbOr, rgbAnd, aOr, aAnd;
 	int		rgbDiffer, rgbaDiffer;
 
+#ifdef __EMSCRIPTEN__
+	// GAB NOTE Dec 2018:
+	// OpenGL ES/WebGL require to have internal_format == format. As Regal does not do format conversion (this is not enabled for now),
+	// and format selected by D3 is always RGBA in the end, we will always return GL_RGBA8 internal format
+	return GL_RGBA8;
+#endif
+
 	// determine if the rgb channels are all the same
 	// and if either all rgb or all alpha are 255
 	c = width*height;
@@ -261,18 +268,10 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 
 	// catch normal maps first
 	if ( minimumDepth == TD_BUMP ) {
-#ifdef __EMSCRIPTEN__
-        if (false) {
-#else
 		if ( globalImages->image_useCompression.GetBool() && globalImages->image_useNormalCompression.GetInteger() == 1 && glConfig.sharedTexturePaletteAvailable ) {
-#endif
             // image_useNormalCompression should only be set to 1 on nv_10 and nv_20 paths
             return GL_COLOR_INDEX8_EXT;
-#ifdef __EMSCRIPTEN__
-		} else if (false) {
-#else
 		} else if ( globalImages->image_useCompression.GetBool() && globalImages->image_useNormalCompression.GetInteger() && glConfig.textureCompressionAvailable ) {
-#endif
 			// image_useNormalCompression == 2 uses rxgb format which produces really good quality for medium settings
 			return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 		} else {
@@ -287,24 +286,17 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	}
 
 	if ( minimumDepth == TD_SPECULAR ) {
-#ifdef __EMSCRIPTEN__
-        if (false) {
-#else
 		// we are assuming that any alpha channel is unintentional
 		if ( glConfig.textureCompressionAvailable ) {
-#endif
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 		} else {
 			return GL_RGBA8;	// GL_RGB5_A1
 		}
 	}
+
 	if ( minimumDepth == TD_DIFFUSE ) {
-#ifdef __EMSCRIPTEN__
-        if (false) {
-#else
 		// we might intentionally have an alpha channel for alpha tested textures
 		if ( glConfig.textureCompressionAvailable ) {
-#endif
 			if ( !needAlpha ) {
 				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			} else {
@@ -333,11 +325,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 		if ( minimumDepth == TD_HIGH_QUALITY ) {
 			return GL_RGBA8;			// four bytes
 		}
-#ifdef __EMSCRIPTEN__
-        if (false) {
-#else
 		if ( glConfig.textureCompressionAvailable ) {
-#endif
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;	// half byte
 		}
 		return GL_RGBA8; 	//GL_RGB5_A1
@@ -345,11 +333,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 
 	// cases with alpha
 	if ( !rgbaDiffer ) {
-#ifdef __EMSCRIPTEN__
-        if (false) {
-#else
 		if ( minimumDepth != TD_HIGH_QUALITY && glConfig.textureCompressionAvailable ) {
-#endif
 			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
 		}
 		return GL_RGBA8;	 // GL_INTENSITY8   1->2
@@ -368,11 +352,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	if ( minimumDepth == TD_HIGH_QUALITY ) {
 		return GL_RGBA8;	// four bytes
 	}
-#ifdef __EMSCRIPTEN__
-    if (false) {
-#else
 	if ( glConfig.textureCompressionAvailable ) {
-#endif
 		return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
 	}
 	if ( !rgbDiffer ) {
@@ -1800,10 +1780,13 @@ void idImage::Bind() {
 		}
 	}
 
+#ifdef __EMSCRITPEN__
+#else
 	if ( com_purgeAll.GetBool() ) {
 		GLclampf priority = 1.0f;
 		qglPrioritizeTextures( 1, &texnum, &priority );
 	}
+#endif
 }
 
 /*
@@ -2007,15 +1990,15 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 
 			// upload the base level
 			for ( i = 0 ; i < 6 ; i++ ) {
-				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGB8, cols, rows, 0,
-					GL_RGB, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
+				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA8, cols, rows, 0,
+					GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
 			}
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
 			for ( i = 0 ; i < 6 ; i++ ) {
 				qglTexSubImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, 0, 0, cols, rows,
-					GL_RGB, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
+					GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
 			}
 		}
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
@@ -2036,11 +2019,11 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 		if ( cols != uploadWidth || rows != uploadHeight ) {
 			uploadWidth = cols;
 			uploadHeight = rows;
-			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGB, GL_UNSIGNED_BYTE, data );
+			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
-			qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGB, GL_UNSIGNED_BYTE, data );
+			qglTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, cols, rows, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		}
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
