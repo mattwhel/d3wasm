@@ -731,6 +731,11 @@ void idRenderSystemLocal::EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		}
 	}
 
+#ifdef __EMSCRIPTEN__
+	qglClearColor(1,1,1,1);
+	qglColorMask(false, false, false, true);
+	qglClear(GL_COLOR_BUFFER_BIT);
+#endif
 }
 
 /*
