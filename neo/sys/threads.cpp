@@ -50,7 +50,11 @@ Sys_Sleep
 ==============
 */
 void Sys_Sleep(int msec) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	SDL_Delay(msec);
+#endif
 }
 
 /*
@@ -68,24 +72,27 @@ Sys_InitThreads
 ==================
 */
 void Sys_InitThreads() {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	// critical sections
 	for (int i = 0; i < MAX_CRITICAL_SECTIONS; i++) {
-		mutex[i] = NULL;//SDL_CreateMutex();
+		mutex[i] = SDL_CreateMutex();
 
-		//if (!mutex[i]) {
-		//	Sys_Printf("ERROR: SDL_CreateMutex failed\n");
-		//	return;
-		//}
+		if (!mutex[i]) {
+			Sys_Printf("ERROR: SDL_CreateMutex failed\n");
+			return;
+		}
 	}
 
 	// events
 	for (int i = 0; i < MAX_TRIGGER_EVENTS; i++) {
-		cond[i] = NULL;//SDL_CreateCond();
+		cond[i] = SDL_CreateCond();
 
-		//if (!cond[i]) {
-		//	Sys_Printf("ERROR: SDL_CreateCond failed\n");
-		//	return;
-		//}
+		if (!cond[i]) {
+			Sys_Printf("ERROR: SDL_CreateCond failed\n");
+			return;
+		}
 
 		signaled[i] = false;
 		waiting[i] = false;
@@ -96,6 +103,7 @@ void Sys_InitThreads() {
 		thread[i] = NULL;
 
 	thread_count = 0;
+#endif
 }
 
 /*
@@ -104,23 +112,26 @@ Sys_ShutdownThreads
 ==================
 */
 void Sys_ShutdownThreads() {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	// threads
 	for (int i = 0; i < MAX_THREADS; i++) {
 		if (!thread[i])
 			continue;
 
-		//Sys_Printf("WARNING: Thread '%s' still running\n", thread[i]->name);
+		Sys_Printf("WARNING: Thread '%s' still running\n", thread[i]->name);
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 		// TODO no equivalent in SDL2
 #else
-		//SDL_KillThread(thread[i]->threadHandle);
+		SDL_KillThread(thread[i]->threadHandle);
 #endif
 		thread[i] = NULL;
 	}
 
 	// events
 	for (int i = 0; i < MAX_TRIGGER_EVENTS; i++) {
-		//SDL_DestroyCond(cond[i]);
+		SDL_DestroyCond(cond[i]);
 		cond[i] = NULL;
 		signaled[i] = false;
 		waiting[i] = false;
@@ -128,9 +139,10 @@ void Sys_ShutdownThreads() {
 
 	// critical sections
 	for (int i = 0; i < MAX_CRITICAL_SECTIONS; i++) {
-		//SDL_DestroyMutex(mutex[i]);
+		SDL_DestroyMutex(mutex[i]);
 		mutex[i] = NULL;
 	}
+#endif
 }
 
 /*
@@ -139,10 +151,14 @@ Sys_EnterCriticalSection
 ==================
 */
 void Sys_EnterCriticalSection(int index) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	assert(index >= 0 && index < MAX_CRITICAL_SECTIONS);
 
-	//if (SDL_LockMutex(mutex[index]) != 0) {}
-		//common->Error("ERROR: SDL_LockMutex failed\n");
+	if (SDL_LockMutex(mutex[index]) != 0)
+		common->Error("ERROR: SDL_LockMutex failed\n");
+#endif
 }
 
 /*
@@ -151,10 +167,14 @@ Sys_LeaveCriticalSection
 ==================
 */
 void Sys_LeaveCriticalSection(int index) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	assert(index >= 0 && index < MAX_CRITICAL_SECTIONS);
 
-	//if (SDL_UnlockMutex(mutex[index]) != 0) {}
-		//common->Error("ERROR: SDL_UnlockMutex failed\n");
+	if (SDL_UnlockMutex(mutex[index]) != 0)
+		common->Error("ERROR: SDL_UnlockMutex failed\n");
+#endif
 }
 
 /*
@@ -176,6 +196,9 @@ Sys_WaitForEvent
 ==================
 */
 void Sys_WaitForEvent(int index) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	assert(index >= 0 && index < MAX_TRIGGER_EVENTS);
 
 	Sys_EnterCriticalSection(CRITICAL_SECTION_SYS);
@@ -186,12 +209,13 @@ void Sys_WaitForEvent(int index) {
 		signaled[index] = false;
 	} else {
 		waiting[index] = true;
-		//if (SDL_CondWait(cond[index], mutex[CRITICAL_SECTION_SYS]) != 0) {}
-			//common->Error("ERROR: SDL_CondWait failed\n");
+		if (SDL_CondWait(cond[index], mutex[CRITICAL_SECTION_SYS]) != 0)
+			common->Error("ERROR: SDL_CondWait failed\n");
 		waiting[index] = false;
 	}
 
 	Sys_LeaveCriticalSection(CRITICAL_SECTION_SYS);
+#endif
 }
 
 /*
@@ -200,19 +224,23 @@ Sys_TriggerEvent
 ==================
 */
 void Sys_TriggerEvent(int index) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	assert(index >= 0 && index < MAX_TRIGGER_EVENTS);
 
 	Sys_EnterCriticalSection(CRITICAL_SECTION_SYS);
 
 	if (waiting[index]) {
-		//if (SDL_CondSignal(cond[index]) != 0) {}
-			//common->Error("ERROR: SDL_CondSignal failed\n");
+		if (SDL_CondSignal(cond[index]) != 0)
+			common->Error("ERROR: SDL_CondSignal failed\n");
 	} else {
 		// emulate windows behaviour: if no thread is waiting, leave the signal on so next wait keeps going
 		signaled[index] = true;
 	}
 
 	Sys_LeaveCriticalSection(CRITICAL_SECTION_SYS);
+#endif
 }
 
 /*
@@ -221,16 +249,19 @@ Sys_CreateThread
 ==================
 */
 void Sys_CreateThread(xthread_t function, void *parms, xthreadInfo& info, const char *name) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	Sys_EnterCriticalSection();
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_Thread *t = NULL;//SDL_CreateThread(function, name, parms);
+	SDL_Thread *t = SDL_CreateThread(function, name, parms);
 #else
-	SDL_Thread *t = NULL;//SDL_CreateThread(function, parms);
+	SDL_Thread *t = SDL_CreateThread(function, parms);
 #endif
 
 	if (!t) {
-		//common->Error("ERROR: SDL_thread for '%s' failed\n", name);
+		common->Error("ERROR: SDL_thread for '%s' failed\n", name);
 		Sys_LeaveCriticalSection();
 		return;
 	}
@@ -245,6 +276,7 @@ void Sys_CreateThread(xthread_t function, void *parms, xthreadInfo& info, const 
 		common->DPrintf("WARNING: MAX_THREADS reached\n");
 
 	Sys_LeaveCriticalSection();
+#endif
 }
 
 /*
@@ -253,10 +285,12 @@ Sys_DestroyThread
 ==================
 */
 void Sys_DestroyThread(xthreadInfo& info) {
+#ifdef __EMSCRIPTEN__
 	return;
-    assert(info.threadHandle);
+#else
+	assert(info.threadHandle);
 
-	//SDL_WaitThread(info.threadHandle, NULL);
+	SDL_WaitThread(info.threadHandle, NULL);
 
 	info.name = NULL;
 	info.threadHandle = NULL;
@@ -280,6 +314,7 @@ void Sys_DestroyThread(xthreadInfo& info) {
 	}
 
 	Sys_LeaveCriticalSection( );
+#endif
 }
 
 /*
@@ -289,11 +324,14 @@ find the name of the calling thread
 ==================
 */
 const char *Sys_GetThreadName(int *index) {
+#ifdef __EMSCRIPTEN__
+	return "main";
+#else
 	const char *name;
 
 	Sys_EnterCriticalSection();
 
-	unsigned int id = 0;//SDL_ThreadID();
+	unsigned int id = SDL_ThreadID();
 
 	for (int i = 0; i < thread_count; i++) {
 		if (id == thread[i]->threadId) {
@@ -314,4 +352,5 @@ const char *Sys_GetThreadName(int *index) {
 	Sys_LeaveCriticalSection();
 
 	return "main";
+#endif
 }
