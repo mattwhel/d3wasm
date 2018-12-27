@@ -273,13 +273,16 @@ NET_InitNetworking
 */
 void Sys_InitNetworking(void)
 {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	unsigned int ip, mask;
 	struct ifaddrs *ifap, *ifp;
 
 	num_interfaces = 0;
 
 	if( getifaddrs( &ifap ) < 0 ) {
-//		common->FatalError( "InitNetworking: SIOCGIFCONF error - %s\n", strerror( errno ) );
+		common->FatalError( "InitNetworking: SIOCGIFCONF error - %s\n", strerror( errno ) );
 		return;
 	}
 
@@ -319,6 +322,7 @@ void Sys_InitNetworking(void)
 			break;
 	}
 	freeifaddrs(ifap);
+#endif
 }
 
 /*
@@ -644,15 +648,15 @@ int idTCP::Read(void *data, int size) {
 		return -1;
 	}
 
-//#if defined(_GNU_SOURCE)
-//	// handle EINTR interrupted system call with TEMP_FAILURE_RETRY -  this is probably GNU libc specific
-//	if ( ( nbytes = TEMP_FAILURE_RETRY( read( fd, data, size ) ) ) == -1 ) {
-//#else
+#if defined(_GNU_SOURCE)&&!defined(__EMSCRIPTEN__)
+	// handle EINTR interrupted system call with TEMP_FAILURE_RETRY -  this is probably GNU libc specific
+	if ( ( nbytes = TEMP_FAILURE_RETRY( read( fd, data, size ) ) ) == -1 ) {
+#else
 	do {
 	  nbytes = read( fd, data, size );
 	} while ( nbytes == -1 && errno == EINTR );
 	if ( nbytes == -1 ) {
-//#endif
+#endif
 		if (errno == EAGAIN) {
 			return 0;
 		}
@@ -701,15 +705,15 @@ int	idTCP::Write(void *data, int size) {
 		return -1;
 	}
 
-//#if defined(_GNU_SOURCE)
+#if defined(_GNU_SOURCE)&&!defined(__EMSCRIPTEN__)
 	// handle EINTR interrupted system call with TEMP_FAILURE_RETRY -  this is probably GNU libc specific
-//	if ( ( nbytes = TEMP_FAILURE_RETRY ( write( fd, data, size ) ) ) == -1 ) {
-//#else
+	if ( ( nbytes = TEMP_FAILURE_RETRY ( write( fd, data, size ) ) ) == -1 ) {
+#else
 	  do {
 		nbytes = write( fd, data, size );
 	  } while ( nbytes == -1 && errno == EINTR );
 	  if ( nbytes == -1 ) {
-//#endif
+#endif
 		common->Printf( "ERROR: idTCP::Write: %s\n", strerror( errno ) );
 		Close();
 		return -1;
