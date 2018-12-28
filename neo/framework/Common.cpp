@@ -1393,6 +1393,7 @@ bool OSX_GetCPUIdentification( int& cpuId, bool& oldArchitecture );
 #endif
 void Com_ExecMachineSpec_f( const idCmdArgs &args ) {
 
+#ifdef __EMSCRIPTEN__
     if ( com_machineSpec.GetInteger() == 4 ) {
 		cvarSystem->SetCVarInteger( "image_anisotropy", 1, CVAR_ARCHIVE );
         cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ARCHIVE );
@@ -1416,7 +1417,9 @@ void Com_ExecMachineSpec_f( const idCmdArgs &args ) {
         cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ARCHIVE );
         cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ARCHIVE );	// Not multithreaded
     }
-	else if ( com_machineSpec.GetInteger() == 3 ) {
+	else
+#else
+	if ( com_machineSpec.GetInteger() == 3 ) {
 		cvarSystem->SetCVarInteger( "image_anisotropy", 1, CVAR_ARCHIVE );
 		cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ARCHIVE );
 		cvarSystem->SetCVarInteger( "image_forceDownSize", 0, CVAR_ARCHIVE );
@@ -1497,6 +1500,7 @@ void Com_ExecMachineSpec_f( const idCmdArgs &args ) {
 		cvarSystem->SetCVarInteger( "image_useNormalCompression", 2, CVAR_ARCHIVE );
 		cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ARCHIVE );
 	}
+#endif
 
 	cvarSystem->SetCVarBool( "com_purgeAll", false, CVAR_ARCHIVE );
 	cvarSystem->SetCVarBool( "r_forceLoadImages", false, CVAR_ARCHIVE );
@@ -2405,10 +2409,12 @@ void idCommonLocal::InitSIMD( void ) {
 	com_forceGenericSIMD.ClearModified();
 }
 
-
 static unsigned int AsyncTimer(unsigned int interval, void *) {
     common->Async();
-    //Sys_TriggerEvent(TRIGGER_EVENT_ONE);
+#ifdef __EMSCRIPTEN__
+#else
+    Sys_TriggerEvent(TRIGGER_EVENT_ONE);
+#endif
 
     // calculate the next interval to get as close to 60fps as possible
     unsigned int now = SDL_GetTicks();
@@ -2535,7 +2541,10 @@ int	lastTicMsec;
 void idCommonLocal::SingleAsyncTic( void ) {
 	// main thread code can prevent this from happening while modifying
 	// critical data structures
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_EnterCriticalSection();
+#endif
 
 	asyncStats_t *stat = &com_asyncStats[com_ticNumber & (MAX_ASYNC_STATS-1)];
 	memset( stat, 0, sizeof( *stat ) );
@@ -2561,7 +2570,10 @@ void idCommonLocal::SingleAsyncTic( void ) {
 
 	stat->timeConsumed = Sys_Milliseconds() - stat->milliseconds;
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_LeaveCriticalSection();
+#endif
 }
 
 /*
@@ -2974,11 +2986,11 @@ void idCommonLocal::Init( int argc, char **argv ) {
 		InitGame();
 
 		// don't add startup commands if no CD key is present
-#if ID_ENFORCE_KEY
-		if ( !session->CDKeysAreValid( false ) || !AddStartupCommands() ) {
-#else
+//#if ID_ENFORCE_KEY
+//		if ( !session->CDKeysAreValid( false ) || !AddStartupCommands() ) {
+//#else
 		if ( !AddStartupCommands() ) {
-#endif
+//#endif
 			// if the user didn't give any commands, run default action
 			session->StartMenu( true );
 		}
@@ -3005,10 +3017,13 @@ void idCommonLocal::Init( int argc, char **argv ) {
 		Sys_Error( "Error during initialization" );
 	}
 
-	//async_timer = SDL_AddTimer(USERCMD_MSEC, AsyncTimer, NULL);
+#ifdef __EMSCRIPTEN
+#else
+	async_timer = SDL_AddTimer(USERCMD_MSEC, AsyncTimer, NULL);
 
-	//if (!async_timer)
-	//	Sys_Error("Error while starting the async timer: %s", SDL_GetError());
+	if (!async_timer)
+		Sys_Error("Error while starting the async timer: %s", SDL_GetError());
+#endif
 }
 
 
