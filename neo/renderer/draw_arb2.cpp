@@ -501,6 +501,7 @@ R_ARB2_Init
 */
 void R_ARB2_Init( void ) {
 	glConfig.allowARB2Path = false;
+	return;
 
 	common->Printf( "ARB2 renderer: " );
 
