@@ -1849,7 +1849,10 @@ void Session_Hitch_f( const idCmdArgs &args ) {
 	if ( sw ) {
 		soundSystem->SetMute(true);
 		sw->Pause();
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_EnterCriticalSection();
+#endif
 	}
 	if ( args.Argc() == 2 ) {
 		Sys_Sleep( atoi(args.Argv(1)) );
@@ -1857,7 +1860,10 @@ void Session_Hitch_f( const idCmdArgs &args ) {
 		Sys_Sleep( 100 );
 	}
 	if ( sw ) {
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_LeaveCriticalSection();
+#endif
 		sw->UnPause();
 		soundSystem->SetMute(false);
 	}
@@ -2600,8 +2606,11 @@ void idSessionLocal::Frame() {
 		if ( latchedTicNumber >= minTic ) {
 			break;
 		}
-		//Sys_WaitForEvent( TRIGGER_EVENT_ONE );
-	    return;
+#ifdef __EMSCRIPTEN__
+		return;
+#else
+		Sys_WaitForEvent( TRIGGER_EVENT_ONE );
+#endif
 	}
 
 	if ( authEmitTimeout ) {

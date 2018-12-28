@@ -2695,8 +2695,6 @@ void idFileSystemLocal::Init( void ) {
 	if ( ReadFile( "default.cfg", NULL, NULL ) <= 0 ) {
 		//common->FatalError( "Couldn't load default.cfg" );
 	}
-
-	//printf("ici\n");
 }
 
 /*
@@ -2729,8 +2727,9 @@ void idFileSystemLocal::Shutdown( bool reloading ) {
 	searchpath_t *sp, *next, *loop;
 
 	backgroundThread_exit = true;
-#ifndef __EMSCRIPTEN__
-	// Emscripten: if we do this, this will restart the background thread code
+#ifdef __EMSCRIPTEN__
+	// Emscripten: if we do usual code, this will restart the background thread code
+#else
 	Sys_TriggerEvent();
 	Sys_DestroyThread(backgroundThread);
 	backgroundThread_exit = false;
@@ -3419,17 +3418,24 @@ int BackgroundDownloadThread( void *pexit ) {
 	if (!(*exit)) {
 #else
 	while (!(*exit)) {
-#endif
 		Sys_EnterCriticalSection();
+#endif
 		backgroundDownload_t	*bgl = fileSystemLocal.backgroundDownloads;
 		if ( !bgl ) {
+#ifdef __EMSCRIPTEN__
+		    return 0;
+#else
 			Sys_LeaveCriticalSection();
-			//Sys_WaitForEvent();
-			return 0;
+			Sys_WaitForEvent();
+			continue;
+#endif
 		}
 		// remove this from the list
 		fileSystemLocal.backgroundDownloads = bgl->next;
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_LeaveCriticalSection();
+#endif
 
 		bgl->next = NULL;
 
@@ -3541,7 +3547,12 @@ idFileSystemLocal::StartBackgroundReadThread
 */
 void idFileSystemLocal::StartBackgroundDownloadThread() {
 #ifdef __EMSCRIPTEN__
-	backgroundThread_exit = false;
+	if (backgroundThread_exit) {
+		backgroundThread_exit = false;
+	}
+	else {
+		common->Printf( "background thread already running\n" );
+	}
 #else
 	if ( !backgroundThread.threadHandle ) {
 		Sys_CreateThread( BackgroundDownloadThread, &backgroundThread_exit, backgroundThread, "backgroundDownload" );
@@ -3560,11 +3571,17 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 	if ( bgl->opcode == DLTYPE_FILE ) {
 		if ( dynamic_cast<idFile_Permanent *>(bgl->f) ) {
 			// add the bgl to the background download list
+#ifdef __EMSCRIPTEN__
+#else
 			Sys_EnterCriticalSection();
+#endif
 			bgl->next = backgroundDownloads;
 			backgroundDownloads = bgl;
-			//Sys_TriggerEvent();
+#ifdef __EMSCRIPTEN__
+#else
+			Sys_TriggerEvent();
 			Sys_LeaveCriticalSection();
+#endif
 		} else {
 			// read zipped file directly
 			bgl->f->Seek( bgl->file.position, FS_SEEK_SET );
@@ -3572,11 +3589,17 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 			bgl->completed = true;
 		}
 	} else {
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_EnterCriticalSection();
+#endif
 		bgl->next = backgroundDownloads;
 		backgroundDownloads = bgl;
-		//Sys_TriggerEvent();
+#ifdef __EMSCRIPTEN__
+#else
+		Sys_TriggerEvent();
 		Sys_LeaveCriticalSection();
+#endif
 	}
 }
 
