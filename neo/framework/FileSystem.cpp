@@ -2639,7 +2639,6 @@ void idFileSystemLocal::SetRestartChecksums( const int pureChecksums[ MAX_PURE_P
 	}
 }
 
-
 /*
 ================
 idFileSystemLocal::Init
