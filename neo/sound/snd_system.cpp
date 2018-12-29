@@ -364,12 +364,17 @@ void idSoundSystemLocal::Init() {
 	common->Printf( "OpenAL renderer: %s\n", alGetString(AL_RENDERER));
 	common->Printf( "OpenAL version: %s\n", alGetString(AL_VERSION));
 
+#ifdef __EMSCRIPTEN__
+	common->Printf( "OpenAL: EFX extension not found\n" );
+		EFXAvailable = 0;
+		idSoundSystemLocal::s_useEAXReverb.SetBool( false );
+#else
 	// try to obtain EFX extensions
 	if (alcIsExtensionPresent(openalDevice, "ALC_EXT_EFX")) {
 		common->Printf( "OpenAL: found EFX extension\n" );
 		EFXAvailable = 1;
 
-		/*alGenEffects = (LPALGENEFFECTS)alGetProcAddress("alGenEffects");
+		alGenEffects = (LPALGENEFFECTS)alGetProcAddress("alGenEffects");
 		alDeleteEffects = (LPALDELETEEFFECTS)alGetProcAddress("alDeleteEffects");
 		alIsEffect = (LPALISEFFECT)alGetProcAddress("alIsEffect");
 		alEffecti = (LPALEFFECTI)alGetProcAddress("alEffecti");
@@ -382,14 +387,14 @@ void idSoundSystemLocal::Init() {
 		alFilterf = (LPALFILTERF)alGetProcAddress("alFilterf");
 		alGenAuxiliaryEffectSlots = (LPALGENAUXILIARYEFFECTSLOTS)alGetProcAddress("alGenAuxiliaryEffectSlots");
 		alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
-		alIsAuxiliaryEffectSlot = (LPALISAUXILIARYEFFECTSLOT)alGetProcAddress("alIsAuxiliaryEffectSlot");;
-		alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");*/
+		alIsAuxiliaryEffectSlot = (LPALISAUXILIARYEFFECTSLOT)alGetProcAddress("alIsAuxiliaryEffectSlot");
+		alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");
 	} else {
 		common->Printf( "OpenAL: EFX extension not found\n" );
 		EFXAvailable = 0;
 		idSoundSystemLocal::s_useEAXReverb.SetBool( false );
 
-		/*alGenEffects = NULL;
+		alGenEffects = NULL;
 		alDeleteEffects = NULL;
 		alIsEffect = NULL;
 		alEffecti = NULL;
@@ -403,8 +408,9 @@ void idSoundSystemLocal::Init() {
 		alGenAuxiliaryEffectSlots = NULL;
 		alDeleteAuxiliaryEffectSlots = NULL;
 		alIsAuxiliaryEffectSlot = NULL;
-		alAuxiliaryEffectSloti = NULL;*/
+		alAuxiliaryEffectSloti = NULL;
 	}
+#endif
 
 	ALuint handle;
 	openalSourceCount = 0;
@@ -743,7 +749,10 @@ cinData_t idSoundSystemLocal::ImageForTime( const int milliseconds, const bool w
 		return ret;
 	}
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_EnterCriticalSection();
+#endif
 
 	if ( !graph ) {
 		graph = (dword *)Mem_Alloc( 256*128 * 4);

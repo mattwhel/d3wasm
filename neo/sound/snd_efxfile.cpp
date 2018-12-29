@@ -43,16 +43,19 @@ idSoundEffect::idSoundEffect() :
 }
 
 idSoundEffect::~idSoundEffect() {
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+#else
 	if (soundSystemLocal.alIsEffect(effect))
 	    soundSystemLocal.alDeleteEffects(1, &effect);
 #endif
-	}
+}
 
 bool idSoundEffect::alloc() {
 	alGetError();
 
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+	return false;
+#else
 	ALenum e;
 
 	soundSystemLocal.alGenEffects(1, &effect);
@@ -70,8 +73,6 @@ bool idSoundEffect::alloc() {
 	}
 
 	return true;
-#else
-	return false;
 #endif
 }
 
@@ -190,7 +191,9 @@ bool idEFXFile::ReadEffect( idLexer &src, idSoundEffect *effect ) {
 	alGetError();
 	EFXprintf("Loading EFX effect '%s' (#%u)\n", name.c_str(), effect->effect);
 
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+	return false;
+#else
 	do {
 		if ( !src.ReadToken( &token ) ) {
 			src.Error( "idEFXFile::ReadEffect: EOF without closing brace" );
@@ -263,11 +266,7 @@ bool idEFXFile::ReadEffect( idLexer &src, idSoundEffect *effect ) {
 	} while ( 1 );
 
 	return true;
-#else
-	return false;
 #endif
-
-
 }
 
 /*

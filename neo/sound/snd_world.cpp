@@ -49,8 +49,10 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 	listenerArea = 0;
 	listenerAreaName = "Undefined";
 
+#ifdef __EMSCRIPTEN__
+#else
 	if (idSoundSystemLocal::useEFXReverb) {
-#ifndef __EMSCRIPTEN__
+
 		if (!soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
 			alGetError();
 
@@ -81,8 +83,8 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 				soundSystemLocal.alFilterf(listenerFilter, AL_LOWPASS_GAINHF, 0.266073f);
 			}
 		}
-#endif
 	}
+#endif
 
 	gameMsec = 0;
 	game44kHz = 0;
@@ -174,7 +176,10 @@ idSoundWorldLocal::ClearAllSoundEmitters
 void idSoundWorldLocal::ClearAllSoundEmitters() {
 	int i;
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_EnterCriticalSection();
+#endif
 
 	AVIClose();
 
@@ -184,7 +189,10 @@ void idSoundWorldLocal::ClearAllSoundEmitters() {
 	}
 	localSound = NULL;
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_LeaveCriticalSection();
+#endif
 }
 
 /*
@@ -218,10 +226,15 @@ idSoundEmitterLocal *idSoundWorldLocal::AllocLocalSoundEmitter() {
 		def = new idSoundEmitterLocal;
 
 		// we need to protect this from the async thread
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_EnterCriticalSection();
+#endif
 		index = emitters.Append( def );
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_LeaveCriticalSection();
-
+#endif
 		if ( idSoundSystemLocal::s_showStartSound.GetInteger() ) {
 			common->Printf( "sound: appended new sound def %d\n", index );
 		}
@@ -499,8 +512,9 @@ void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *final
 	alListenerfv( AL_POSITION, listenerPosition );
 	alListenerfv( AL_ORIENTATION, listenerOrientation );
 
+#ifdef __EMSCRIPTEN__
+#else
 	if (idSoundSystemLocal::useEFXReverb && soundSystemLocal.efxloaded) {
-#ifndef __EMSCRIPTEN__
 		ALuint effect = 0;
 		idStr s(listenerArea);
 
@@ -520,8 +534,8 @@ void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *final
 			listenerEffect = effect;
 			soundSystemLocal.alAuxiliaryEffectSloti(listenerSlot, AL_EFFECTSLOT_EFFECT, effect);
 		}
-#endif
 	}
+#endif
 
 	// debugging option to mute all but a single soundEmitter
 	if ( idSoundSystemLocal::s_singleEmitter.GetInteger() > 0 && idSoundSystemLocal::s_singleEmitter.GetInteger() < emitters.Num() ) {

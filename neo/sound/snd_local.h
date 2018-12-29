@@ -38,7 +38,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include <AL/al.h>
 #include <AL/alc.h>
-//#include <AL/alext.h>
+#ifdef __EMSCRIPTEN__
+#else
+#include <AL/alext.h>
+#endif
 
 #include "framework/UsercmdGen.h"
 #include "sound/efxlib.h"
@@ -724,7 +727,8 @@ public:
 	ALsizei					openalSourceCount;
 	openalSource_t			openalSources[256];
 
-	/*
+#ifdef __EMSCRIPTEN__
+#else
 	LPALGENEFFECTS			alGenEffects;
 	LPALDELETEEFFECTS		alDeleteEffects;
 	LPALISEFFECT			alIsEffect;
@@ -739,7 +743,8 @@ public:
 	LPALGENAUXILIARYEFFECTSLOTS		alGenAuxiliaryEffectSlots;
 	LPALDELETEAUXILIARYEFFECTSLOTS	alDeleteAuxiliaryEffectSlots;
 	LPALISAUXILIARYEFFECTSLOT		alIsAuxiliaryEffectSlot;
-	LPALAUXILIARYEFFECTSLOTI		alAuxiliaryEffectSloti;*/
+	LPALAUXILIARYEFFECTSLOTI		alAuxiliaryEffectSloti;
+#endif
 
 	idEFXFile				EFXDatabase;
 	bool					efxloaded;
