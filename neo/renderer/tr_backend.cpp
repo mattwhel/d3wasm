@@ -67,7 +67,8 @@ void RB_SetDefaultGLState( void ) {
 	qglDisable( GL_LINE_STIPPLE );
 	qglDisable( GL_STENCIL_TEST );
 
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+#else
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 #endif
 	qglDepthMask( GL_TRUE );
@@ -345,7 +346,8 @@ void GL_State( int stateBits ) {
 	// fill/line mode
 	//
 	if ( diff & GLS_POLYMODE_LINE ) {
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+#else
 		if ( stateBits & GLS_POLYMODE_LINE ) {
 			qglPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		} else {
@@ -469,7 +471,7 @@ was there.  This is used to test for texture thrashing.
 ===============
 */
 void RB_ShowImages( void ) {
-	int		i;
+	int		i = 0;
 	idImage	*image;
 	float	x, y, w, h;
 	int		start, end;
@@ -483,11 +485,13 @@ void RB_ShowImages( void ) {
 
 	start = Sys_Milliseconds();
 
-	for ( i = 0 ; i < globalImages->images.Num() ; i++ ) {
-		image = globalImages->images[i];
+	{ //for ( i = 0 ; i < globalImages->images.Num() ; i++ ) {
+		//image = globalImages->images[i];
+		image = globalImages->fogEnterImage;
 
 		if ( image->texnum == idImage::TEXTURE_NOT_LOADED && image->partialImage == NULL ) {
-			continue;
+			//continue;
+			return;
 		}
 
 		w = glConfig.vidWidth / 20;
