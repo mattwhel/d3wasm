@@ -266,7 +266,7 @@ endif()
 set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO ${CMAKE_C_FLAGS_RELWITHDEBINFO})
 # disable assertions in release builds
-set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 
@@ -274,7 +274,6 @@ if (EMSCRIPTEN)
 	set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
 	set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
 	set(ldflags "${ldflags} -s FULL_ES2=1")
-	set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=clamp")
 	set(ldflags "${ldflags} -s TOTAL_MEMORY=268435456")
 endif()
 
