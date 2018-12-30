@@ -53,11 +53,7 @@ idCVar idImageManager::image_forceDownSize( "image_forceDownSize", "0", CVAR_REN
 idCVar idImageManager::image_roundDown( "image_roundDown", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "round bad sizes down to nearest power of two" );
 idCVar idImageManager::image_colorMipLevels( "image_colorMipLevels", "0", CVAR_RENDERER | CVAR_BOOL, "development aid to see texture mip usage" );
 idCVar idImageManager::image_preload( "image_preload", "1", CVAR_RENDERER | CVAR_BOOL | CVAR_ARCHIVE, "if 0, dynamically load all images" );
-#ifdef __EMSCRIPTEN__
-idCVar idImageManager::image_useCompression( "image_useCompression", "O", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "0 = force everything to high quality" );
-#else
 idCVar idImageManager::image_useCompression( "image_useCompression", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "0 = force everything to high quality" );
-#endif
 idCVar idImageManager::image_useAllFormats( "image_useAllFormats", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "allow alpha/intensity/luminance/luminance+alpha" );
 idCVar idImageManager::image_useNormalCompression( "image_useNormalCompression", "2", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "2 = use rxgb compression for normal maps, 1 = use 256 color compression for normal maps if available" );
 idCVar idImageManager::image_usePrecompressedTextures( "image_usePrecompressedTextures", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "use .dds files if present" );
@@ -736,13 +732,13 @@ void R_FogImage( idImage *image ) {
 	byte	data[FOG_SIZE][FOG_SIZE][4];
 	int		b;
 
-float	step[256];
-int		i;
-float	remaining = 1.0;
-for ( i = 0 ; i < 256 ; i++ ) {
-	step[i] = remaining;
-	remaining *= 0.982f;
-}
+    float	step[256];
+    int		i;
+    float	remaining = 1.0;
+    for ( i = 0 ; i < 256 ; i++ ) {
+	    step[i] = remaining;
+	    remaining *= 0.982f;
+    }
 
 	for (x=0 ; x<FOG_SIZE ; x++) {
 		for (y=0 ; y<FOG_SIZE ; y++) {
@@ -758,7 +754,7 @@ for ( i = 0 ; i < 256 ; i++ ) {
 			} else if ( b > 255 ) {
 				b = 255;
 			}
-b = (byte)(255 * ( 1.0 - step[b] ));
+            b = (byte)(255 * ( 1.0 - step[b] ));
 			if ( x == 0 || x == FOG_SIZE-1 || y == 0 || y == FOG_SIZE-1 ) {
 				b = 255;		// avoid clamping issues
 			}
