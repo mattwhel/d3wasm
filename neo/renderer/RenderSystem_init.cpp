@@ -378,8 +378,6 @@ static void R_CheckPortableExtensions( void ) {
 	}
 
 	// GL_EXT_texture_filter_anisotropic
-	glConfig.anisotropicAvailable = true;
-    common->Printf( "...using %s\n", "GL_EXT_texture_filter_anisotropic" );
 	glConfig.anisotropicAvailable = R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
 	if ( glConfig.anisotropicAvailable ) {
 		qglGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &glConfig.maxTextureAnisotropy );
@@ -500,6 +498,7 @@ static void R_CheckPortableExtensions( void ) {
 	if ( glConfig.depthBoundsTestAvailable ) {
 		qglDepthBoundsEXT = (PFNGLDEPTHBOUNDSEXTPROC)GLimp_ExtensionPointer( "glDepthBoundsEXT" );
 	}
+
 }
 
 
