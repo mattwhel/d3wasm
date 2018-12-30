@@ -578,7 +578,7 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 		backEndRendererHasVertexPrograms = true;
 		backEndRendererMaxLight = 999;
 		break;
-	default: ;
+	default:
 		common->FatalError( "SetbackEndRenderer: bad back end" );
 	}
 

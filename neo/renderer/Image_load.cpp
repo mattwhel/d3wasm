@@ -1769,7 +1769,7 @@ void idImage::Bind() {
 		}
 	}
 
-#ifdef __EMSCRITPEN__
+#ifdef __EMSCRIPTEN__
 #else
 	if ( com_purgeAll.GetBool() ) {
 		GLclampf priority = 1.0f;

@@ -369,7 +369,8 @@ static void R_BorderClampImage( idImage *image ) {
 		// can't call qglTexParameterfv yet
 		return;
 	}
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+#else
 	// explicit zero border
 	float	color[4];
 	color[0] = color[1] = color[2] = color[3] = 0;
