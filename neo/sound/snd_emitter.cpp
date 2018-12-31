@@ -750,7 +750,10 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 		}
 	}
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_EnterCriticalSection();
+#endif
 
 	// kill any sound that is currently playing on this channel
 	if ( channel != SCHANNEL_ANY ) {
@@ -784,7 +787,10 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 
 	if ( i == SOUND_MAX_CHANNELS ) {
 		// we couldn't find a channel for it
+#ifdef __EMSCRIPTEN__
+#else
 		Sys_LeaveCriticalSection();
+#endif
 		if ( idSoundSystemLocal::s_showStartSound.GetInteger() ) {
 			common->Printf( "no channels available\n" );
 		}
@@ -860,7 +866,10 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 
 	length *= 1000 / (float)PRIMARYFREQ;
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_LeaveCriticalSection();
+#endif
 
 	return length;
 }
@@ -929,7 +938,10 @@ void idSoundEmitterLocal::StopSound( const s_channelType channel ) {
 		soundWorld->writeDemo->WriteInt( channel );
 	}
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_EnterCriticalSection();
+#endif
 
 	for( i = 0; i < SOUND_MAX_CHANNELS; i++ ) {
 		idSoundChannel	*chan = &channels[i];
@@ -956,7 +968,10 @@ void idSoundEmitterLocal::StopSound( const s_channelType channel ) {
 		chan->soundShader = NULL;
 	}
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_LeaveCriticalSection();
+#endif
 }
 
 /*
