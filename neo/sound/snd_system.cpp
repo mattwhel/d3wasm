@@ -69,7 +69,7 @@ idCVar idSoundSystemLocal::s_reverbFeedback( "s_reverbFeedback", "0.333", CVAR_S
 idCVar idSoundSystemLocal::s_enviroSuitVolumeScale( "s_enviroSuitVolumeScale", "0.9", CVAR_SOUND | CVAR_FLOAT, "" );
 idCVar idSoundSystemLocal::s_skipHelltimeFX( "s_skipHelltimeFX", "0", CVAR_SOUND | CVAR_BOOL, "" );
 
-#if !defined(ID_DEDICATED)
+#if !defined(ID_DEDICATED)  && !defined(__EMSCRIPTEN__)
 idCVar idSoundSystemLocal::s_useEAXReverb( "s_useEAXReverb", "1", CVAR_SOUND | CVAR_BOOL | CVAR_ARCHIVE, "use EFX reverb" );
 idCVar idSoundSystemLocal::s_decompressionLimit( "s_decompressionLimit", "6", CVAR_SOUND | CVAR_INTEGER | CVAR_ARCHIVE, "specifies maximum uncompressed sample length in seconds" );
 #else
@@ -366,8 +366,8 @@ void idSoundSystemLocal::Init() {
 
 #ifdef __EMSCRIPTEN__
 	common->Printf( "OpenAL: EFX extension not found\n" );
-		EFXAvailable = 0;
-		idSoundSystemLocal::s_useEAXReverb.SetBool( false );
+	EFXAvailable = 0;
+	idSoundSystemLocal::s_useEAXReverb.SetBool( false );
 #else
 	// try to obtain EFX extensions
 	if (alcIsExtensionPresent(openalDevice, "ALC_EXT_EFX")) {
@@ -387,7 +387,7 @@ void idSoundSystemLocal::Init() {
 		alFilterf = (LPALFILTERF)alGetProcAddress("alFilterf");
 		alGenAuxiliaryEffectSlots = (LPALGENAUXILIARYEFFECTSLOTS)alGetProcAddress("alGenAuxiliaryEffectSlots");
 		alDeleteAuxiliaryEffectSlots = (LPALDELETEAUXILIARYEFFECTSLOTS)alGetProcAddress("alDeleteAuxiliaryEffectSlots");
-		alIsAuxiliaryEffectSlot = (LPALISAUXILIARYEFFECTSLOT)alGetProcAddress("alIsAuxiliaryEffectSlot");
+		alIsAuxiliaryEffectSlot = (LPALISAUXILIARYEFFECTSLOT)alGetProcAddress("alIsAuxiliaryEffectSlot");;
 		alAuxiliaryEffectSloti = (LPALAUXILIARYEFFECTSLOTI)alGetProcAddress("alAuxiliaryEffectSloti");
 	} else {
 		common->Printf( "OpenAL: EFX extension not found\n" );
@@ -891,7 +891,10 @@ cinData_t idSoundSystemLocal::ImageForTime( const int milliseconds, const bool w
 	ret.imageWidth = 256;
 	ret.image = (unsigned char *)graph;
 
+#ifdef __EMSCRIPTEN__
+#else
 	Sys_LeaveCriticalSection();
+#endif
 
 	return ret;
 }

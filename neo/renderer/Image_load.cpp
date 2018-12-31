@@ -219,7 +219,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	// OpenGL ES/WebGL require to have internal_format == format. As Regal does not do format conversion (this is not enabled for now),
 	// and format selected by D3 is always RGBA in the end, we will always return GL_RGBA8 internal format
 	return GL_RGBA8;
-#endif
+#else
 
 	// determine if the rgb channels are all the same
 	// and if either all rgb or all alpha are 255
@@ -358,6 +358,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 		return GL_LUMINANCE8_ALPHA8;	// two bytes, max quality
 	}
 	return GL_RGBA4;	// two bytes
+#endif
 }
 
 /*
@@ -407,8 +408,8 @@ void idImage::SetImageFilterAndRepeat() const {
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 #else
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
+		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
+		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
 #endif
 		break;
 	case TR_CLAMP_TO_ZERO:
@@ -841,13 +842,13 @@ void idImage::Generate3DImage( const byte *pic, int width, int height, int picDe
 		break;
 	case TR_CLAMP_TO_BORDER:
 #ifdef __EMSCRIPTEN__
-			qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-			qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-			qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
+		qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE );
 #else
-			qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
-			qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
-			qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER );
+		qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
+		qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
+		qglTexParameterf( GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER );
 #endif
 		break;
 	case TR_CLAMP_TO_ZERO:
@@ -1868,7 +1869,11 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 		uploadWidth = potWidth;
 		uploadHeight = potHeight;
 		if ( potWidth == imageWidth && potHeight == imageHeight ) {
-			qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, x, y, imageWidth, imageHeight, 0 );
+#ifdef __EMSCRIPTEN__
+            qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, x, y, imageWidth, imageHeight, 0 );
+#else
+            qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, x, y, imageWidth, imageHeight, 0 );
+#endif
 		} else {
 			byte	*junk;
 			// we need to create a dummy image with power of two dimensions,
@@ -1881,7 +1886,11 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 				junk[i+1] = 255;
 			}
 #endif
+#ifdef __EMSCRIPTEN__
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
+#else
+            qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
+#endif
 			Mem_Free( junk );
 
 			qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, x, y, imageWidth, imageHeight );
@@ -1976,7 +1985,11 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 
 			// upload the base level
 			for ( i = 0 ; i < 6 ; i++ ) {
+#ifdef __EMSCRIPTEN__
 				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA8, cols, rows, 0,
+#else
+				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGB8, cols, rows, 0,
+#endif
 					GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
 			}
 		} else {
@@ -2005,7 +2018,11 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 		if ( cols != uploadWidth || rows != uploadHeight ) {
 			uploadWidth = cols;
 			uploadHeight = rows;
+#ifdef __EMSCRIPTEN__
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+#else
+			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+#endif
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
@@ -2160,9 +2177,9 @@ void idImage::Print() const {
 	case GL_RGB5:
 		common->Printf( "RGB5  " );
 		break;
-		case GL_RGB5_A1:
-			common->Printf( "RGB5_A1  " );
-			break;
+	case GL_RGB5_A1:
+	    common->Printf( "RGB5_A1  " );
+		break;
 	case GL_COLOR_INDEX8_EXT:
 		common->Printf( "CI8   " );
 		break;

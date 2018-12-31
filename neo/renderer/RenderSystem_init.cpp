@@ -354,22 +354,21 @@ static void R_CheckPortableExtensions( void ) {
     // GL_ARB_texture_env_combine
     glConfig.textureEnvCombineAvailable = R_CheckExtension( "GL_ARB_texture_env_combine" );
 
-    // GL_ARB_texture_cube_map
-    glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
+	// GL_ARB_texture_cube_map
+	glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
 
-    // GL_ARB_texture_env_dot3
-    glConfig.envDot3Available = R_CheckExtension( "GL_ARB_texture_env_dot3" );
+	// GL_ARB_texture_env_dot3
+	glConfig.envDot3Available = R_CheckExtension( "GL_ARB_texture_env_dot3" );
 
-    // GL_ARB_texture_env_add
-    glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
+	// GL_ARB_texture_env_add
+	glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
 #endif
-
     // GL_ARB_texture_non_power_of_two
     glConfig.textureNonPowerOfTwoAvailable = R_CheckExtension( "GL_ARB_texture_non_power_of_two" );
 
 	// GL_ARB_texture_compression + GL_S3_s3tc
 	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
-    if ( R_CheckExtension( "GL_ARB_texture_compression" ) && R_CheckExtension( "GL_EXT_texture_compression_s3tc" ) ) {
+	if ( R_CheckExtension( "GL_ARB_texture_compression" ) && R_CheckExtension( "GL_EXT_texture_compression_s3tc" ) ) {
 		glConfig.textureCompressionAvailable = true;
 		qglCompressedTexImage2DARB = (PFNGLCOMPRESSEDTEXIMAGE2DARBPROC)GLimp_ExtensionPointer( "glCompressedTexImage2DARB" );
 		qglGetCompressedTexImageARB = (PFNGLGETCOMPRESSEDTEXIMAGEARBPROC)GLimp_ExtensionPointer( "glGetCompressedTexImageARB" );

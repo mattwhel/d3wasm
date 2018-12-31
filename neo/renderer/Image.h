@@ -405,6 +405,7 @@ public:
 	idImage *			blackImage;					// full of 0x00
 	idImage *			normalCubeMapImage;			// cube map to normalize STR into RGB
 	idImage *			noFalloffImage;				// all 255, but zero clamped
+	idImage * 			quadraticImage;				//
 	idImage *			fogImage;					// increasing alpha is denser fog
 	idImage *			fogEnterImage;				// adjust fogImage alpha based on terminator plane
 	idImage *			cinematicImage;

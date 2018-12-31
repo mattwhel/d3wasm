@@ -2692,7 +2692,10 @@ void idFileSystemLocal::Init( void ) {
 	// graphics screen when the font fails to load
 	// Dedicated servers can run with no outside files at all
 	if ( ReadFile( "default.cfg", NULL, NULL ) <= 0 ) {
-		//common->FatalError( "Couldn't load default.cfg" );
+#ifdef __EMSCRIPTEN__
+#else
+		common->FatalError( "Couldn't load default.cfg" );
+#endif
 	}
 }
 

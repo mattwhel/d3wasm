@@ -1392,30 +1392,30 @@ void OSX_GetVideoCard( int& outVendorId, int& outDeviceId );
 bool OSX_GetCPUIdentification( int& cpuId, bool& oldArchitecture );
 #endif
 void Com_ExecMachineSpec_f( const idCmdArgs &args ) {
-
 #ifdef __EMSCRIPTEN__
+	// GAB NOTE Dec 2018: Specific configuration for emscripten
     if ( com_machineSpec.GetInteger() == 4 ) {
-		cvarSystem->SetCVarInteger( "image_anisotropy", 1, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_forceDownSize", 0, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_roundDown", 1, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_preload", 1, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_useAllFormats", 1, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_downSizeSpecular", 0, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_downSizeBump", 0, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_downSizeSpecularLimit", 64, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_downSizeBumpLimit", 256, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_usePrecompressedTextures", 0, CVAR_ARCHIVE );	// Do not use .DDS
-        cvarSystem->SetCVarInteger( "image_downsize", 0			, CVAR_ARCHIVE );
-        cvarSystem->SetCVarString( "image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE );
         cvarSystem->SetCVarInteger( "image_anisotropy", 8, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_useCompression", 0, CVAR_ARCHIVE );		// Do not use S3TC
-        cvarSystem->SetCVarInteger( "image_ignoreHighQuality", 0, CVAR_ARCHIVE );
+    	cvarSystem->SetCVarInteger( "image_preload", 1, CVAR_ARCHIVE );
+        cvarSystem->SetCVarString( "image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE );
         cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
         cvarSystem->SetCVarInteger( "r_mode", 4, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "image_useNormalCompression", 0, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ARCHIVE );
-        cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ARCHIVE );	// Not multithreaded
+        // These CVAR are read only
+    	cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ROM ); // Not supported by Regal
+        cvarSystem->SetCVarInteger( "image_forceDownSize", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_roundDown", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_useAllFormats", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_downSizeSpecular", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_downSizeBump", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_downSizeSpecularLimit", 64, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_downSizeBumpLimit", 256, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_usePrecompressedTextures", 0, CVAR_ROM );	// Dysfunctional with Regal
+        cvarSystem->SetCVarInteger( "image_downsize", 0			, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_useCompression", 0, CVAR_ROM );		// Dysfunctional with Regal
+        cvarSystem->SetCVarInteger( "image_ignoreHighQuality", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "image_useNormalCompression", 0, CVAR_ROM );
+        cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ROM );    // Not supported by Regal
+        cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ROM );	// No multithreading
     }
 	else
 #else
@@ -2910,7 +2910,11 @@ void idCommonLocal::Init( int argc, char **argv ) {
 #endif
 #endif
 
-	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))//| SDL_INIT_JOYSTICK)) // init joystick to work around SDL 2.0.9 bug #4391
+#ifdef __EMSCRIPTEN__
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO )))
+#else
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))| SDL_INIT_JOYSTICK)) // init joystick to work around SDL 2.0.9 bug #4391
+#endif
 		Sys_Error("Error while initializing SDL: %s", SDL_GetError());
 
 	Sys_InitThreads();

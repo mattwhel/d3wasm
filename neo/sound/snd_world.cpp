@@ -52,7 +52,6 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 #ifdef __EMSCRIPTEN__
 #else
 	if (idSoundSystemLocal::useEFXReverb) {
-
 		if (!soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
 			alGetError();
 
@@ -144,8 +143,9 @@ void idSoundWorldLocal::Shutdown() {
 
 	AVIClose();
 
+#ifdef __EMSCRIPTEN__
+#else
 	if (idSoundSystemLocal::useEFXReverb) {
-#ifndef __EMSCRIPTEN__
 		if (soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
 			soundSystemLocal.alAuxiliaryEffectSloti(listenerSlot, AL_EFFECTSLOT_EFFECT, AL_EFFECTSLOT_NULL);
 			soundSystemLocal.alDeleteAuxiliaryEffectSlots(1, &listenerSlot);
@@ -156,8 +156,8 @@ void idSoundWorldLocal::Shutdown() {
 			soundSystemLocal.alDeleteFilters(1, &listenerFilter);
 			listenerFilter = AL_FILTER_NULL;
 		}
-#endif
 	}
+#endif
 
 	for ( i = 0; i < emitters.Num(); i++ ) {
 		if ( emitters[i] ) {
@@ -1807,17 +1807,17 @@ void idSoundWorldLocal::AddChannelContribution( idSoundEmitterLocal *sound, idSo
 #endif
 			alSourcef( chan->openalSource, AL_PITCH, ( slowmoActive && !chan->disallowSlow ) ? ( slowmoSpeed ) : ( 1.0f ) );
 
+#ifdef __EMSCRIPTEN__
+#else
 			if (idSoundSystemLocal::useEFXReverb) {
-#ifndef __EMSCRIPTEN__
 				if (enviroSuitActive) {
 					alSourcei(chan->openalSource, AL_DIRECT_FILTER, listenerFilter);
 					alSource3i(chan->openalSource, AL_AUXILIARY_SEND_FILTER, listenerSlot, 0, listenerFilter);
 				} else {
 					alSource3i(chan->openalSource, AL_AUXILIARY_SEND_FILTER, listenerSlot, 0, AL_FILTER_NULL);
 				}
-#endif
 			}
-
+#endif
 
 			if ( ( !looping && chan->leadinSample->hardwareBuffer ) || ( looping && chan->soundShader->entries[0]->hardwareBuffer ) ) {
 				// handle uncompressed (non streaming) single shot and looping sounds

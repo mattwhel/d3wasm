@@ -570,9 +570,9 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 	backEndRendererMaxLight = 1.0;
 
 	switch( backEndRenderer ) {
-		case BE_ARB:
-			common->Printf( "using ARB renderSystem\n" );
-			break;
+	case BE_ARB:
+	    common->Printf( "using ARB renderSystem\n" );
+		break;
 	case BE_ARB2:
 		common->Printf( "using ARB2 renderSystem\n" );
 		backEndRendererHasVertexPrograms = true;
@@ -732,6 +732,7 @@ void idRenderSystemLocal::EndFrame( int *frontEndMsec, int *backEndMsec ) {
 	}
 
 #ifdef __EMSCRIPTEN__
+	// GAB Note Dec 2018: Clear the Alpha channel, so that final render will not blend with the HTML5 background
 	qglClearColor(1,1,1,1);
 	qglColorMask(false, false, false, true);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -894,7 +895,9 @@ void idRenderSystemLocal::CaptureRenderToImage( const char *imageName ) {
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
+#ifdef __EMSCRIPTEN__
 	return;
+#else
 	guiModel->EmitFullScreen();
 	guiModel->Clear();
 
@@ -923,6 +926,7 @@ void idRenderSystemLocal::CaptureRenderToImage( const char *imageName ) {
 	cmd->image = image;
 
 	guiModel->Clear();
+#endif
 }
 
 /*
@@ -935,8 +939,9 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
+#ifdef __EMSCRIPTEN__
 	return;
-
+#else
 	renderCrop_t *rc = &renderCrops[currentRenderCrop];
 
 	guiModel->EmitFullScreen();
@@ -964,6 +969,7 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 
 	R_StaticFree( data );
 	R_StaticFree( data2 );
+#endif
 }
 
 
