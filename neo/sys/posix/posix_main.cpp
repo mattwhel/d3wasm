@@ -62,7 +62,11 @@ static int				history_current = 0;			// goes back in history
 idEditField				history_backup;				// the base edit line
 
 // terminal support
+#ifdef __EMSCRIPTEN__
+idCVar in_tty( "in_tty", "0", CVAR_BOOL | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
+#else
 idCVar in_tty( "in_tty", "1", CVAR_BOOL | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
+#endif
 
 static bool				tty_enabled = false;
 static struct termios	tty_tc;
@@ -725,7 +729,7 @@ char *Sys_ConsoleInput( void ) {
 	} else {
 		// disabled on OSX. works fine from a terminal, but launching from Finder is causing trouble
 		// I'm pretty sure it could be re-enabled if needed, and just handling the Finder failure case right (TTimo)
-#ifndef MACOS_X
+#if !defined(MACOS_X)&&!defined(__EMSCRIPTEN__)
 		// no terminal support - read only complete lines
 		int				len;
 		fd_set			fdset;
