@@ -152,6 +152,8 @@ void RB_PrepareStageTexturing( const shaderStage_t *pStage,  const drawSurf_t *s
 	}
 
 	if ( pStage->texture.texgen == TG_GLASSWARP ) {
+#ifdef __EMSCRIPTEN__
+#else
 		if ( tr.backEndRenderer == BE_ARB2 /*|| tr.backEndRenderer == BE_NV30*/ ) {
 			qglBindProgramARB( GL_FRAGMENT_PROGRAM_ARB, FPROG_GLASSWARP );
 			qglEnable( GL_FRAGMENT_PROGRAM_ARB );
@@ -189,9 +191,12 @@ void RB_PrepareStageTexturing( const shaderStage_t *pStage,  const drawSurf_t *s
 
 			GL_SelectTexture( 0 );
 		}
+#endif
 	}
 
 	if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
+#ifdef __EMSCRIPTEN__
+#else
 		if ( tr.backEndRenderer == BE_ARB2 ) {
 			// see if there is also a bump map specified
 			const shaderStage_t *bumpStage = surf->material->GetBumpStage();
@@ -225,7 +230,9 @@ void RB_PrepareStageTexturing( const shaderStage_t *pStage,  const drawSurf_t *s
 				qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, VPROG_ENVIRONMENT );
 				qglEnable( GL_VERTEX_PROGRAM_ARB );
 			}
-		} else {
+		} else
+#endif
+        {
 			qglEnable( GL_TEXTURE_GEN_S );
 			qglEnable( GL_TEXTURE_GEN_T );
 			qglEnable( GL_TEXTURE_GEN_R );
@@ -274,6 +281,8 @@ void RB_FinishStageTexturing( const shaderStage_t *pStage, const drawSurf_t *sur
 	}
 
 	if ( pStage->texture.texgen == TG_GLASSWARP ) {
+#ifdef __EMSCRIPTEN__
+#else
 		if ( tr.backEndRenderer == BE_ARB2 /*|| tr.backEndRenderer == BE_NV30*/ ) {
 			GL_SelectTexture( 2 );
 			globalImages->BindNull();
@@ -289,9 +298,12 @@ void RB_FinishStageTexturing( const shaderStage_t *pStage, const drawSurf_t *sur
 			globalImages->BindNull();
 			GL_SelectTexture( 0 );
 		}
+#endif
 	}
 
 	if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
+#ifdef __EMSCRIPTEN__
+#else
 		if ( tr.backEndRenderer == BE_ARB2 ) {
 			// see if there is also a bump map specified
 			const shaderStage_t *bumpStage = surf->material->GetBumpStage();
@@ -312,7 +324,9 @@ void RB_FinishStageTexturing( const shaderStage_t *pStage, const drawSurf_t *sur
 			qglDisable( GL_VERTEX_PROGRAM_ARB );
 			// Fixme: Hack to get around an apparent bug in ATI drivers.  Should remove as soon as it gets fixed.
 			qglBindProgramARB( GL_VERTEX_PROGRAM_ARB, 0 );
-		} else {
+		} else
+#endif
+		{
 			qglDisable( GL_TEXTURE_GEN_S );
 			qglDisable( GL_TEXTURE_GEN_T );
 			qglDisable( GL_TEXTURE_GEN_R );
@@ -785,9 +799,13 @@ void RB_STD_T_RenderShaderPasses( const drawSurf_t *surf ) {
 			//--------------------------
 
 			// completely skip the stage if we don't have the capability
+#ifdef __EMSCRIPTEN__
+            continue;
+#else
 			if ( tr.backEndRenderer != BE_ARB2 ) {
 				continue;
 			}
+#endif
 			if ( r_skipNewAmbient.GetBool() ) {
 				continue;
 			}
@@ -983,12 +1001,15 @@ int RB_STD_DrawShaderPasses( drawSurf_t **drawSurfs, int numDrawSurfs ) {
 			return 0;
 		}
 
+#ifdef __EMSCRIPTEN__
+#else
 		// only dump if in a 3d view
 		if ( backEnd.viewDef->viewEntitys && tr.backEndRenderer == BE_ARB2 ) {
 			globalImages->currentRenderImage->CopyFramebuffer( backEnd.viewDef->viewport.x1,
 				backEnd.viewDef->viewport.y1,  backEnd.viewDef->viewport.x2 -  backEnd.viewDef->viewport.x1 + 1,
 				backEnd.viewDef->viewport.y2 -  backEnd.viewDef->viewport.y1 + 1, true );
 		}
+#endif
 		backEnd.currentRenderCopied = true;
 	}
 
