@@ -302,20 +302,6 @@ static void R_CheckPortableExtensions( void ) {
 	glConfig.glVersion = atof( glConfig.version_string );
 
 	// GL_ARB_multitexture
-#ifdef __EMSCRIPTEN__
-    glConfig.multitextureAvailable = true;
-    common->Printf( "...using %s\n", "OpenGL 1.3 Multitexture" );
-    qglMultiTexCoord2fARB = (void(APIENTRY *)(GLenum, GLfloat, GLfloat))GLimp_ExtensionPointer( "glMultiTexCoord2f" );
-    qglMultiTexCoord2fvARB = (void(APIENTRY *)(GLenum, GLfloat *))GLimp_ExtensionPointer( "glMultiTexCoord2fv" );
-    qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTexture" );
-    qglClientActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glClientActiveTexture" );
-    qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
-    if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
-	    glConfig.maxTextureUnits = MAX_MULTITEXTURE_UNITS;
-    }
-	qglGetIntegerv( GL_MAX_TEXTURE_COORDS_ARB, (GLint *)&glConfig.maxTextureCoords );
-	qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
-#else
 	glConfig.multitextureAvailable = R_CheckExtension( "GL_ARB_multitexture" );
 	if ( glConfig.multitextureAvailable ) {
 		qglMultiTexCoord2fARB = (void(APIENTRY *)(GLenum, GLfloat, GLfloat))GLimp_ExtensionPointer( "glMultiTexCoord2fARB" );
@@ -332,25 +318,7 @@ static void R_CheckPortableExtensions( void ) {
 		qglGetIntegerv( GL_MAX_TEXTURE_COORDS_ARB, (GLint *)&glConfig.maxTextureCoords );
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
 	}
-#endif
 
-#ifdef __EMSCRIPTEN__
-	// GL_ARB_texture_env_combine
-	glConfig.textureEnvCombineAvailable = true;
-    common->Printf( "...using %s\n", "GL_ARB_texture_env_combine" );
-
-	// GL_ARB_texture_cube_map
-	glConfig.cubeMapAvailable = true;
-    common->Printf( "...using %s\n", "GL_ARB_texture_cube_map" );
-
-	// GL_ARB_texture_env_dot3
-	glConfig.envDot3Available = true;
-    common->Printf( "...using %s\n", "GL_ARB_texture_env_dot3" );
-
-	// GL_ARB_texture_env_add
-	glConfig.textureEnvAddAvailable = false;
-    common->Printf( "...using %s\n", "GL_ARB_texture_env_add" );
-#else
     // GL_ARB_texture_env_combine
     glConfig.textureEnvCombineAvailable = R_CheckExtension( "GL_ARB_texture_env_combine" );
 
@@ -362,7 +330,7 @@ static void R_CheckPortableExtensions( void ) {
 
 	// GL_ARB_texture_env_add
 	glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
-#endif
+
     // GL_ARB_texture_non_power_of_two
     glConfig.textureNonPowerOfTwoAvailable = R_CheckExtension( "GL_ARB_texture_non_power_of_two" );
 
@@ -429,6 +397,7 @@ static void R_CheckPortableExtensions( void ) {
 
 	// ARB_vertex_buffer_object
 #ifdef __EMSCRIPTEN__
+	// Partially supported with Regal (no glMapBuffer/glUnmapBuffer). Use OpenGL 1.5 API instead of ARB API
     glConfig.ARBVertexBufferObjectAvailable = true;
     common->Printf( "...using %s\n", "OpenGL Vertex Buffers" );
     qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBuffer");
@@ -754,7 +723,7 @@ void R_InitOpenGL( void ) {
 
 	// parse our vertex and fragment programs, possibly disably support for
 	// one of the paths if there was an error
-#ifndef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 #else
 	R_ARB2_Init();
 
