@@ -285,6 +285,7 @@ if (EMSCRIPTEN)
 	set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
 	set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
 	set(ldflags "${ldflags} -s FULL_ES2=1")
+	set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=clamp")
 	set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184")
 endif()
 
