@@ -319,8 +319,8 @@ static void R_CheckPortableExtensions( void ) {
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
 	}
 
-    // GL_ARB_texture_env_combine
-    glConfig.textureEnvCombineAvailable = R_CheckExtension( "GL_ARB_texture_env_combine" );
+	// GL_ARB_texture_env_combine
+	glConfig.textureEnvCombineAvailable = R_CheckExtension( "GL_ARB_texture_env_combine" );
 
 	// GL_ARB_texture_cube_map
 	glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
@@ -331,8 +331,8 @@ static void R_CheckPortableExtensions( void ) {
 	// GL_ARB_texture_env_add
 	glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
 
-    // GL_ARB_texture_non_power_of_two
-    glConfig.textureNonPowerOfTwoAvailable = R_CheckExtension( "GL_ARB_texture_non_power_of_two" );
+	// GL_ARB_texture_non_power_of_two
+	glConfig.textureNonPowerOfTwoAvailable = R_CheckExtension( "GL_ARB_texture_non_power_of_two" );
 
 	// GL_ARB_texture_compression + GL_S3_s3tc
 	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
