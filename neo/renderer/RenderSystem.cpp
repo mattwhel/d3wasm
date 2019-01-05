@@ -895,9 +895,7 @@ void idRenderSystemLocal::CaptureRenderToImage( const char *imageName ) {
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
-#ifdef __EMSCRIPTEN__
-	return;
-#else
+
 	guiModel->EmitFullScreen();
 	guiModel->Clear();
 
@@ -926,7 +924,6 @@ void idRenderSystemLocal::CaptureRenderToImage( const char *imageName ) {
 	cmd->image = image;
 
 	guiModel->Clear();
-#endif
 }
 
 /*
@@ -939,16 +936,17 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
-#ifdef __EMSCRIPTEN__
-	return;
-#else
+
 	renderCrop_t *rc = &renderCrops[currentRenderCrop];
 
 	guiModel->EmitFullScreen();
 	guiModel->Clear();
 	R_IssueRenderCommands();
 
+#ifdef __EMSCRIPTEN__
+#else
 	qglReadBuffer( GL_BACK );
+#endif
 
 	// include extra space for OpenGL padding to word boundaries
 	int	c = ( rc->width + 3 ) * rc->height;
@@ -969,7 +967,6 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 
 	R_StaticFree( data );
 	R_StaticFree( data2 );
-#endif
 }
 
 
