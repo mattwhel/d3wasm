@@ -276,7 +276,8 @@ void idSysLocal::OpenURL( const char *url, bool quit ) {
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 
-static void emloopcb()
+extern "C" void emloopcb();
+void emloopcb()
 {
 	common->Frame();
 }
