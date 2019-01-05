@@ -287,7 +287,10 @@ if (EMSCRIPTEN)
 	set(ldflags "${ldflags} -s FULL_ES2=1")
 	set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=clamp")
 	set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184")
-endif()
+	set(ldflags "${ldflags} -s EMTERPRETIFY=1")
+	set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
+	set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
+	endif()
 
 # mingw and msvc
 if(WIN32)

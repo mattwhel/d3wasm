@@ -2067,6 +2067,8 @@ void idImageManager::BeginLevelLoad() {
 	}
 }
 
+#include "emscripten.h"
+
 /*
 ====================
 EndLevelLoad
@@ -2126,6 +2128,7 @@ void idImageManager::EndLevelLoad() {
 
 			if ( ( loadCount & 15 ) == 0 ) {
 				session->PacifierUpdate();
+				emscripten_sleep_with_yield(0);
 			}
 		}
 	}

@@ -37,6 +37,8 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "framework/Session_local.h"
 
+#include "emscripten.h"
+
 #if defined(__AROS__)
 #define CDKEY_FILEPATH CDKEY_FILE
 #define XPKEY_FILEPATH XPKEY_FILE
@@ -523,6 +525,7 @@ void idSessionLocal::CompleteWipe() {
 		emptyDrawCount = 0;
 #endif
 		UpdateScreen( true );
+		emscripten_sleep_with_yield(0);
 	}
 }
 
@@ -544,8 +547,9 @@ void idSessionLocal::ShowLoadingGui() {
 	int force = 10;
 	while ( Sys_Milliseconds() < stop || force-- > 0 ) {
 		com_frameTime = com_ticNumber * USERCMD_MSEC;
-		session->Frame();
+		common->Frame();
 		session->UpdateScreen( false );
+		emscripten_sleep_with_yield(0);
 	}
 #else
 	int stop = com_ticNumber + 1000.0f / USERCMD_MSEC * 1.0f;
@@ -1703,6 +1707,7 @@ void idSessionLocal::ExecuteMapChange( bool noFadeWipe ) {
 			guiLoading->StateChanged( com_frameTime );
 			Sys_GenerateEvents();
 			UpdateScreen();
+			emscripten_sleep_with_yield(0);
 			pct += 0.05f;
 		}
 	}

@@ -505,6 +505,8 @@ void idRenderModelManagerLocal::BeginLevelLoad() {
 	R_PurgeTriSurfData( frameData );
 }
 
+#include "emscripten.h"
+
 /*
 =================
 idRenderModelManagerLocal::EndLevelLoad
@@ -556,6 +558,7 @@ void idRenderModelManagerLocal::EndLevelLoad() {
 
 			if ( ( loadCount & 15 ) == 0 ) {
 				session->PacifierUpdate();
+				emscripten_sleep_with_yield(0);
 			}
 		}
 	}
