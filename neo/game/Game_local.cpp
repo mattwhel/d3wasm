@@ -74,6 +74,8 @@ idCVar *					idCVar::staticVars = NULL;
 
 idCVar com_forceGenericSIMD( "com_forceGenericSIMD", "0", CVAR_BOOL|CVAR_SYSTEM, "force generic platform independent SIMD" );
 
+#else
+#include "tools/compilers/aas/AASFileManager.h"
 #endif
 
 idRenderWorld *				gameRenderWorld = NULL;		// all drawing is done to this world

@@ -49,9 +49,15 @@ include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 option(CORE			"Build the core" ON)
 option(BASE			"Build the base game code" ON)
 option(D3XP			"Build the d3xp game code" ON)
+option(NODLL        "Build core and base game code, embedded inside one binary" OFF)
 option(DEDICATED	"Build the dedicated server" OFF)
 option(ONATIVE		"Optimize for the host CPU" OFF)
 option(SDL2			"Use SDL2 instead of SDL1.2" ON)
+
+if (NODLL)
+    set(BASE		OFF)
+    set(D3XP		OFF)
+endif()
 
 if(NOT CMAKE_SYSTEM_PROCESSOR)
 	message(FATAL_ERROR "No target CPU architecture set")
@@ -805,28 +811,56 @@ else()
 endif()
 
 if(CORE)
-	add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
-		${src_core}
-		${src_sys_base}
-		${src_sys_core}
-	)
+    if (NODLL)
+        add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
+                ${src_core}
+                ${src_sys_base}
+                ${src_sys_core}
+                ${src_game}
+                )
 
-	set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
-	set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
-	set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
+        set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags} ")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
+        set_target_properties(${DHEWM3BINARY} PROPERTIES INSTALL_NAME_DIR "@executable_path")
 
-	target_link_libraries(${DHEWM3BINARY}
-		idlib
-		${OPENAL_LIBRARY}
-		${VORBISFILE_LIBRARIES}
-		${VORBIS_LIBRARIES}
-		${OGG_LIBRARIES}
-		${CURL_LIBRARY}
-		${JPEG_LIBRARY}
-		${ZLIB_LIBRARY}
-		${SDLx_LIBRARY}
-		${sys_libs}
-	)
+        target_link_libraries(${DHEWM3BINARY}
+                idlib
+                ${OPENAL_LIBRARY}
+                ${VORBISFILE_LIBRARIES}
+                ${VORBIS_LIBRARIES}
+                ${OGG_LIBRARIES}
+                ${CURL_LIBRARY}
+                ${JPEG_LIBRARY}
+                ${ZLIB_LIBRARY}
+                ${SDLx_LIBRARY}
+                ${sys_libs}
+                )
+
+    else()
+        add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
+            ${src_core}
+            ${src_sys_base}
+            ${src_sys_core}
+        )
+
+        set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
+
+        target_link_libraries(${DHEWM3BINARY}
+            idlib
+            ${OPENAL_LIBRARY}
+            ${VORBISFILE_LIBRARIES}
+            ${VORBIS_LIBRARIES}
+            ${OGG_LIBRARIES}
+            ${CURL_LIBRARY}
+            ${JPEG_LIBRARY}
+            ${ZLIB_LIBRARY}
+            ${SDLx_LIBRARY}
+            ${sys_libs}
+        )
+    endif()
 
 	if(NOT APPLE AND NOT WIN32)
 		install(TARGETS ${DHEWM3BINARY}
