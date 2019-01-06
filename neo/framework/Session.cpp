@@ -1195,9 +1195,6 @@ void idSessionLocal::StartNewGame( const char *mapName, bool devmap ) {
 		}
 	}
 #endif
-#ifdef __EMSCRIPTEN__
-	fileSystem->Restart();
-#endif
 
 	if ( idAsyncNetwork::server.IsActive() ) {
 		common->Printf("Server running, use si_map / serverMapRestart\n");
