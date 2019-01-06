@@ -35,6 +35,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "framework/GameCallbacks_local.h"
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#endif
+
 const char *imageFilter[] = {
 	"GL_LINEAR_MIPMAP_NEAREST",
 	"GL_LINEAR_MIPMAP_LINEAR",
@@ -2066,8 +2070,6 @@ void idImageManager::BeginLevelLoad() {
 		image->levelLoadReferenced = false;
 	}
 }
-
-#include "emscripten.h"
 
 /*
 ====================

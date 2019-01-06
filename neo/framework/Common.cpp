@@ -53,7 +53,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "GameCallbacks_local.h"
 
+#ifdef __EMSCRIPTEN__
 #include "emscripten.h"
+#endif
+
 
 #define	MAX_PRINT_MSG_SIZE	4096
 #define MAX_WARNING_LIST	256
@@ -769,6 +772,7 @@ void idCommonLocal::Quit( void ) {
 		Shutdown();
 	}
 
+#ifdef __EMSCRIPTEN__
 	EM_ASM(
 			console.info('Syncing user home to persistent storage....');
 						 FS.syncfs(false, function(err) {
@@ -777,6 +781,7 @@ void idCommonLocal::Quit( void ) {
 						 	FS.unmount('/home/web_user');
 						});
 	);
+#endif
 
 	Sys_Quit();
 }
@@ -2931,7 +2936,7 @@ void idCommonLocal::Init( int argc, char **argv ) {
 #ifdef __EMSCRIPTEN__
 	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))
 #else
-	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))| SDL_INIT_JOYSTICK)) // init joystick to work around SDL 2.0.9 bug #4391
+	if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO | SDL_INIT_JOYSTICK)) // init joystick to work around SDL 2.0.9 bug #4391
 #endif
 		Sys_Error("Error while initializing SDL: %s", SDL_GetError());
 

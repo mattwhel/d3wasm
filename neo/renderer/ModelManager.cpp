@@ -35,6 +35,11 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "renderer/ModelManager.h"
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#endif
+
+
 class idRenderModelManagerLocal : public idRenderModelManager {
 public:
 							idRenderModelManagerLocal();
@@ -504,8 +509,6 @@ void idRenderModelManagerLocal::BeginLevelLoad() {
 	// purge unused triangle surface memory
 	R_PurgeTriSurfData( frameData );
 }
-
-#include "emscripten.h"
 
 /*
 =================

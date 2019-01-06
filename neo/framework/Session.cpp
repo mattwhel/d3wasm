@@ -37,7 +37,9 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "framework/Session_local.h"
 
+#ifdef __EMSCRIPTEN__
 #include "emscripten.h"
+#endif
 
 #if defined(__AROS__)
 #define CDKEY_FILEPATH CDKEY_FILE
