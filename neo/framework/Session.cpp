@@ -515,17 +515,17 @@ void idSessionLocal::CompleteWipe() {
 		UpdateScreen( true );
 		return;
 	}
-#ifdef __EMSCRIPTEN__
-	if ( com_ticNumber < wipeStopTic ) {
-	    wipeStopTic = 0;
-#else
 	while ( com_ticNumber < wipeStopTic ) {
+#ifdef __EMSCRIPTEN__
+		common->Async();
 #endif
 #if ID_CONSOLE_LOCK
 		emptyDrawCount = 0;
 #endif
 		UpdateScreen( true );
-		emscripten_sleep_with_yield(0);
+#ifdef __EMSCRIPTEN__
+		emscripten_sleep_with_yield(1000/60);
+#endif
 	}
 }
 
@@ -546,10 +546,18 @@ void idSessionLocal::ShowLoadingGui() {
 	int stop = Sys_Milliseconds() + 1000;
 	int force = 10;
 	while ( Sys_Milliseconds() < stop || force-- > 0 ) {
+#ifdef __EMSCRIPTEN__
+		// GAB Note Jan 2019: as the next code use com_ticNumber in the loop, we need to do a manual async tic update at each step (we don't have the async thread)
+		common->Async();
+#endif
 		com_frameTime = com_ticNumber * USERCMD_MSEC;
-		common->Frame();
+		session->Frame();
 		session->UpdateScreen( false );
-		emscripten_sleep_with_yield(0);
+
+#ifdef __EMSCRIPTEN__
+		// Gab Note Jan 2019: be sure to yield for 60hz like the async thread would do
+		emscripten_sleep_with_yield(1000/60);
+#endif
 	}
 #else
 	int stop = com_ticNumber + 1000.0f / USERCMD_MSEC * 1.0f;
@@ -1703,12 +1711,19 @@ void idSessionLocal::ExecuteMapChange( bool noFadeWipe ) {
 			pct = 0.0f;
 		}
 		while ( pct < 1.0f ) {
+#ifdef __EMSCRIPTEN__
+			// GAB Note Jan 2019: as the next code use com_ticNumber in the loop, we need to do a manual async tic update at each step (we don't have the async thread)
+			common->Async();
+			com_frameTime = com_ticNumber * USERCMD_MSEC;
+#endif
 			guiLoading->SetStateFloat( "map_loading", pct );
 			guiLoading->StateChanged( com_frameTime );
 			Sys_GenerateEvents();
 			UpdateScreen();
-			emscripten_sleep_with_yield(0);
 			pct += 0.05f;
+#ifdef __EMSCRIPTEN__
+			emscripten_sleep_with_yield(1000/60);
+#endif
 		}
 	}
 

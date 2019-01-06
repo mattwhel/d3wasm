@@ -2412,7 +2412,9 @@ void idCommonLocal::InitSIMD( void ) {
 }
 
 static unsigned int AsyncTimer(unsigned int interval, void *) {
-    common->Async();
+
+	common->Async();
+
 #ifdef __EMSCRIPTEN__
 #else
     Sys_TriggerEvent(TRIGGER_EVENT_ONE);
@@ -2438,7 +2440,8 @@ void idCommonLocal::Frame( void ) {
 
 #ifdef __EMSCRIPTEN__
 		AsyncTimer(0,NULL);
-        fileSystem->RunThread();
+		// Disable background download thread for now (not really used)
+        //fileSystem->RunThread();
 #endif
 
 		// pump all the events
