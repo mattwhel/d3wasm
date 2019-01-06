@@ -1684,7 +1684,6 @@ void RB_STD_LightScale( void ) {
 /*
 =============
 RB_STD_DrawView
-
 =============
 */
 void	RB_STD_DrawView( void ) {
@@ -1706,21 +1705,22 @@ void	RB_STD_DrawView( void ) {
 	// subviews
 	RB_STD_FillDepthBuffer( drawSurfs, numDrawSurfs );
 
+#ifdef __EMSCRIPTEN__
+	RB_ARB_DrawInteractions();
+#else
 	// main light renderer
 	switch( tr.backEndRenderer ) {
-#ifdef __EMSCRIPTEN__
 		default:
 			RB_ARB_DrawInteractions();
 			break;
-#else
 		case BE_ARB:
 			RB_ARB_DrawInteractions();
 			break;
 		case BE_ARB2:
 			RB_ARB2_DrawInteractions();
 			break;
-#endif
 	}
+#endif
 
 	// disable stencil shadow test
 	qglStencilFunc( GL_ALWAYS, 128, 255 );
@@ -1740,5 +1740,4 @@ void	RB_STD_DrawView( void ) {
 	}
 
 	RB_RenderDebugTools( drawSurfs, numDrawSurfs );
-
 }
