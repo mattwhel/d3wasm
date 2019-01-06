@@ -769,6 +769,15 @@ void idCommonLocal::Quit( void ) {
 		Shutdown();
 	}
 
+	EM_ASM(
+			console.info('Syncing user home to persistent storage....');
+						 FS.syncfs(false, function(err) {
+						 	console.info("Syncing done.");
+						 	console.info("unmounting user home");
+						 	FS.unmount('/home/web_user');
+						});
+	);
+
 	Sys_Quit();
 }
 

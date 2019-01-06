@@ -406,6 +406,8 @@ void idGameLocal::Shutdown( void ) {
 #endif
 }
 
+#include "emscripten.h"
+
 /*
 ===========
 idGameLocal::SaveGame
@@ -582,6 +584,15 @@ void idGameLocal::SaveGame( idFile *f ) {
 	idEvent::Save( &savegame );
 
 	savegame.Close();
+
+#if defined __EMSCRIPTEN__
+	EM_ASM(
+			console.info('Syncing user home to persistent storage....');
+			FS.syncfs(false, function(err) {
+				console.info("Syncing done.");
+			});
+		);
+#endif
 }
 
 /*
