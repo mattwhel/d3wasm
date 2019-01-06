@@ -2408,6 +2408,10 @@ void idCommonLocal::PrintLoadingMessage( const char *msg ) {
 	int len = strlen( msg );
 	renderSystem->DrawSmallStringExt( ( 640 - len * SMALLCHAR_WIDTH ) / 2, 410, msg, idVec4( 0.0f, 0.81f, 0.94f, 1.0f ), true, declManager->FindMaterial( "textures/bigchars" ) );
 	renderSystem->EndFrame( NULL, NULL );
+
+#ifdef __EMSCRIPTEN__
+	emscripten_sleep_with_yield(0);
+#endif
 }
 
 /*
