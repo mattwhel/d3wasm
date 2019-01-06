@@ -49,13 +49,21 @@ include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 option(CORE			"Build the core" ON)
 option(BASE			"Build the base game code" ON)
 option(D3XP			"Build the d3xp game code" ON)
-if (EMSCRIPTEN)
-	set(BASE		OFF)
-	set(D3XP		OFF)
-endif()
+option(NODLL        "Build core and base game code, embedded inside one binary" OFF)
 option(DEDICATED	"Build the dedicated server" OFF)
 option(ONATIVE		"Optimize for the host CPU" OFF)
 option(SDL2			"Use SDL2 instead of SDL1.2" ON)
+
+if (EMSCRIPTEN)
+    set(NODLL ON)
+    set(CMAKE_CROSSCOMPILING ON)
+    set(GL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
+endif()
+
+if (NODLL)
+    set(BASE		OFF)
+    set(D3XP		OFF)
+endif()
 
 if(NOT CMAKE_SYSTEM_PROCESSOR)
 	message(FATAL_ERROR "No target CPU architecture set")
@@ -167,12 +175,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
 	add_compile_options(-pipe)
 	add_compile_options(-Wall)
 
-	if (NOT EMSCRIPTEN)
-		if(NOT CMAKE_CROSSCOMPILING AND ONATIVE)
-			add_compile_options(-march=native)
-		elseif(NOT APPLE AND cpu STREQUAL "x86")
-			add_compile_options(-march=pentium3)
-		endif()
+	if(NOT CMAKE_CROSSCOMPILING AND ONATIVE)
+        add_compile_options(-march=native)
+	elseif(NOT APPLE AND cpu STREQUAL "x86")
+	    add_compile_options(-march=pentium3)
 	endif()
 
 	if(EMSCRIPTEN)
@@ -841,34 +847,33 @@ else()
 endif()
 
 if(CORE)
-	if (EMSCRIPTEN)
+    if (NODLL)
         add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
-            ${src_core}
-            ${src_sys_base}
-            ${src_sys_core}
-            ${src_game}
-        )
+                ${src_core}
+                ${src_sys_base}
+                ${src_sys_core}
+                ${src_game}
+                )
 
-		set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags} ")
-		set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
-		set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
-		set_target_properties(${DHEWM3BINARY} PROPERTIES INSTALL_NAME_DIR "@executable_path")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags} ")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
+        set_target_properties(${DHEWM3BINARY} PROPERTIES INSTALL_NAME_DIR "@executable_path")
 
-		target_link_libraries(${DHEWM3BINARY}
-				idlib
-				${OPENAL_LIBRARY}
-				${VORBISFILE_LIBRARIES}
-				${VORBIS_LIBRARIES}
-				${OGG_LIBRARIES}
-				${CURL_LIBRARY}
-				${JPEG_LIBRARY}
-				${ZLIB_LIBRARY}
-				${SDLx_LIBRARY}
-				${sys_libs}
-				$ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a
-				)
+        target_link_libraries(${DHEWM3BINARY}
+                    idlib
+                    ${OPENAL_LIBRARY}
+                    ${VORBISFILE_LIBRARIES}
+                    ${VORBIS_LIBRARIES}
+                    ${OGG_LIBRARIES}
+                    ${CURL_LIBRARY}
+                    ${JPEG_LIBRARY}
+                    ${ZLIB_LIBRARY}
+                    ${SDLx_LIBRARY}
+                    ${sys_libs}
+                    ${GL_LIBRARY})
 
-	else()
+    else()
 		add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
 				${src_core}
 				${src_sys_base}
