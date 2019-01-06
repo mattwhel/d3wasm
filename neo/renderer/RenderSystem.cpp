@@ -952,7 +952,11 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	int	c = ( rc->width + 3 ) * rc->height;
 	byte *data = (byte *)R_StaticAlloc( c * 3 );
 
+#ifdef __EMSCRIPTEN__
+	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGBA, GL_UNSIGNED_BYTE, data );
+#else
 	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGB, GL_UNSIGNED_BYTE, data );
+#endif
 
 	byte *data2 = (byte *)R_StaticAlloc( c * 4 );
 
