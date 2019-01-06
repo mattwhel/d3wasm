@@ -285,6 +285,10 @@ GLimp_SwapBuffers
 ===================
 */
 void GLimp_SwapBuffers() {
+#ifdef __EMSCRIPTEN__
+	// GAB Note Jan 2018: Not needed on WebGL
+	return;
+#endif
 #if SDL_VERSION_ATLEAST(2, 0, 0)
 	SDL_GL_SwapWindow(window);
 #else
