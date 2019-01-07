@@ -589,7 +589,7 @@ void idGameLocal::SaveGame( idFile *f ) {
 
 #if defined __EMSCRIPTEN__
 	EM_ASM(
-			console.info('Syncing user home to persistent storage....');
+			console.info('Syncing user home to IDBFS....');
 			FS.syncfs(false, function(err) {
 				console.info("Syncing done.");
 			});
