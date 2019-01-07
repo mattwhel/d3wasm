@@ -528,7 +528,7 @@ void idSessionLocal::CompleteWipe() {
 #endif
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(0);   // Yields to the browser so that the screen updated at each tic
+    emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
     common->Async();                  // Needed because the loop uses com_ticNumber in the stop condition
 #endif
   }
@@ -554,7 +554,7 @@ void idSessionLocal::ShowLoadingGui() {
     session->Frame();
     session->UpdateScreen(false);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(0);   // Yields to the browser so that the screen updated at each tic
+    emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
 #endif
   }
 }
@@ -1710,8 +1710,8 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       UpdateScreen();
       pct += 0.05f;
 #ifdef __EMSCRIPTEN__
-      emscripten_sleep_with_yield(0);   // Yields to the browser so that the screen updated at each tic
-      common->Async();                  // Needed because the loop uses com_ticNumber (updating com_frameTime at each loop iteration)
+      emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
+      common->Async();                        // Needed because the loop uses com_ticNumber (updating com_frameTime at each loop iteration)
 #endif
     }
   }
@@ -2769,20 +2769,6 @@ void idSessionLocal::Frame() {
   GuiFrameEvents();                       // This function might yields (ie. inline loading screen update)
 
   emsessionframe_last();
-
-  int gameTicsToRun = latchedTicNumber - lastGameTic;
-  int i;
-  for (i = 0; i < gameTicsToRun; i++) {
-    RunGameTic();                         // This function might yields (ie. inline loading screen update)
-    if (!mapSpawned) {
-      // exited game play
-      break;
-    }
-    if (syncNextGameFrame) {
-      // long game frame, so break out and continue executing as if there was no hitch
-      break;
-    }
-  }
 }
 
 /*
