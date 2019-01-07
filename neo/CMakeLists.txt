@@ -323,7 +323,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-    set(ldflags "${ldflags} --embed-file ./data/demo_init.pk4@/usr/local/share/dhewm3/base/")
+    set(ldflags "${ldflags} --embed-file ./data/demo_bootstrap.pk4@/usr/local/share/dhewm3/base/")
     set(ldflags "${ldflags} --pre-js ../wasm/pre.js")
     set(ldflags "${ldflags} --post-js ../wasm/post.js")
     set(ldflags "${ldflags} --shell-file $ENV{EMSCRIPTEN}/src/shell.html")
