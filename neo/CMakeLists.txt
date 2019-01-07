@@ -53,15 +53,32 @@ option(NODLL "Build core and base game code, embedded inside one binary" OFF)
 option(DEDICATED "Build the dedicated server" OFF)
 option(ONATIVE "Optimize for the host CPU" OFF)
 option(SDL2 "Use SDL2 instead of SDL1.2" ON)
+option(USEREGAL "Use Regal GL emulation layer library" OFF)
 
+# Enforce some options for emscripten
 if (EMSCRIPTEN)
-    set(NODLL ON)
-    set(GL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
+    set(DEDICATED OFF) # build the client game
+    set(ONATIVE OFF)   # we are building for WebAssembly VM
+    set(SDL2 ON)       # only SDL2 is supported
+    set(NODLL ON)      # only one single binary with core+base game
+    set(USEREGAL ON)   # Regal GL emulation library is used
+    SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
+    option(OPTIMIZEDATALOADING "Optimize loading of data through network" ON)
 endif ()
 
+if (USEREGAL)
+    if (EMSCRIPTEN)
+        set(REGAL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
+    else()
+        # todo
+    endif()
+    add_compile_options("-DUSEREGAL")
+endif()
+
 if (NODLL)
-    set(BASE OFF)
-    set(D3XP OFF)
+    set(BASE OFF)   # base game will be linked with core directly
+    set(D3XP OFF)   # D3XP game is not supported in this mode for now
+    add_compile_options("-DNODLL")
 endif ()
 
 if (NOT CMAKE_SYSTEM_PROCESSOR)
@@ -90,6 +107,11 @@ if (APPLE)
 else ()
     string(TOLOWER "${CMAKE_SYSTEM_NAME}" os)
 endif ()
+
+if (EMSCRIPTEN)
+    set(os  "emscripten")
+    set(cpu "wasm")
+endif()
 
 # build type
 if (NOT CMAKE_BUILD_TYPE)
@@ -131,7 +153,7 @@ include_directories(${VORBISFILE_INCLUDE_DIR})
 
 find_package(OpenAL REQUIRED)
 if (EMSCRIPTEN)
-    include_directories("${OPENAL_INCLUDE_DIR}/AL")
+    include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
 else ()
     include_directories(${OPENAL_INCLUDE_DIR})
 endif ()
@@ -159,40 +181,45 @@ else ()
     set(SDLx_LIBRARY ${SDL_LIBRARY})
 endif ()
 
+if (NOT EMSCRIPTEN)
 find_package(CURL QUIET)
+endif()
 if (CURL_FOUND)
     set(ID_ENABLE_CURL ON)
     include_directories(${CURL_INCLUDE_DIR})
 else ()
-    message(STATUS "libcurl not found, server downloads won't be available")
+    if (NOT EMSCRIPTEN)
+        message(STATUS "libcurl not found, server downloads won't be available")
+    endif()
     set(ID_ENABLE_CURL OFF)
     set(CURL_LIBRARY "")
 endif ()
 
 # compiler specific flags
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTEN)
     add_compile_options(-pipe)
     add_compile_options(-Wall)
 
-    if (NOT CMAKE_CROSSCOMPILING AND ONATIVE AND NOT EMSCRIPTEN)
+    if (NOT CMAKE_CROSSCOMPILING AND ONATIVE)
         add_compile_options(-march=native)
-    elseif (NOT APPLE AND cpu STREQUAL "x86" AND NOT EMSCRIPTEN)
+    elseif (NOT APPLE AND cpu STREQUAL "x86")
         add_compile_options(-march=pentium3)
     endif ()
 
-    if (EMSCRIPTEN)
-        set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
-        set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
-        set(CMAKE_C_FLAGS_PROFILE "-g --D_DEBUG -O1 -fno-omit-frame-pointer")
-        set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
-        set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-    else ()
+    if (NOT EMSCRIPTEN)
         set(CMAKE_C_FLAGS_DEBUG "-g -ggdb -D_DEBUG -O0")
         set(CMAKE_C_FLAGS_DEBUGALL "-g -ggdb -D_DEBUG")
         set(CMAKE_C_FLAGS_PROFILE "-g -ggdb -D_DEBUG -O1 -fno-omit-frame-pointer")
         set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
         set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -ggdb -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
+        set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+    else ()
+        # On emscripten, need to redefine compile options to not have "-ggdb" (not supported)
+        set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
+        set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
+        set(CMAKE_C_FLAGS_PROFILE "-g --D_DEBUG -O1 -fno-omit-frame-pointer")
+        set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
         set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
     endif ()
 
@@ -215,6 +242,8 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wno-format-security)
     if (EMSCRIPTEN)
         add_compile_options(-Wno-unused-variable)
+        add_compile_options(-Wno-enum-compare)
+        add_compile_options(-Wno-self-assign-field)
         add_compile_options(-Wno-unused-function)
         add_compile_options(-Wno-unused-const-variable)
         add_compile_options(-Wno-unused-private-field)
@@ -261,11 +290,12 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
         set(sys_libs ${sys_libs} "-framework Carbon -framework Cocoa -framework IOKit")
     elseif (WIN32)
         set(ldflags "${ldflags} -static-libgcc -static-libstdc++")
-    elseif (EMSCRIPTEN)
-        set(sys_libs ${GL_LIBRARY})
     elseif (os STREQUAL "linux")
         set(sys_libs ${sys_libs} dl)
     endif ()
+    if (USEREGAL)
+        set(sys_libs ${sys_libs} ${REGAL_LIBRARY})
+    endif()
 elseif (MSVC)
     add_compile_options(/W4)
     add_compile_options(/wd4100) # unreferenced formal parameter
@@ -293,6 +323,12 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
+    set(ldflags "${ldflags} --embed-file ./data/demo_init.pk4@/usr/local/share/dhewm3/base/")
+    set(ldflags "${ldflags} --pre-js ../wasm/pre.js")
+    set(ldflags "${ldflags} --post-js ../wasm/post.js")
+    set(ldflags "${ldflags} --shell-file $ENV{EMSCRIPTEN}/src/shell.html")
+    set(ldflags "${ldflags} -o dhewm3.html")
+
     set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
     set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
     set(ldflags "${ldflags} -s FULL_ES2=1")
@@ -301,7 +337,11 @@ if (EMSCRIPTEN)
     set(ldflags "${ldflags} -s EMTERPRETIFY=1")
     set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
     set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"_main\",\"__ZN13idCommonLocal16InitRenderSystemEv\",\"__ZN13idCommonLocal19PrintLoadingMessageEPKc\",\"__ZN13idCommonLocal8InitGameEv\",\"__ZN13idCommonLocal4InitEiPPc\",\"__Z10LoadGame_fRK9idCmdArgs\",\"__ZN14idSessionLocal8LoadGameEPKc\",\"__ZN14idSessionLocal9MenuEventEPK10sysEvent_t\",\"__ZN14idSessionLocal12ProcessEventEPK10sysEvent_t\",\"__ZN14idSessionLocal25HandleSaveGameMenuCommandER9idCmdArgsRi\",\"__ZN11idEventLoop12ProcessEventE10sysEvent_t\",\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
-    set(ldflags "${ldflags} --embed-file demo_init.pk4@/usr/local/share/dhewm3/base/")
+    set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
+
+    if (OPTIMIZEDATALOADING)
+        add_compile_options("-DOPTIMIZEDATALOADING")
+    endif()
 endif ()
 
 # mingw and msvc
@@ -349,7 +389,7 @@ configure_file(
 
 message(STATUS "Building ${CMAKE_BUILD_TYPE} for ${os}-${cpu}")
 
-if (NOT APPLE AND NOT WIN32)
+if (NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN)
     message(STATUS "The install target will use the following directories:")
     message(STATUS "  Binary directory:  ${bindir}")
     message(STATUS "  Library directory: ${libdir}")
@@ -853,15 +893,14 @@ endif ()
 
 if (CORE)
     if (NODLL)
-        add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
+        add_executable(${DHEWM3BINARY}
                 ${src_core}
                 ${src_sys_base}
                 ${src_sys_core}
-                ${src_game}
+                ${src_game}         # base game is added to core
                 )
 
         set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
-        set_target_properties(${DHEWM3BINARY} PROPERTIES INSTALL_NAME_DIR "@executable_path")
     else ()
         add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
                 ${src_core}
@@ -870,11 +909,10 @@ if (CORE)
                 )
 
         set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
+        set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
     endif ()
 
-    set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags} ")
-    set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
-
+    set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
     target_link_libraries(${DHEWM3BINARY}
             idlib
             ${OPENAL_LIBRARY}
@@ -887,7 +925,7 @@ if (CORE)
             ${SDLx_LIBRARY}
             ${sys_libs})
 
-    if (NOT APPLE AND NOT WIN32)
+    if (NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN)
         install(TARGETS ${DHEWM3BINARY}
                 RUNTIME DESTINATION "${bindir}"
                 LIBRARY DESTINATION "${libdir}"
