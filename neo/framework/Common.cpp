@@ -880,13 +880,11 @@ void idCommonLocal::Quit(void) {
 
 #ifdef __EMSCRIPTEN__
   EM_ASM(
-console.info('Syncing user home to persistent storage....');
-FS.syncfs(false, function(err) {
-console.info("Syncing done.");
-console.info("unmounting user home");
-FS.unmount('/home/web_user');
-});
-);
+    console.info('Syncing user home to IDBFS....');
+    FS.syncfs(false, function(err) {
+      console.info("Syncing done.");
+    });
+  );
 #endif
 
   Sys_Quit();
@@ -1192,6 +1190,15 @@ void idCommonLocal::WriteConfiguration(void) {
 
   // restore the developer cvar
   com_developer.SetBool(developer);
+
+#if defined __EMSCRIPTEN__
+  EM_ASM(
+			console.info('Syncing user home to IDBFS....');
+			FS.syncfs(false, function(err) {
+				console.info("Syncing done.");
+			});
+		);
+#endif
 }
 
 /*
