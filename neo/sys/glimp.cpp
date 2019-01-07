@@ -198,9 +198,11 @@ bool GLimp_Init(glimpParms_t parms) {
 #ifdef __EMSCRIPTEN__
         RegalMakeCurrent((void*)1);
 #endif
-
+#ifdef __EMSCRIPTEN__
+#else
 		if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
 			common->Warning("SDL_GL_SWAP_CONTROL not supported");
+#endif
 
 		SDL_GetWindowSize(window, &glConfig.vidWidth, &glConfig.vidHeight);
 
