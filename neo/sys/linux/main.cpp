@@ -276,10 +276,14 @@ void idSysLocal::OpenURL( const char *url, bool quit ) {
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 
-extern "C" void emloopcb();
-void emloopcb()
-{
+extern "C" void emloopcb() {
+	// This function might yields in some very specific cases (during a few GUI events, and if we are loading a level)
+	// Otherwise, the normal path is that it does not yield, and return to browser
 	common->Frame();
+}
+
+void emmain() {
+	emscripten_set_main_loop(emloopcb,0,false);
 }
 
 #endif
@@ -313,11 +317,11 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef __EMSCRIPTEN__
-	emscripten_set_main_loop(emloopcb,0,true);
+	emmain();
 #else
 	while (1) {
 		common->Frame();
 	}
 #endif
-	return 0;
+  return 0;
 }

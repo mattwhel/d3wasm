@@ -106,7 +106,7 @@ public:
 
 	virtual void		PacifierUpdate();
 
-	virtual void		Frame();
+	virtual void  	Frame();
 
 	virtual bool		IsMultiplayer();
 
@@ -366,6 +366,10 @@ private:
 	bool				authWaitBox;
 
 	idStr				authMsg;
+#ifdef __EMSCRIPTEN__
+	bool  emsessionframe_pre();
+	void emsessionframe_last();
+#endif
 };
 
 extern idSessionLocal	sessLocal;
