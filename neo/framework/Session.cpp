@@ -2752,6 +2752,20 @@ void idSessionLocal::emsessionframe_last() {
   if (com_showTics.GetBool()) {
     common->Printf("%i ", latchedTicNumber - lastGameTic);
   }
+
+  int gameTicsToRun = latchedTicNumber - lastGameTic;
+  int i;
+  for (i = 0; i < gameTicsToRun; i++) {
+    RunGameTic();                         // This function might yields (ie. inline loading screen update). Needs to be handled
+    if (!mapSpawned) {
+      // exited game play
+      break;
+    }
+    if (syncNextGameFrame) {
+      // long game frame, so break out and continue executing as if there was no hitch
+      break;
+    }
+  }
 }
 #endif
 
