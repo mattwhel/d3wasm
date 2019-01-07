@@ -1584,6 +1584,26 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
     currentMapName = fullMapName;
   }
 
+  common->Printf("Fetching full game data...\n");
+
+  common->PrintLoadingMessage("Fetching full game data (380MB)...");
+
+  FILE* f = NULL;
+
+  while(f == NULL) {
+    emscripten_sleep_with_yield(333);
+
+    f = fopen( "/usr/local/share/dhewm3/base/demo_chunk01.pk4", "r");
+  }
+
+  fclose( f );
+
+  common->Printf("Loading full game data...\n");
+
+  fileSystem->Restart();
+
+  declManager->Init();
+
   // note which media we are going to need to load
   if (!reloadingSameMap) {
     declManager->BeginLevelLoad();
