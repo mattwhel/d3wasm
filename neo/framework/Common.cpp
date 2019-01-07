@@ -3345,7 +3345,32 @@ void idCommonLocal::InitGame(void) {
   // startup the script debugger
   // DebuggerServerInit();
 
-	PrintLoadingMessage( common->GetLanguageDict()->GetString( "#str_04350" ) );
+#ifdef OPTIMIZEDATALOADING
+
+  common->Printf("Fetching base game data...\n");
+
+  PrintLoadingMessage( "Fetching base game data (15MB)..." );
+  FILE* f = NULL;
+
+  while(f == NULL) {
+    emscripten_sleep_with_yield(333);
+
+    f = fopen( "/usr/local/share/dhewm3/base/demo_chunk00.pk4", "r");
+  }
+
+  fclose( f );
+
+  common->Printf("Fetching base game data...\n");
+
+  PrintLoadingMessage( "Loading base game data..." );
+
+  fileSystem->Restart();
+
+  declManager->Init();
+
+#endif
+
+  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04350"));
 
   // load the game dll
   LoadGameDLL();
