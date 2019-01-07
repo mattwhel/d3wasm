@@ -451,6 +451,17 @@ set(src_renderer
         renderer/tr_turboshadow.cpp
         )
 
+# I'm a bit sloppy with headers and just glob them in..
+# they're only handled in CMake at all so they turn up in Visual Studio solutions..
+
+# globs all the headers from ${PATHPREFIX}/ and adds them to ${SRCLIST}
+function(add_globbed_headers SRCLIST PATHPREFIX)
+	file(GLOB_RECURSE tmp_hdrs RELATIVE "${CMAKE_SOURCE_DIR}" "${PATHPREFIX}/*.h")
+	set(${SRCLIST} ${tmp_hdrs} ${${SRCLIST}} PARENT_SCOPE)
+endfunction()
+
+add_globbed_headers(src_renderer "renderer")
+
 set(src_framework
         framework/CVarSystem.cpp
         framework/CmdSystem.cpp
@@ -484,6 +495,8 @@ set(src_framework
         framework/minizip/unzip.cpp
         )
 
+add_globbed_headers(src_framework "framework")
+
 set(src_cm
         cm/CollisionModel_contacts.cpp
         cm/CollisionModel_contents.cpp
@@ -494,6 +507,8 @@ set(src_cm
         cm/CollisionModel_trace.cpp
         cm/CollisionModel_translate.cpp
         )
+
+add_globbed_headers(src_cm "cm")
 
 set(src_dmap
         tools/compilers/dmap/dmap.cpp
@@ -512,6 +527,8 @@ set(src_dmap
         tools/compilers/dmap/usurface.cpp
         )
 
+add_globbed_headers(src_dmap "tools/compilers/dmap")
+
 set(src_aas
         tools/compilers/aas/AASBuild.cpp
         tools/compilers/aas/AASBuild_file.cpp
@@ -528,6 +545,8 @@ set(src_aas
         tools/compilers/aas/BrushBSP.cpp
         )
 
+add_globbed_headers(src_aas "tools/compilers/aas")
+
 set(src_roq
         tools/compilers/roqvq/NSBitmapImageRep.cpp
         tools/compilers/roqvq/codec.cpp
@@ -535,9 +554,13 @@ set(src_roq
         tools/compilers/roqvq/roqParam.cpp
         )
 
+add_globbed_headers(src_roq "tools/compilers/roqvq")
+
 set(src_renderbump
         tools/compilers/renderbump/renderbump.cpp
         )
+
+add_globbed_headers(src_renderbump "tools/compilers/renderbump")
 
 set(src_snd
         sound/snd_cache.cpp
@@ -549,6 +572,8 @@ set(src_snd
         sound/snd_wavefile.cpp
         sound/snd_world.cpp
         )
+
+add_globbed_headers(src_snd "sound")
 
 set(src_ui
         ui/BindWindow.cpp
@@ -572,9 +597,13 @@ set(src_ui
         ui/Winvar.cpp
         )
 
+add_globbed_headers(src_ui "ui")
+
 set(src_tools
         tools/guied/GEWindowWrapper_stub.cpp
         )
+
+# TODO: add_globbed_headers(src_tools "tools/guied")
 
 set(src_idlib
         idlib/bv/Bounds.cpp
@@ -626,6 +655,8 @@ set(src_idlib
         idlib/Timer.cpp
         idlib/Heap.cpp
         )
+
+add_globbed_headers(src_idlib "idlib")
 
 set(src_game
         game/AF.cpp
@@ -698,6 +729,8 @@ set(src_game
         game/physics/Physics_StaticMulti.cpp
         game/physics/Push.cpp
         )
+
+add_globbed_headers(src_game "game")
 
 set(src_d3xp
         d3xp/AF.cpp
@@ -772,6 +805,8 @@ set(src_d3xp
         d3xp/Grabber.cpp
         d3xp/physics/Force_Grab.cpp
         )
+
+add_globbed_headers(src_d3xp "d3xp")
 
 set(src_core
         ${src_renderer}
@@ -855,6 +890,14 @@ elseif (WIN32)
             sys/win32/SDL_win32_main.c
             )
 
+	# adding the few relevant headers in sys/ manually..
+	set(src_sys_base ${src_sys_base}
+		sys/platform.h
+		sys/sys_local.h
+		sys/sys_public.h
+		sys/win32/win_local.h
+	)
+
     set(src_sys_core
             sys/glimp.cpp
             ${WIN32_RESOURCE_FILES}
@@ -892,6 +935,8 @@ else ()
     endif ()
 endif ()
 
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_idlib})
+
 if (CORE)
     if (NODLL)
         add_executable(${DHEWM3BINARY}
@@ -908,6 +953,8 @@ if (CORE)
                 ${src_sys_base}
                 ${src_sys_core}
                 )
+
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core})
 
         set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
         set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
@@ -943,6 +990,8 @@ if (DEDICATED)
             ${src_sys_base}
             )
 
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_stub_openal} ${src_stub_gl})
+
     set_target_properties(${DHEWM3BINARY}ded PROPERTIES COMPILE_DEFINITIONS "ID_DEDICATED;__DOOM_DLL__")
     set_target_properties(${DHEWM3BINARY}ded PROPERTIES LINK_FLAGS "${ldflags}")
     target_link_libraries(${DHEWM3BINARY}ded
@@ -974,6 +1023,9 @@ if (BASE)
         add_library(base SHARED ${src_game})
 
     endif ()
+
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_game})
+
     set_target_properties(base PROPERTIES PREFIX "")
     set_target_properties(base PROPERTIES COMPILE_DEFINITIONS "GAME_DLL")
     set_target_properties(base PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
@@ -1001,6 +1053,7 @@ if (D3XP)
     else ()
         add_library(d3xp SHARED ${src_d3xp})
     endif ()
+	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_d3xp})
     set_target_properties(d3xp PROPERTIES PREFIX "")
     set_target_properties(d3xp PROPERTIES COMPILE_DEFINITIONS "GAME_DLL;_D3XP;CTF")
     set_target_properties(d3xp PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/d3xp")

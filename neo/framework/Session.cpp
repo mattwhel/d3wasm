@@ -2981,10 +2981,10 @@ void idSessionLocal::Init() {
 
   // we have a single instance of the main menu
   guiMainMenu = uiManager->FindGui("guis/mainmenu.gui", true, false, true);
-  if (!guiMainMenu) {
-    guiMainMenu = uiManager->FindGui("guis/demo_mainmenu.gui", true, false, true);
-    demoversion = true;
-  }
+	if (!guiMainMenu) {
+		guiMainMenu = uiManager->FindGui( "guis/demo_mainmenu.gui", true, false, true );
+		demoversion = (guiMainMenu != NULL);
+	}
   guiMainMenu_MapList = uiManager->AllocListGUI();
   guiMainMenu_MapList->Config(guiMainMenu, "mapList");
   idAsyncNetwork::client.serverList.GUIConfig(guiMainMenu, "serverList");
