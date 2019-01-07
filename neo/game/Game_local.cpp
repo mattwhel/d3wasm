@@ -3192,6 +3192,8 @@ gameState_t	idGameLocal::GameState( void ) const {
 	return gamestate;
 }
 
+#include "framework/Session.h"
+
 /*
 ==============
 idGameLocal::SpawnMapEntities
@@ -3243,6 +3245,14 @@ void idGameLocal::SpawnMapEntities( void ) {
 
 			SpawnEntityDef( args );
 			num++;
+
+			if ( ( num & 15 ) == 0 ) {
+				session->PacifierUpdate();
+#ifdef __EMSCRIPTEN__
+				emscripten_sleep_with_yield(0);
+#endif
+			}
+
 		} else {
 			inhibit++;
 		}
