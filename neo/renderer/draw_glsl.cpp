@@ -244,8 +244,7 @@ void RB_GLSL_DrawInteractions(void)
 
 	GL_SelectTexture(0);
 
-	//GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
-
+  //GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
 	//
 	// for each light, perform adding and shadowing
@@ -396,12 +395,12 @@ static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram, bool needsAttribute
 	qglAttachShader(shaderProgram->program, shaderProgram->fragmentShader);
 
 	if (needsAttributes) {
-		qglBindAttribLocation(shaderProgram->program, 8, "attr_TexCoord");
-		qglBindAttribLocation(shaderProgram->program, 9, "attr_Tangent");
-		qglBindAttribLocation(shaderProgram->program, 10, "attr_Bitangent");
-		qglBindAttribLocation(shaderProgram->program, 11, "attr_Normal");
-		qglBindAttribLocation(shaderProgram->program, 12, "attr_Vertex");
-		qglBindAttribLocation(shaderProgram->program, 13, "attr_Color");
+		qglBindAttribLocation(shaderProgram->program,  3, "attr_TexCoord");
+		qglBindAttribLocation(shaderProgram->program,  4, "attr_Tangent");
+		qglBindAttribLocation(shaderProgram->program,  5, "attr_Bitangent");
+		qglBindAttribLocation(shaderProgram->program,  1, "attr_Normal");
+		qglBindAttribLocation(shaderProgram->program,  0, "attr_Vertex");
+		qglBindAttribLocation(shaderProgram->program,  2, "attr_Color");
 	}
 
 	qglLinkProgram(shaderProgram->program);
