@@ -547,10 +547,23 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 
 	backEndRenderer = BE_BAD;
 
-	if ( idStr::Icmp( r_renderer.GetString(), "arb" ) == 0 ) {
+	if (idStr::Icmp(r_renderer.GetString(), "arb") == 0) {
 		backEndRenderer = BE_ARB;
-	} else if ( idStr::Icmp( r_renderer.GetString(), "arb2" ) == 0 ) {
+	}
+	else if (idStr::Icmp(r_renderer.GetString(), "arb2") == 0) {
 		if (glConfig.allowARB2Path) {
+			backEndRenderer = BE_ARB2;
+		}
+	}
+	else if (idStr::Icmp(r_renderer.GetString(), "glsl") == 0) {
+		if (glConfig.allowGLSLPath) {
+			backEndRenderer = BE_GLSL;
+		}
+	}
+	else if (idStr::Icmp(r_renderer.GetString(), "best") == 0) {
+		if (glConfig.allowGLSLPath) {
+			backEndRenderer = BE_GLSL;
+		} else if (glConfig.allowARB2Path) {
 			backEndRenderer = BE_ARB2;
 		}
 	}
@@ -571,11 +584,15 @@ void idRenderSystemLocal::SetBackEndRenderer() {
 
 	switch( backEndRenderer ) {
 	case BE_ARB:
-	    common->Printf( "using ARB renderSystem\n" );
+	  common->Printf( "using ARB renderSystem\n" );
 		break;
 	case BE_ARB2:
 		common->Printf( "using ARB2 renderSystem\n" );
 		backEndRendererHasVertexPrograms = true;
+		backEndRendererMaxLight = 999;
+		break;
+	case BE_GLSL:
+		common->Printf("using GLSL renderSystem\n");
 		backEndRendererMaxLight = 999;
 		break;
 	default:

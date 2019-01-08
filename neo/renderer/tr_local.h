@@ -54,6 +54,7 @@ const int FOG_ENTER_SIZE = 64;
 const float FOG_ENTER = (FOG_ENTER_SIZE+1.0f)/(FOG_ENTER_SIZE*2);
 // picky to get the bilerp correct at terminator
 
+struct shaderProgram_s;
 
 // idScreenRect gets carried around with each drawSurf, so it makes sense
 // to keep it compact, instead of just using the idBounds class
@@ -609,6 +610,8 @@ typedef struct {
 	int			faceCulling;
 	int			glStateBits;
 	bool		forceGlState;		// the next GL_State will ignore glStateBits and set everything
+
+  shaderProgram_s	*currentProgram;
 } glstate_t;
 
 
@@ -674,6 +677,7 @@ const int MAX_GUI_SURFACES	= 1024;		// default size of the drawSurfs list for gu
 typedef enum {
 	BE_ARB,
 	BE_ARB2,
+	BE_GLSL,
 	BE_BAD
 } backEndName_t;
 
@@ -982,6 +986,13 @@ GL wrapper/helper functions
 */
 
 void	GL_SelectTexture( int unit );
+void	GL_UseProgram(shaderProgram_s *program);
+void	GL_Uniform1fv(GLint location, const GLfloat *value);
+void	GL_Uniform4fv(GLint location, const GLfloat *value);
+void	GL_UniformMatrix4fv(GLint location, const GLfloat *value);
+void	GL_EnableVertexAttribArray(GLuint index);
+void	GL_DisableVertexAttribArray(GLuint index);
+void	GL_VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
 void	GL_CheckErrors( void );
 void	GL_ClearStateDelta( void );
 void	GL_State( int stateVector );
@@ -1352,6 +1363,77 @@ typedef enum {
 	PP_LIGHT_FALLOFF_TQ = 20	// only for NV programs
 } programParameter_t;
 
+
+
+/*
+============================================================
+
+DRAW_GLSL
+
+============================================================
+*/
+
+typedef struct shaderProgram_s {
+	GLuint		program;
+
+	GLuint		vertexShader;
+	GLuint		fragmentShader;
+
+	GLint		glColor;
+	GLint		alphaTest;
+	GLint		specularExponent;
+
+	GLint		modelViewProjectionMatrix;
+	GLint		modelMatrix;
+	GLint		textureMatrix;
+
+	GLint		windowCoords;
+	GLint		eyeOrigin;
+	GLint		localEyeOrigin;
+	GLint		localLightOrigin;
+	GLint		localViewOrigin;
+
+	GLint		lightProjectionS;
+	GLint		lightProjectionT;
+	GLint		lightProjectionQ;
+	GLint		lightFalloff;
+
+	GLint		bumpMatrixS;
+	GLint		bumpMatrixT;
+	GLint		diffuseMatrixS;
+	GLint		diffuseMatrixT;
+	GLint		specularMatrixS;
+	GLint		specularMatrixT;
+
+	GLint		colorModulate;
+	GLint		colorAdd;
+
+	GLint		diffuseColor;
+	GLint		specularColor;
+
+	/* gl_... */
+	GLint		attr_TexCoord;
+	GLint		attr_Tangent;
+	GLint		attr_Bitangent;
+	GLint		attr_Normal;
+	GLint		attr_Vertex;
+	GLint		attr_Color;
+
+	GLint		nonPowerOfTwo;
+
+	GLint		u_fragmentMap[MAX_FRAGMENT_IMAGES];
+	GLint		u_vertexParm[MAX_VERTEX_PARMS];
+} shaderProgram_t;
+
+void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
+void R_GLSL_Init(void);
+void RB_GLSL_DrawInteractions(void);
+void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf);
+void RB_GLSL_DrawInteraction(const drawInteraction_t *din);
+extern shaderProgram_t shadowShader;
+extern shaderProgram_t interactionShader;
+extern shaderProgram_t defaultShader;
+extern shaderProgram_t depthFillShader;
 
 /*
 ============================================================

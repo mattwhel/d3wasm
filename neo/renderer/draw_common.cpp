@@ -800,7 +800,7 @@ void RB_STD_T_RenderShaderPasses( const drawSurf_t *surf ) {
 
 			// completely skip the stage if we don't have the capability
 #ifdef __EMSCRIPTEN__
-            continue;
+      continue;
 #else
 			if ( tr.backEndRenderer != BE_ARB2 ) {
 				continue;
@@ -1001,6 +1001,7 @@ int RB_STD_DrawShaderPasses( drawSurf_t **drawSurfs, int numDrawSurfs ) {
 			return 0;
 		}
 
+		// GAB TODO
 #ifdef __EMSCRIPTEN__
 #else
 		// only dump if in a 3d view
@@ -1705,22 +1706,24 @@ void	RB_STD_DrawView( void ) {
 	// subviews
 	RB_STD_FillDepthBuffer( drawSurfs, numDrawSurfs );
 
-#ifdef __EMSCRIPTEN__
-	RB_ARB_DrawInteractions();
-#else
 	// main light renderer
 	switch( tr.backEndRenderer ) {
-		default:
-			RB_ARB_DrawInteractions();
-			break;
 		case BE_ARB:
 			RB_ARB_DrawInteractions();
 			break;
+#ifdef __EMSCRIPTEN__
+#else
 		case BE_ARB2:
 			RB_ARB2_DrawInteractions();
 			break;
-	}
 #endif
+		case BE_GLSL:
+			RB_GLSL_DrawInteractions();
+			break;
+		default:
+			RB_ARB_DrawInteractions();
+			break;
+	}
 
 	// disable stencil shadow test
 	qglStencilFunc( GL_ALWAYS, 128, 255 );

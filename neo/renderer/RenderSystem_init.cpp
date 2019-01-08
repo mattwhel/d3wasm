@@ -51,7 +51,7 @@ If you have questions concerning this license or the applicable additional terms
 
 glconfig_t	glConfig;
 
-const char *r_rendererArgs[] = { "best", "arb2", NULL };
+const char *r_rendererArgs[] = { "best", "glsl", NULL };
 
 idCVar r_inhibitFragmentProgram( "r_inhibitFragmentProgram", "0", CVAR_RENDERER | CVAR_BOOL, "ignore the fragment program extension" );
 idCVar r_useLightPortalFlow( "r_useLightPortalFlow", "1", CVAR_RENDERER | CVAR_BOOL, "use a more precise area reference determination" );
@@ -467,6 +467,12 @@ static void R_CheckPortableExtensions( void ) {
 		qglDepthBoundsEXT = (PFNGLDEPTHBOUNDSEXTPROC)GLimp_ExtensionPointer( "glDepthBoundsEXT" );
 	}
 
+	// GL_ARB_shading_language_100
+#ifdef __EMSCRIPTEN__
+	glConfig.GLSLAvailable = true;
+#else
+  glConfig.GLSLAvailable = R_CheckExtension("GL_ARB_shading_language_100");
+#endif
 }
 
 
@@ -723,6 +729,11 @@ void R_InitOpenGL( void ) {
 
 	// parse our vertex and fragment programs, possibly disably support for
 	// one of the paths if there was an error
+	R_GLSL_Init();
+
+	cmdSystem->AddCommand("reloadGLSLprograms", R_ReloadGLSLPrograms_f, CMD_FL_RENDERER, "reloads GLSL programs");
+	R_ReloadGLSLPrograms_f(idCmdArgs());
+
 #ifdef __EMSCRIPTEN__
 #else
 	R_ARB2_Init();
@@ -1842,6 +1853,12 @@ static void GfxInfo_f( const idCmdArgs &args ) {
 		common->Printf( "ARB2 path ENABLED%s\n", active[tr.backEndRenderer == BE_ARB2] );
 	} else {
 		common->Printf( "ARB2 path disabled\n" );
+	}
+
+	if ( glConfig.allowGLSLPath ) {
+		common->Printf( "GLSL path ENABLED%s\n", active[tr.backEndRenderer == BE_GLSL] );
+	} else {
+		common->Printf( "GLSL path disabled\n" );
 	}
 
 	if ( r_finish.GetBool() ) {
