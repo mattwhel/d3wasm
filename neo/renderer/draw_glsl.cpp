@@ -237,6 +237,11 @@ void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf)
 	GL_SelectTexture(0);
 
 	GL_UseProgram(NULL);
+
+  qglEnableClientState( GL_VERTEX_ARRAY );
+  qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+  qglDisableClientState( GL_COLOR_ARRAY );
+  qglDisableClientState( GL_NORMAL_ARRAY );
 }
 
 
