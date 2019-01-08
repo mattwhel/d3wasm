@@ -332,7 +332,22 @@ R_CheckPortableExtensions
 static void R_CheckPortableExtensions( void ) {
 	glConfig.glVersion = atof( glConfig.version_string );
 
-	// GL_ARB_multitexture
+	// GL_ARB_multitexture  / OpenGL 1.3
+#ifdef __EMSCRIPTEN__
+	glConfig.multitextureAvailable = true;
+	common->Printf( "...using %s\n", "OpenGL 1.3 Multitexture" );
+	qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTexture" );
+	qglClientActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glClientActiveTexture" );
+	qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
+	if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
+		glConfig.maxTextureUnits = MAX_MULTITEXTURE_UNITS;
+	}
+	if ( glConfig.maxTextureUnits < 2 ) {
+		glConfig.multitextureAvailable = false;	// shouldn't ever happen
+	}
+	qglGetIntegerv( GL_MAX_TEXTURE_COORDS_ARB, (GLint *)&glConfig.maxTextureCoords );
+	qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
+#else
 	glConfig.multitextureAvailable = R_CheckExtension( "GL_ARB_multitexture" );
 	if ( glConfig.multitextureAvailable ) {
 	  // Not used in the code
@@ -350,23 +365,24 @@ static void R_CheckPortableExtensions( void ) {
 		qglGetIntegerv( GL_MAX_TEXTURE_COORDS_ARB, (GLint *)&glConfig.maxTextureCoords );
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
 	}
+#endif
 
-	// GL_ARB_texture_env_combine
+	// GL_ARB_texture_env_combine / OpenGL 1.3
 	glConfig.textureEnvCombineAvailable = R_CheckExtension( "GL_ARB_texture_env_combine" );
 
-	// GL_ARB_texture_cube_map
+	// GL_ARB_texture_cube_map / OpenGL 1.3
 	glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
 
-	// GL_ARB_texture_env_dot3
+	// GL_ARB_texture_env_dot3 / OpenGL 1.3
 	glConfig.envDot3Available = R_CheckExtension( "GL_ARB_texture_env_dot3" );
 
-	// GL_ARB_texture_env_add
+	// GL_ARB_texture_env_add / OpenGL 1.3
 	glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
 
-	// GL_ARB_texture_non_power_of_two
+  // GL_ARB_texture_non_power_of_two / OpenGL 2.0
 	glConfig.textureNonPowerOfTwoAvailable = R_CheckExtension( "GL_ARB_texture_non_power_of_two" );
 
-	// GL_ARB_texture_compression + GL_S3_s3tc
+	// GL_ARB_texture_compression / OpenGL 1.3 + GL_S3_s3tc (extension only)
 	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
 	if ( R_CheckExtension( "GL_ARB_texture_compression" ) && R_CheckExtension( "GL_EXT_texture_compression_s3tc" ) ) {
 		glConfig.textureCompressionAvailable = true;
@@ -376,7 +392,7 @@ static void R_CheckPortableExtensions( void ) {
 		glConfig.textureCompressionAvailable = false;
 	}
 
-	// GL_EXT_texture_filter_anisotropic
+	// GL_EXT_texture_filter_anisotropic (extension only)
 	glConfig.anisotropicAvailable = R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
 	if ( glConfig.anisotropicAvailable ) {
 		qglGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &glConfig.maxTextureAnisotropy );
@@ -385,8 +401,8 @@ static void R_CheckPortableExtensions( void ) {
 		glConfig.maxTextureAnisotropy = 1;
 	}
 
-	// GL_EXT_texture_lod_bias
-	// The actual extension is broken as specificed, storing the state in the texture unit instead
+	// GL_EXT_texture_lod_bias / OpenGL 1.4
+	// The actual extension is broken as specified, storing the state in the texture unit instead
 	// of the texture object.  The behavior in GL 1.4 is the behavior we use.
 	if ( glConfig.glVersion >= 1.4 || R_CheckExtension( "GL_EXT_texture_lod" ) ) {
 		common->Printf( "...using %s\n", "GL_1.4_texture_lod_bias" );
@@ -396,13 +412,13 @@ static void R_CheckPortableExtensions( void ) {
 		glConfig.textureLODBiasAvailable = false;
 	}
 
-	// GL_EXT_shared_texture_palette
+	// GL_EXT_shared_texture_palette (extension only)
 	glConfig.sharedTexturePaletteAvailable = R_CheckExtension( "GL_EXT_shared_texture_palette" );
 	if ( glConfig.sharedTexturePaletteAvailable ) {
 		qglColorTableEXT = ( void ( APIENTRY * ) ( int, int, int, int, int, const void * ) ) GLimp_ExtensionPointer( "glColorTableEXT" );
 	}
 
-	// GL_EXT_texture3D (not currently used for anything)
+	// GL_EXT_texture3D / OpenGL 1.2
 	glConfig.texture3DAvailable = R_CheckExtension( "GL_EXT_texture3D" );
 	if ( glConfig.texture3DAvailable ) {
 		qglTexImage3D =
@@ -410,7 +426,7 @@ static void R_CheckPortableExtensions( void ) {
 			GLimp_ExtensionPointer( "glTexImage3D" );
 	}
 
-	// EXT_stencil_wrap
+	// EXT_stencil_wrap / OpenGL 1.4
 	// This isn't very important, but some pathological case might cause a clamp error and give a shadow bug.
 	// Nvidia also believes that future hardware may be able to run faster with this enabled to avoid the
 	// serialization of clamping.
@@ -422,19 +438,21 @@ static void R_CheckPortableExtensions( void ) {
 		tr.stencilDecr = GL_DECR;
 	}
 
-	// GL_EXT_stencil_two_side
+	// GL_EXT_stencil_two_side / OpenGL 2.0
 	glConfig.twoSidedStencilAvailable = R_CheckExtension( "GL_EXT_stencil_two_side" );
 	//if ( glConfig.twoSidedStencilAvailable )
 	//	qglActiveStencilFaceEXT = (PFNGLACTIVESTENCILFACEEXTPROC)GLimp_ExtensionPointer( "glActiveStencilFaceEXT" );
 
-	// ARB_vertex_buffer_object
+	// ARB_vertex_buffer_object / OpenGL 1.5
 #ifdef __EMSCRIPTEN__
-	// Partially supported with Regal (no glMapBuffer/glUnmapBuffer)
     glConfig.ARBVertexBufferObjectAvailable = true;
-    common->Printf( "...using %s\n", "GL_ARB_vertex_buffer_object (partial support)" );
+    common->Printf( "...using %s\n", "OpenGL 1.5 Vertex Buffer Objects (partial support)" );
+    qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBuffer");
+		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)GLimp_ExtensionPointer( "glGenBuffers");
+		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)GLimp_ExtensionPointer( "glBufferData");
+		qglBufferSubDataARB = (PFNGLBUFFERSUBDATAARBPROC)GLimp_ExtensionPointer( "glBufferSubData");
 #else
 		glConfig.ARBVertexBufferObjectAvailable = R_CheckExtension( "GL_ARB_vertex_buffer_object" );
-  #endif
 
 	if(glConfig.ARBVertexBufferObjectAvailable) {
 		qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBufferARB");
@@ -452,8 +470,9 @@ static void R_CheckPortableExtensions( void ) {
 		//qglGetBufferParameterivARB = (PFNGLGETBUFFERPARAMETERIVARBPROC)GLimp_ExtensionPointer( "glGetBufferParameterivARB");
 		//qglGetBufferPointervARB = (PFNGLGETBUFFERPOINTERVARBPROC)GLimp_ExtensionPointer( "glGetBufferPointervARB");
 	}
+#endif
 
-	// ARB_vertex_program
+	// ARB_vertex_program (extension only)
 	glConfig.ARBVertexProgramAvailable = R_CheckExtension( "GL_ARB_vertex_program" );
 	if (glConfig.ARBVertexProgramAvailable) {
 		qglVertexAttribPointerARB = (PFNGLVERTEXATTRIBPOINTERARBPROC)GLimp_ExtensionPointer( "glVertexAttribPointerARB" );
@@ -467,7 +486,7 @@ static void R_CheckPortableExtensions( void ) {
 		qglProgramLocalParameter4fvARB = (PFNGLPROGRAMLOCALPARAMETER4FVARBPROC)GLimp_ExtensionPointer( "glProgramLocalParameter4fvARB" );
 	}
 
-	// ARB_fragment_program
+	// ARB_fragment_program (extension only)
 	if ( r_inhibitFragmentProgram.GetBool() ) {
 		glConfig.ARBFragmentProgramAvailable = false;
 	} else {
@@ -487,16 +506,16 @@ static void R_CheckPortableExtensions( void ) {
 			common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
 	}
 
-	// GL_EXT_depth_bounds_test
+	// GL_EXT_depth_bounds_test (extension only)
 	glConfig.depthBoundsTestAvailable = R_CheckExtension( "EXT_depth_bounds_test" );
 	if ( glConfig.depthBoundsTestAvailable ) {
 		qglDepthBoundsEXT = (PFNGLDEPTHBOUNDSEXTPROC)GLimp_ExtensionPointer( "glDepthBoundsEXT" );
 	}
 
-	// GL_ARB_shading_language_100
+	// GL_ARB_shading_language_100 / OpenGL 2.0
 #ifdef __EMSCRIPTEN__
 	glConfig.GLSLAvailable = true;
-	common->Printf( "...using %s\n", "GL_ARB_shading_language_100" );
+	common->Printf( "...using %s\n", "OpenGL 2.0 Shaders" );
 #else
   glConfig.GLSLAvailable = R_CheckExtension("GL_ARB_shading_language_100");
 #endif
