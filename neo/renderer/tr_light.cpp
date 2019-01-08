@@ -84,9 +84,9 @@ bool R_CreateLightingCache( const idRenderEntityLocal *ent, const idRenderLightL
 	}
 
 	// not needed if we have vertex programs
-	if ( tr.backEndRendererHasVertexPrograms ) {
-		return true;
-	}
+	//if ( tr.backEndRendererHasVertexPrograms ) {
+	//	return true;
+	//}
 
 	R_GlobalPointToLocal( ent->modelMatrix, light->globalLightOrigin, localLightOrigin );
 
