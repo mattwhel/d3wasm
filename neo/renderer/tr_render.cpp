@@ -147,7 +147,8 @@ Sets texcoord and vertex pointers
 */
 void RB_RenderTriangleSurface( const srfTriangles_t *tri ) {
 	if ( !tri->ambientCache ) {
-		RB_DrawElementsImmediate( tri );
+		// Should not pass here
+		//RB_DrawElementsImmediate( tri );
 		return;
 	}
 
@@ -407,8 +408,9 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 ======================
 RB_BindStageTexture
 ======================
+GAB Note: Methods not used (curious?)
 */
-void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf ) {
+/*void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf ) {
 	// image
 	RB_BindVariableStageImage( texture, shaderRegisters );
 
@@ -442,14 +444,14 @@ void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *te
 	if ( texture->hasMatrix ) {
 		RB_LoadShaderTextureMatrix( shaderRegisters, texture );
 	}
-}
+}*/
 
 /*
 ======================
 RB_FinishStageTexture
 ======================
 */
-void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf ) {
+/*void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf ) {
 	if ( texture->texgen == TG_DIFFUSE_CUBE || texture->texgen == TG_SKYBOX_CUBE
 		|| texture->texgen == TG_WOBBLESKY_CUBE ) {
 		qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ),
@@ -476,7 +478,7 @@ void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *sur
 		qglMatrixMode( GL_MODELVIEW );
 	}
 }
-
+*/
 
 
 //=============================================================================================
