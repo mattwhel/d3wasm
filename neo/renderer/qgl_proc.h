@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #error "you must define QGLPROC before including this file"
 #endif
 
+// This is OpenGL 1.0 and 1.1 APIs
 QGLPROC(glAccum, void, (GLenum op, GLfloat value))
 QGLPROC(glAlphaFunc, void, (GLenum func, GLclampf ref))
 QGLPROC(glAreTexturesResident, GLboolean, (GLsizei n, const GLuint *textures, GLboolean *residences))
