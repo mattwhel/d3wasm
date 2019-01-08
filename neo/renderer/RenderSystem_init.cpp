@@ -507,7 +507,7 @@ static void R_CheckPortableExtensions( void ) {
   qglUniform1fv = (PFNGLUNIFORM1FVPROC)GLimp_ExtensionPointer("glUniform1fv");
   qglUniform4fv = (PFNGLUNIFORM4FVPROC)GLimp_ExtensionPointer("glUniform4fv");
   qglUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)GLimp_ExtensionPointer("glUniformMatrix4fv");
-	qglLinkProgram = (PFNGLLINKPROGRAMPROC)GLimp_ExtensionPointer("qglLinkProgram");
+	qglLinkProgram = (PFNGLLINKPROGRAMPROC)GLimp_ExtensionPointer("glLinkProgram");
 	qglGetProgramiv = (PFNGLGETPROGRAMIVPROC)GLimp_ExtensionPointer("glGetProgramiv");
 	qglGetShaderInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)GLimp_ExtensionPointer("glGetShaderInfoLog");
 	qglBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC)GLimp_ExtensionPointer("glBindAttribLocation");
