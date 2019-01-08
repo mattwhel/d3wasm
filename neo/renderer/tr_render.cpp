@@ -407,9 +407,8 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 ======================
 RB_BindStageTexture
 ======================
-GAB Note: Methods not used (curious?)
 */
-/*void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf ) {
+void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf ) {
 	// image
 	RB_BindVariableStageImage( texture, shaderRegisters );
 
@@ -443,14 +442,14 @@ GAB Note: Methods not used (curious?)
 	if ( texture->hasMatrix ) {
 		RB_LoadShaderTextureMatrix( shaderRegisters, texture );
 	}
-}*/
+}
 
 /*
 ======================
 RB_FinishStageTexture
 ======================
 */
-/*void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf ) {
+void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf ) {
 	if ( texture->texgen == TG_DIFFUSE_CUBE || texture->texgen == TG_SKYBOX_CUBE
 		|| texture->texgen == TG_WOBBLESKY_CUBE ) {
 		qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ),
@@ -477,7 +476,7 @@ RB_FinishStageTexture
 		qglMatrixMode( GL_MODELVIEW );
 	}
 }
-*/
+
 
 
 //=============================================================================================
