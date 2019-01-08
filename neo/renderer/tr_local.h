@@ -1430,10 +1430,7 @@ void R_GLSL_Init(void);
 void RB_GLSL_DrawInteractions(void);
 void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf);
 void RB_GLSL_DrawInteraction(const drawInteraction_t *din);
-extern shaderProgram_t shadowShader;
 extern shaderProgram_t interactionShader;
-extern shaderProgram_t defaultShader;
-extern shaderProgram_t depthFillShader;
 
 /*
 ============================================================

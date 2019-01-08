@@ -31,9 +31,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "tr_local.h"
 
 shaderProgram_t	interactionShader;
-shaderProgram_t	shadowShader;
-shaderProgram_t	defaultShader;
-shaderProgram_t	depthFillShader;
 
 /*
 =========================================================================================
@@ -52,7 +49,6 @@ static void GL_SelectTextureNoClient(int unit)
 {
 	backEnd.glState.currenttmu = unit;
   qglActiveTextureARB(GL_TEXTURE0 + unit);
-  //qglActiveTexture(GL_TEXTURE0 + unit); // use the ARB version instead (even if it is the same, at least it is declared)
 }
 
 /*
@@ -509,9 +505,6 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader)
 static bool RB_GLSL_InitShaders(void)
 {
 	memset(&interactionShader, 0, sizeof(shaderProgram_t));
-	memset(&shadowShader, 0, sizeof(shaderProgram_t));
-	memset(&defaultShader, 0, sizeof(shaderProgram_t));
-	memset(&depthFillShader, 0, sizeof(shaderProgram_t));
 
 	// load interation shaders
 	R_LoadGLSLShader("interaction.vert", &interactionShader, GL_VERTEX_SHADER);
@@ -522,38 +515,7 @@ static bool RB_GLSL_InitShaders(void)
 	} else {
 		RB_GLSL_GetUniformLocations(&interactionShader);
 	}
-
-	// load stencil shadow extrusion shaders
-	R_LoadGLSLShader("shadow.vert", &shadowShader, GL_VERTEX_SHADER);
-	R_LoadGLSLShader("shadow.frag", &shadowShader, GL_FRAGMENT_SHADER);
-
-	if (!R_LinkGLSLShader(&shadowShader, true) && !R_ValidateGLSLProgram(&shadowShader)) {
-		return false;
-	} else {
-		RB_GLSL_GetUniformLocations(&shadowShader);
-	}
-
-	// load default interation shaders
-	R_LoadGLSLShader("default.vert", &defaultShader, GL_VERTEX_SHADER);
-	R_LoadGLSLShader("default.frag", &defaultShader, GL_FRAGMENT_SHADER);
-
-	if (!R_LinkGLSLShader(&defaultShader, true) && !R_ValidateGLSLProgram(&defaultShader)) {
-		return false;
-	} else {
-		RB_GLSL_GetUniformLocations(&defaultShader);
-	}
-
-	// load default interation shaders
-	R_LoadGLSLShader("zfill.vert", &depthFillShader, GL_VERTEX_SHADER);
-	R_LoadGLSLShader("zfill.frag", &depthFillShader, GL_FRAGMENT_SHADER);
-
-	if (!R_LinkGLSLShader(&depthFillShader, true) && !R_ValidateGLSLProgram(&depthFillShader)) {
-		return false;
-	} else {
-		RB_GLSL_GetUniformLocations(&depthFillShader);
-	}
-
-	return true;
+  return true;
 }
 
 /*
