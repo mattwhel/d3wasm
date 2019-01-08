@@ -694,13 +694,19 @@ void R_LinkLightSurf( const drawSurf_t **link, const srfTriangles_t *tri, const 
 		}
 
 		// calculate the specular coordinates if we aren't using vertex programs
-		if ( !tr.backEndRendererHasVertexPrograms && !r_skipSpecular.GetBool() && tr.backEndRenderer != BE_ARB ) {
-			R_SpecularTexGen( drawSurf, light->globalLightOrigin, tr.viewDef->renderView.vieworg );
-			// if we failed to allocate space for the specular calculations, drop the surface
-			if ( !drawSurf->dynamicTexCoords ) {
-				return;
+
+		// GAB Note: Does not seem to be used because:
+			// ARB2 do have vertex programs, and this code is not authorized for ARB (apparently it was done for NV10 only)
+			// and drawSurf->dynamicTexCoords are only used for WobbleskyTexGen and SkyboxTexGen, but does not seem to be related to specular
+
+		/*if ( !tr.backEndRendererHasVertexPrograms && !r_skipSpecular.GetBool() && tr.backEndRenderer != BE_ARB ) {
+				R_SpecularTexGen( drawSurf, light->globalLightOrigin, tr.viewDef->renderView.vieworg );
+			 	if we failed to allocate space for the specular calculations, drop the surface
+					if ( !drawSurf->dynamicTexCoords ) {
+						return;
+				}
 			}
-		}
+		 */
 	}
 
 	// actually link it in
