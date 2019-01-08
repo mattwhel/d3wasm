@@ -36,10 +36,8 @@ static void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (
 static void RB_EnterWeaponDepthHack_GLSL(const drawSurf_t *surf);
 static void RB_EnterModelDepthHack_GLSL(const drawSurf_t *surf);
 static void RB_LeaveDepthHack_GLSL(const drawSurf_t *surf);
-static void RB_GetShaderTextureMatrix_GLSL(const float *shaderRegisters,
-                                    const textureStage_t *texture, float matrix[16]);
-static void RB_BakeTextureMatrixIntoTexgen_GLSL(idPlane lightProject[3]);
 
+// Externs
 void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
                            idImage **image, idVec4 matrix[2], float color[4] );
 void RB_SubmittInteraction( drawInteraction_t *din, void (*DrawInteraction)(const drawInteraction_t *) );
@@ -301,11 +299,11 @@ void RB_GLSL_DrawInteractions(void)
 
     GL_UseProgram(NULL);
     //GL_UseProgram(&shadowShader);
-		RB_StencilShadowPass(vLight->globalShadows);
+		//RB_StencilShadowPass(vLight->globalShadows);
 		RB_GLSL_CreateDrawInteractions(vLight->localInteractions);
     GL_UseProgram(NULL);
     //GL_UseProgram(&shadowShader);
-		RB_StencilShadowPass(vLight->localShadows);
+		//RB_StencilShadowPass(vLight->localShadows);
 		RB_GLSL_CreateDrawInteractions(vLight->globalInteractions);
 		GL_UseProgram(NULL);	// if there weren't any globalInteractions, it would have stayed on
 
@@ -595,11 +593,18 @@ void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawIn
     return;
   }
 
-	// change the matrix and light projection vectors if needed
-	if ( surf->space != backEnd.currentSpace ) {
-		backEnd.currentSpace = surf->space;
-		qglLoadMatrixf( surf->space->modelViewMatrix );
-	}
+  // change the matrix and light projection vectors if needed
+  if (surf->space != backEnd.currentSpace) {
+    backEnd.currentSpace = surf->space;
+    // OLD CODE IS: qglLoadMatrixf( surf->space->modelViewMatrix );
+    float	mat[16];
+    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+
+    // we need the model matrix without it being combined with the view matrix
+    // so we can transform local vectors to global coordinates
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelMatrix), surf->space->modelMatrix);
+  }
 
   // change the scissor if needed
   if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(surf->scissorRect)) {
@@ -645,12 +650,13 @@ void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawIn
 
     inter.lightImage = lightStage->texture.image;
 
-		memcpy( inter.lightProjection, lightProject, sizeof( inter.lightProjection ) );
-		// now multiply the texgen by the light texture matrix
-		if ( lightStage->texture.hasMatrix ) {
-			RB_GetShaderTextureMatrix( lightRegs, &lightStage->texture, backEnd.lightTextureMatrix );
-			RB_BakeTextureMatrixIntoTexgen( reinterpret_cast<class idPlane *>(inter.lightProjection), backEnd.lightTextureMatrix );
-		}
+    memcpy(inter.lightProjection, lightProject, sizeof(inter.lightProjection));
+
+    // now multiply the texgen by the light texture matrix
+    if (lightStage->texture.hasMatrix) {
+      RB_GetShaderTextureMatrix(lightRegs, &lightStage->texture, backEnd.lightTextureMatrix);
+      RB_BakeTextureMatrixIntoTexgen(reinterpret_cast<class idPlane *>(inter.lightProjection), NULL);
+    }
 
     inter.bumpImage = NULL;
     inter.specularImage = NULL;
@@ -793,88 +799,4 @@ void RB_LeaveDepthHack_GLSL(const drawSurf_t *surf)
   float	mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-}
-
-
-/*
-======================
-RB_GetShaderTextureMatrix
-======================
-*/
-void RB_GetShaderTextureMatrix_GLSL(const float *shaderRegisters,
-                               const textureStage_t *texture, float matrix[16])
-{
-  matrix[0] = shaderRegisters[ texture->matrix[0][0] ];
-  matrix[1] = shaderRegisters[ texture->matrix[0][1] ];
-  matrix[2] = 0;
-  matrix[3] = shaderRegisters[ texture->matrix[0][2] ];
-
-  // we attempt to keep scrolls from generating incredibly large texture values, but
-  // center rotations and center scales can still generate offsets that need to be > 1
-  if (matrix[3] < -40 || matrix[3] > 40) {
-    matrix[3] -= (int)matrix[3];
-  }
-
-  matrix[4] = shaderRegisters[ texture->matrix[1][0] ];
-  matrix[5] = shaderRegisters[ texture->matrix[1][1] ];
-  matrix[6] = 0;
-  matrix[7] = shaderRegisters[ texture->matrix[1][2] ];
-
-  if (matrix[7] < -40 || matrix[7] > 40) {
-    matrix[7] -= (int)matrix[7];
-  }
-
-  matrix[8] = 0;
-  matrix[9] = 0;
-  matrix[10] = 1;
-  matrix[11] = 0;
-
-  matrix[12] = 0;
-  matrix[13] = 0;
-  matrix[14] = 0;
-  matrix[15] = 1;
-}
-
-
-/*
-=====================
-RB_BakeTextureMatrixIntoTexgen
-=====================
-*/
-void RB_BakeTextureMatrixIntoTexgen_GLSL(idPlane lightProject[3])
-{
-  float	genMatrix[16];
-  float	final[16];
-
-  genMatrix[0] = lightProject[0][0];
-  genMatrix[1] = lightProject[0][1];
-  genMatrix[2] = lightProject[0][2];
-  genMatrix[3] = lightProject[0][3];
-
-  genMatrix[4] = lightProject[1][0];
-  genMatrix[5] = lightProject[1][1];
-  genMatrix[6] = lightProject[1][2];
-  genMatrix[7] = lightProject[1][3];
-
-  genMatrix[8] = 0;
-  genMatrix[9] = 0;
-  genMatrix[10] = 0;
-  genMatrix[11] = 0;
-
-  genMatrix[12] = lightProject[2][0];
-  genMatrix[13] = lightProject[2][1];
-  genMatrix[14] = lightProject[2][2];
-  genMatrix[15] = lightProject[2][3];
-
-  myGlMultMatrix(genMatrix, backEnd.lightTextureMatrix, final);
-
-  lightProject[0][0] = final[0];
-  lightProject[0][1] = final[1];
-  lightProject[0][2] = final[2];
-  lightProject[0][3] = final[3];
-
-  lightProject[1][0] = final[4];
-  lightProject[1][1] = final[5];
-  lightProject[1][2] = final[6];
-  lightProject[1][3] = final[7];
 }
