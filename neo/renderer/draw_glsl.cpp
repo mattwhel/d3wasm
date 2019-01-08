@@ -32,7 +32,14 @@ If you have questions concerning this license or the applicable additional terms
 
 shaderProgram_t	interactionShader;
 
-void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) );
+static void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) );
+static void RB_EnterWeaponDepthHack_GLSL(const drawSurf_t *surf);
+static void RB_EnterModelDepthHack_GLSL(const drawSurf_t *surf);
+static void RB_LeaveDepthHack_GLSL(const drawSurf_t *surf);
+static void RB_GetShaderTextureMatrix_GLSL(const float *shaderRegisters,
+                                    const textureStage_t *texture, float matrix[16]);
+static void RB_BakeTextureMatrixIntoTexgen_GLSL(idPlane lightProject[3]);
+
 void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
                            idImage **image, idVec4 matrix[2], float color[4] );
 void RB_SubmittInteraction( drawInteraction_t *din, void (*DrawInteraction)(const drawInteraction_t *) );
@@ -307,7 +314,7 @@ void RB_GLSL_DrawInteractions(void)
 		backEnd.depthFunc = GLS_DEPTHFUNC_LESS;
 		RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions);
 
-		backEnd.depthFunc = GLS_DEPTHFUNC_EQUAL;
+    backEnd.depthFunc = GLS_DEPTHFUNC_EQUAL;
 	}
 
 	// disable stencil shadow test
@@ -537,6 +544,11 @@ void R_ReloadGLSLPrograms_f(const idCmdArgs &args)
 		common->Printf("GLSL shaders failed to init.\n");
 	}
 
+  if (!glConfig.GLSLAvailable) {
+    common->Printf("Not available.\n");
+    return;
+  }
+
 	glConfig.allowGLSLPath = true;
 
 	common->Printf("-------------------------------\n");
@@ -567,16 +579,16 @@ interaction into primitive interactions
 =============
 */
 void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) ) {
-	const idMaterial	*surfaceShader = surf->material;
-	const float			*surfaceRegs = surf->shaderRegisters;
-	const viewLight_t	*vLight = backEnd.vLight;
-	const idMaterial	*lightShader = vLight->lightShader;
-	const float			*lightRegs = vLight->shaderRegisters;
-	drawInteraction_t	inter;
+  const idMaterial	*surfaceShader = surf->material;
+  const float			*surfaceRegs = surf->shaderRegisters;
+  const viewLight_t	*vLight = backEnd.vLight;
+  const idMaterial	*lightShader = vLight->lightShader;
+  const float			*lightRegs = vLight->shaderRegisters;
+  drawInteraction_t	inter;
 
-	if ( r_skipInteractions.GetBool() || !surf->geo || !surf->geo->ambientCache ) {
-		return;
-	}
+  if (r_skipInteractions.GetBool() || !surf->geo || !surf->geo->ambientCache) {
+    return;
+  }
 
 	// change the matrix and light projection vectors if needed
 	if ( surf->space != backEnd.currentSpace ) {
@@ -584,48 +596,49 @@ void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawIn
 		qglLoadMatrixf( surf->space->modelViewMatrix );
 	}
 
-	// change the scissor if needed
-	if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( surf->scissorRect ) ) {
-		backEnd.currentScissor = surf->scissorRect;
+  // change the scissor if needed
+  if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(surf->scissorRect)) {
+    backEnd.currentScissor = surf->scissorRect;
 		qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-								backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-								backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-								backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
-	}
+              backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+              backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+              backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
+  }
 
-	// hack depth range if needed
-	if ( surf->space->weaponDepthHack ) {
-		RB_EnterWeaponDepthHack();
-	}
+  // hack depth range if needed
+  if (surf->space->weaponDepthHack) {
+    RB_EnterWeaponDepthHack_GLSL(surf);
+  }
 
-	if ( surf->space->modelDepthHack ) {
-		RB_EnterModelDepthHack( surf->space->modelDepthHack );
-	}
+  if (surf->space->modelDepthHack) {
+    RB_EnterModelDepthHack_GLSL(surf);
+  }
 
-	inter.surf = surf;
-	inter.lightFalloffImage = vLight->falloffImage;
+  inter.surf = surf;
+  inter.lightFalloffImage = vLight->falloffImage;
 
-	R_GlobalPointToLocal( surf->space->modelMatrix, vLight->globalLightOrigin, inter.localLightOrigin.ToVec3() );
-	R_GlobalPointToLocal( surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, inter.localViewOrigin.ToVec3() );
-	inter.localLightOrigin[3] = 0;
-	inter.localViewOrigin[3] = 1;
-	inter.ambientLight = lightShader->IsAmbientLight();
+  R_GlobalPointToLocal(surf->space->modelMatrix, vLight->globalLightOrigin, inter.localLightOrigin.ToVec3());
+  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, inter.localViewOrigin.ToVec3());
+  inter.localLightOrigin[3] = 0;
+  inter.localViewOrigin[3] = 1;
+  inter.ambientLight = lightShader->IsAmbientLight();
 
-	// the base projections may be modified by texture matrix on light stages
-	idPlane lightProject[4];
-	for ( int i = 0 ; i < 4 ; i++ ) {
-		R_GlobalPlaneToLocal( surf->space->modelMatrix, backEnd.vLight->lightProject[i], lightProject[i] );
-	}
+  // the base projections may be modified by texture matrix on light stages
+  idPlane lightProject[4];
 
-	for ( int lightStageNum = 0 ; lightStageNum < lightShader->GetNumStages() ; lightStageNum++ ) {
-		const shaderStage_t	*lightStage = lightShader->GetStage( lightStageNum );
+  for (int i = 0 ; i < 4 ; i++) {
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, backEnd.vLight->lightProject[i], lightProject[i]);
+  }
 
-		// ignore stages that fail the condition
-		if ( !lightRegs[ lightStage->conditionRegister ] ) {
-			continue;
-		}
+  for (int lightStageNum = 0 ; lightStageNum < lightShader->GetNumStages() ; lightStageNum++) {
+    const shaderStage_t	*lightStage = lightShader->GetStage(lightStageNum);
 
-		inter.lightImage = lightStage->texture.image;
+    // ignore stages that fail the condition
+    if (!lightRegs[ lightStage->conditionRegister ]) {
+      continue;
+    }
+
+    inter.lightImage = lightStage->texture.image;
 
 		memcpy( inter.lightProjection, lightProject, sizeof( inter.lightProjection ) );
 		// now multiply the texgen by the light texture matrix
@@ -634,85 +647,229 @@ void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawIn
 			RB_BakeTextureMatrixIntoTexgen( reinterpret_cast<class idPlane *>(inter.lightProjection), backEnd.lightTextureMatrix );
 		}
 
-		inter.bumpImage = NULL;
-		inter.specularImage = NULL;
-		inter.diffuseImage = NULL;
-		inter.diffuseColor[0] = inter.diffuseColor[1] = inter.diffuseColor[2] = inter.diffuseColor[3] = 0;
-		inter.specularColor[0] = inter.specularColor[1] = inter.specularColor[2] = inter.specularColor[3] = 0;
+    inter.bumpImage = NULL;
+    inter.specularImage = NULL;
+    inter.diffuseImage = NULL;
+    inter.diffuseColor[0] = inter.diffuseColor[1] = inter.diffuseColor[2] = inter.diffuseColor[3] = 0;
+    inter.specularColor[0] = inter.specularColor[1] = inter.specularColor[2] = inter.specularColor[3] = 0;
 
-		float lightColor[4];
+    float lightColor[4];
 
-		// backEnd.lightScale is calculated so that lightColor[] will never exceed
-		// tr.backEndRendererMaxLight
-		lightColor[0] = backEnd.lightScale * lightRegs[ lightStage->color.registers[0] ];
-		lightColor[1] = backEnd.lightScale * lightRegs[ lightStage->color.registers[1] ];
-		lightColor[2] = backEnd.lightScale * lightRegs[ lightStage->color.registers[2] ];
-		lightColor[3] = lightRegs[ lightStage->color.registers[3] ];
+    // backEnd.lightScale is calculated so that lightColor[] will never exceed
+    // tr.backEndRendererMaxLight
+    lightColor[0] = backEnd.lightScale * lightRegs[ lightStage->color.registers[0] ];
+    lightColor[1] = backEnd.lightScale * lightRegs[ lightStage->color.registers[1] ];
+    lightColor[2] = backEnd.lightScale * lightRegs[ lightStage->color.registers[2] ];
+    lightColor[3] = lightRegs[ lightStage->color.registers[3] ];
 
-		// go through the individual stages
-		for ( int surfaceStageNum = 0 ; surfaceStageNum < surfaceShader->GetNumStages() ; surfaceStageNum++ ) {
-			const shaderStage_t	*surfaceStage = surfaceShader->GetStage( surfaceStageNum );
+    // go through the individual stages
+    for (int surfaceStageNum = 0 ; surfaceStageNum < surfaceShader->GetNumStages() ; surfaceStageNum++) {
+      const shaderStage_t	*surfaceStage = surfaceShader->GetStage(surfaceStageNum);
 
-			switch( surfaceStage->lighting ) {
-				case SL_AMBIENT: {
-					// ignore ambient stages while drawing interactions
-					break;
-				}
-				case SL_BUMP: {
-					// ignore stage that fails the condition
-					if ( !surfaceRegs[ surfaceStage->conditionRegister ] ) {
-						break;
-					}
-					// draw any previous interaction
-					RB_SubmittInteraction( &inter, DrawInteraction );
-					inter.diffuseImage = NULL;
-					inter.specularImage = NULL;
-					R_SetDrawInteraction( surfaceStage, surfaceRegs, &inter.bumpImage, inter.bumpMatrix, NULL );
-					break;
-				}
-				case SL_DIFFUSE: {
-					// ignore stage that fails the condition
-					if ( !surfaceRegs[ surfaceStage->conditionRegister ] ) {
-						break;
-					}
-					if ( inter.diffuseImage ) {
-						RB_SubmittInteraction( &inter, DrawInteraction );
-					}
-					R_SetDrawInteraction( surfaceStage, surfaceRegs, &inter.diffuseImage,
-																inter.diffuseMatrix, inter.diffuseColor.ToFloatPtr() );
-					inter.diffuseColor[0] *= lightColor[0];
-					inter.diffuseColor[1] *= lightColor[1];
-					inter.diffuseColor[2] *= lightColor[2];
-					inter.diffuseColor[3] *= lightColor[3];
-					inter.vertexColor = surfaceStage->vertexColor;
-					break;
-				}
-				case SL_SPECULAR: {
-					// ignore stage that fails the condition
-					if ( !surfaceRegs[ surfaceStage->conditionRegister ] ) {
-						break;
-					}
-					if ( inter.specularImage ) {
-						RB_SubmittInteraction( &inter, DrawInteraction );
-					}
-					R_SetDrawInteraction( surfaceStage, surfaceRegs, &inter.specularImage,
-																inter.specularMatrix, inter.specularColor.ToFloatPtr() );
-					inter.specularColor[0] *= lightColor[0];
-					inter.specularColor[1] *= lightColor[1];
-					inter.specularColor[2] *= lightColor[2];
-					inter.specularColor[3] *= lightColor[3];
-					inter.vertexColor = surfaceStage->vertexColor;
-					break;
-				}
-			}
-		}
+      switch (surfaceStage->lighting) {
+        case SL_AMBIENT: {
+          // ignore ambient stages while drawing interactions
+          break;
+        }
+        case SL_BUMP: {
+          // ignore stage that fails the condition
+          if (!surfaceRegs[ surfaceStage->conditionRegister ]) {
+            break;
+          }
 
-		// draw the final interaction
-		RB_SubmittInteraction( &inter, DrawInteraction );
-	}
+          // draw any previous interaction
+          RB_SubmittInteraction(&inter, DrawInteraction);
+          inter.diffuseImage = NULL;
+          inter.specularImage = NULL;
+          R_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.bumpImage, inter.bumpMatrix, NULL);
+          break;
+        }
+        case SL_DIFFUSE: {
+          // ignore stage that fails the condition
+          if (!surfaceRegs[ surfaceStage->conditionRegister ]) {
+            break;
+          }
 
-	// unhack depth range if needed
-	if ( surf->space->weaponDepthHack || surf->space->modelDepthHack != 0.0f ) {
-		RB_LeaveDepthHack();
-	}
+          if (inter.diffuseImage) {
+            RB_SubmittInteraction(&inter, DrawInteraction);
+          }
+
+          R_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.diffuseImage,
+                               inter.diffuseMatrix, inter.diffuseColor.ToFloatPtr());
+          inter.diffuseColor[0] *= lightColor[0];
+          inter.diffuseColor[1] *= lightColor[1];
+          inter.diffuseColor[2] *= lightColor[2];
+          inter.diffuseColor[3] *= lightColor[3];
+          inter.vertexColor = surfaceStage->vertexColor;
+          break;
+        }
+        case SL_SPECULAR: {
+          // ignore stage that fails the condition
+          if (!surfaceRegs[ surfaceStage->conditionRegister ]) {
+            break;
+          }
+
+          if (inter.specularImage) {
+            RB_SubmittInteraction(&inter, DrawInteraction);
+          }
+
+          R_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.specularImage,
+                               inter.specularMatrix, inter.specularColor.ToFloatPtr());
+          inter.specularColor[0] *= lightColor[0];
+          inter.specularColor[1] *= lightColor[1];
+          inter.specularColor[2] *= lightColor[2];
+          inter.specularColor[3] *= lightColor[3];
+          inter.vertexColor = surfaceStage->vertexColor;
+          break;
+        }
+      }
+    }
+
+    // draw the final interaction
+    RB_SubmittInteraction(&inter, DrawInteraction);
+  }
+
+  // unhack depth range if needed
+  if (surf->space->weaponDepthHack || surf->space->modelDepthHack != 0.0f) {
+    RB_LeaveDepthHack_GLSL(surf);
+  }
+}
+
+
+/*
+===============
+RB_EnterWeaponDepthHack
+===============
+*/
+void RB_EnterWeaponDepthHack_GLSL(const drawSurf_t *surf)
+{
+  glDepthRangef(0, 0.5);
+
+  float	matrix[16];
+
+  memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
+
+  matrix[14] *= 0.25;
+
+  float	mat[16];
+  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+}
+
+/*
+===============
+RB_EnterModelDepthHack
+===============
+*/
+void RB_EnterModelDepthHack_GLSL(const drawSurf_t *surf)
+{
+  glDepthRangef(0.0f, 1.0f);
+
+  float	matrix[16];
+
+  memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
+
+  matrix[14] -= surf->space->modelDepthHack;
+
+  float	mat[16];
+  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+}
+
+/*
+===============
+RB_LeaveDepthHack
+===============
+*/
+void RB_LeaveDepthHack_GLSL(const drawSurf_t *surf)
+{
+  glDepthRangef(0, 1);
+
+  float	mat[16];
+  myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+}
+
+
+/*
+======================
+RB_GetShaderTextureMatrix
+======================
+*/
+void RB_GetShaderTextureMatrix_GLSL(const float *shaderRegisters,
+                               const textureStage_t *texture, float matrix[16])
+{
+  matrix[0] = shaderRegisters[ texture->matrix[0][0] ];
+  matrix[1] = shaderRegisters[ texture->matrix[0][1] ];
+  matrix[2] = 0;
+  matrix[3] = shaderRegisters[ texture->matrix[0][2] ];
+
+  // we attempt to keep scrolls from generating incredibly large texture values, but
+  // center rotations and center scales can still generate offsets that need to be > 1
+  if (matrix[3] < -40 || matrix[3] > 40) {
+    matrix[3] -= (int)matrix[3];
+  }
+
+  matrix[4] = shaderRegisters[ texture->matrix[1][0] ];
+  matrix[5] = shaderRegisters[ texture->matrix[1][1] ];
+  matrix[6] = 0;
+  matrix[7] = shaderRegisters[ texture->matrix[1][2] ];
+
+  if (matrix[7] < -40 || matrix[7] > 40) {
+    matrix[7] -= (int)matrix[7];
+  }
+
+  matrix[8] = 0;
+  matrix[9] = 0;
+  matrix[10] = 1;
+  matrix[11] = 0;
+
+  matrix[12] = 0;
+  matrix[13] = 0;
+  matrix[14] = 0;
+  matrix[15] = 1;
+}
+
+
+/*
+=====================
+RB_BakeTextureMatrixIntoTexgen
+=====================
+*/
+void RB_BakeTextureMatrixIntoTexgen_GLSL(idPlane lightProject[3])
+{
+  float	genMatrix[16];
+  float	final[16];
+
+  genMatrix[0] = lightProject[0][0];
+  genMatrix[1] = lightProject[0][1];
+  genMatrix[2] = lightProject[0][2];
+  genMatrix[3] = lightProject[0][3];
+
+  genMatrix[4] = lightProject[1][0];
+  genMatrix[5] = lightProject[1][1];
+  genMatrix[6] = lightProject[1][2];
+  genMatrix[7] = lightProject[1][3];
+
+  genMatrix[8] = 0;
+  genMatrix[9] = 0;
+  genMatrix[10] = 0;
+  genMatrix[11] = 0;
+
+  genMatrix[12] = lightProject[2][0];
+  genMatrix[13] = lightProject[2][1];
+  genMatrix[14] = lightProject[2][2];
+  genMatrix[15] = lightProject[2][3];
+
+  myGlMultMatrix(genMatrix, backEnd.lightTextureMatrix, final);
+
+  lightProject[0][0] = final[0];
+  lightProject[0][1] = final[1];
+  lightProject[0][2] = final[2];
+  lightProject[0][3] = final[3];
+
+  lightProject[1][0] = final[4];
+  lightProject[1][1] = final[5];
+  lightProject[1][2] = final[6];
+  lightProject[1][3] = final[7];
 }
