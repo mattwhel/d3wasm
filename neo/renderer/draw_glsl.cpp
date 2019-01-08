@@ -51,7 +51,8 @@ GL_SelectTextureNoClient
 static void GL_SelectTextureNoClient(int unit)
 {
 	backEnd.glState.currenttmu = unit;
-  glActiveTexture(GL_TEXTURE0 + unit);
+  qglActiveTextureARB(GL_TEXTURE0 + unit);
+  //qglActiveTexture(GL_TEXTURE0 + unit); // use the ARB version instead (even if it is the same, at least it is declared)
 }
 
 /*
@@ -273,18 +274,18 @@ void RB_GLSL_DrawInteractions(void)
 			backEnd.currentScissor = vLight->scissorRect;
 
 			if (r_useScissor.GetBool()) {
-				glScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+				qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
 				          backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
 				          backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
 				          backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
 			}
 
-			glClear(GL_STENCIL_BUFFER_BIT);
+			qglClear(GL_STENCIL_BUFFER_BIT);
 		} else {
 			// no shadows, so no need to read or write the stencil buffer
 			// we might in theory want to use GL_ALWAYS instead of disabling
 			// completely, to satisfy the invarience rules
-			glStencilFunc(GL_ALWAYS, 128, 255);
+			qglStencilFunc(GL_ALWAYS, 128, 255);
 		}
 
 		GL_UseProgram(&shadowShader);
@@ -300,7 +301,7 @@ void RB_GLSL_DrawInteractions(void)
 			continue;
 		}
 
-		glStencilFunc(GL_ALWAYS, 128, 255);
+		qglStencilFunc(GL_ALWAYS, 128, 255);
 
 		backEnd.depthFunc = GLS_DEPTHFUNC_LESS;
 		RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions);
@@ -309,7 +310,7 @@ void RB_GLSL_DrawInteractions(void)
 	}
 
 	// disable stencil shadow test
-	glStencilFunc(GL_ALWAYS, 128, 255);
+	qglStencilFunc(GL_ALWAYS, 128, 255);
 
 	GL_SelectTexture(0);
 
@@ -357,15 +358,15 @@ static void R_LoadGLSLShader(const char *name, shaderProgram_t *shaderProgram, G
 	switch (type) {
 		case GL_VERTEX_SHADER:
 			// create vertex shader
-			shaderProgram->vertexShader = glCreateShader(GL_VERTEX_SHADER);
-			glShaderSource(shaderProgram->vertexShader, 1, (const GLchar **)&buffer, 0);
-			glCompileShader(shaderProgram->vertexShader);
+			shaderProgram->vertexShader = qglCreateShader(GL_VERTEX_SHADER);
+			qglShaderSource(shaderProgram->vertexShader, 1, (const GLchar **)&buffer, 0);
+			qglCompileShader(shaderProgram->vertexShader);
 			break;
 		case GL_FRAGMENT_SHADER:
 			// create fragment shader
-			shaderProgram->fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-			glShaderSource(shaderProgram->fragmentShader, 1, (const GLchar **)&buffer, 0);
-			glCompileShader(shaderProgram->fragmentShader);
+			shaderProgram->fragmentShader = qglCreateShader(GL_FRAGMENT_SHADER);
+			qglShaderSource(shaderProgram->fragmentShader, 1, (const GLchar **)&buffer, 0);
+			qglCompileShader(shaderProgram->fragmentShader);
 			break;
 		default:
 			common->Printf("R_LoadGLSLShader: no type\n");
@@ -389,28 +390,28 @@ static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram, bool needsAttribute
 	GLint status;
 	GLint linked;
 
-	shaderProgram->program = glCreateProgram();
+	shaderProgram->program = qglCreateProgram();
 
-	glAttachShader(shaderProgram->program, shaderProgram->vertexShader);
-	glAttachShader(shaderProgram->program, shaderProgram->fragmentShader);
+	qglAttachShader(shaderProgram->program, shaderProgram->vertexShader);
+	qglAttachShader(shaderProgram->program, shaderProgram->fragmentShader);
 
 	if (needsAttributes) {
-		glBindAttribLocation(shaderProgram->program, 8, "attr_TexCoord");
-		glBindAttribLocation(shaderProgram->program, 9, "attr_Tangent");
-		glBindAttribLocation(shaderProgram->program, 10, "attr_Bitangent");
-		glBindAttribLocation(shaderProgram->program, 11, "attr_Normal");
-		glBindAttribLocation(shaderProgram->program, 12, "attr_Vertex");
-		glBindAttribLocation(shaderProgram->program, 13, "attr_Color");
+		qglBindAttribLocation(shaderProgram->program, 8, "attr_TexCoord");
+		qglBindAttribLocation(shaderProgram->program, 9, "attr_Tangent");
+		qglBindAttribLocation(shaderProgram->program, 10, "attr_Bitangent");
+		qglBindAttribLocation(shaderProgram->program, 11, "attr_Normal");
+		qglBindAttribLocation(shaderProgram->program, 12, "attr_Vertex");
+		qglBindAttribLocation(shaderProgram->program, 13, "attr_Color");
 	}
 
-	glLinkProgram(shaderProgram->program);
+	qglLinkProgram(shaderProgram->program);
 
-	glGetProgramiv(shaderProgram->program, GL_LINK_STATUS, &linked);
+	qglGetProgramiv(shaderProgram->program, GL_LINK_STATUS, &linked);
 
 	if (com_developer.GetBool()) {
-		glGetShaderInfoLog(shaderProgram->vertexShader, sizeof(buf), &len, buf);
+		qglGetShaderInfoLog(shaderProgram->vertexShader, sizeof(buf), &len, buf);
 		common->Printf("VS:\n%.*s\n", len, buf);
-		glGetShaderInfoLog(shaderProgram->fragmentShader, sizeof(buf), &len, buf);
+		qglGetShaderInfoLog(shaderProgram->fragmentShader, sizeof(buf), &len, buf);
 		common->Printf("FS:\n%.*s\n", len, buf);
 	}
 
@@ -433,9 +434,9 @@ static bool R_ValidateGLSLProgram(shaderProgram_t *shaderProgram)
 {
 	GLint validProgram;
 
-	glValidateProgram(shaderProgram->program);
+	qglValidateProgram(shaderProgram->program);
 
-	glGetProgramiv(shaderProgram->program, GL_VALIDATE_STATUS, &validProgram);
+	qglGetProgramiv(shaderProgram->program, GL_VALIDATE_STATUS, &validProgram);
 
 	if (!validProgram) {
 		common->Printf("R_ValidateGLSLProgram: program invalid\n");
@@ -453,52 +454,52 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader)
 
 	GL_UseProgram(shader);
 
-	shader->localLightOrigin = glGetUniformLocation(shader->program, "u_lightOrigin");
-	shader->localViewOrigin = glGetUniformLocation(shader->program, "u_viewOrigin");
-	shader->lightProjectionS = glGetUniformLocation(shader->program, "u_lightProjectionS");
-	shader->lightProjectionT = glGetUniformLocation(shader->program, "u_lightProjectionT");
-	shader->lightProjectionQ = glGetUniformLocation(shader->program, "u_lightProjectionQ");
-	shader->lightFalloff = glGetUniformLocation(shader->program, "u_lightFalloff");
-	shader->bumpMatrixS = glGetUniformLocation(shader->program, "u_bumpMatrixS");
-	shader->bumpMatrixT = glGetUniformLocation(shader->program, "u_bumpMatrixT");
-	shader->diffuseMatrixS = glGetUniformLocation(shader->program, "u_diffuseMatrixS");
-	shader->diffuseMatrixT = glGetUniformLocation(shader->program, "u_diffuseMatrixT");
-	shader->specularMatrixS = glGetUniformLocation(shader->program, "u_specularMatrixS");
-	shader->specularMatrixT = glGetUniformLocation(shader->program, "u_specularMatrixT");
-	shader->colorModulate = glGetUniformLocation(shader->program, "u_colorModulate");
-	shader->colorAdd = glGetUniformLocation(shader->program, "u_colorAdd");
-	shader->diffuseColor = glGetUniformLocation(shader->program, "u_diffuseColor");
-	shader->specularColor = glGetUniformLocation(shader->program, "u_specularColor");
-	shader->glColor = glGetUniformLocation(shader->program, "u_glColor");
-	shader->alphaTest = glGetUniformLocation(shader->program, "u_alphaTest");
-	shader->specularExponent = glGetUniformLocation(shader->program, "u_specularExponent");
+	shader->localLightOrigin = qglGetUniformLocation(shader->program, "u_lightOrigin");
+	shader->localViewOrigin = qglGetUniformLocation(shader->program, "u_viewOrigin");
+	shader->lightProjectionS = qglGetUniformLocation(shader->program, "u_lightProjectionS");
+	shader->lightProjectionT = qglGetUniformLocation(shader->program, "u_lightProjectionT");
+	shader->lightProjectionQ = qglGetUniformLocation(shader->program, "u_lightProjectionQ");
+	shader->lightFalloff = qglGetUniformLocation(shader->program, "u_lightFalloff");
+	shader->bumpMatrixS = qglGetUniformLocation(shader->program, "u_bumpMatrixS");
+	shader->bumpMatrixT = qglGetUniformLocation(shader->program, "u_bumpMatrixT");
+	shader->diffuseMatrixS = qglGetUniformLocation(shader->program, "u_diffuseMatrixS");
+	shader->diffuseMatrixT = qglGetUniformLocation(shader->program, "u_diffuseMatrixT");
+	shader->specularMatrixS = qglGetUniformLocation(shader->program, "u_specularMatrixS");
+	shader->specularMatrixT = qglGetUniformLocation(shader->program, "u_specularMatrixT");
+	shader->colorModulate = qglGetUniformLocation(shader->program, "u_colorModulate");
+	shader->colorAdd = qglGetUniformLocation(shader->program, "u_colorAdd");
+	shader->diffuseColor = qglGetUniformLocation(shader->program, "u_diffuseColor");
+	shader->specularColor = qglGetUniformLocation(shader->program, "u_specularColor");
+	shader->glColor = qglGetUniformLocation(shader->program, "u_glColor");
+	shader->alphaTest = qglGetUniformLocation(shader->program, "u_alphaTest");
+	shader->specularExponent = qglGetUniformLocation(shader->program, "u_specularExponent");
 
-	shader->eyeOrigin = glGetUniformLocation(shader->program, "u_eyeOrigin");
-	shader->localEyeOrigin = glGetUniformLocation(shader->program, "u_localEyeOrigin");
-	shader->nonPowerOfTwo = glGetUniformLocation(shader->program, "u_nonPowerOfTwo");
-	shader->windowCoords = glGetUniformLocation(shader->program, "u_windowCoords");
+	shader->eyeOrigin = qglGetUniformLocation(shader->program, "u_eyeOrigin");
+	shader->localEyeOrigin = qglGetUniformLocation(shader->program, "u_localEyeOrigin");
+	shader->nonPowerOfTwo = qglGetUniformLocation(shader->program, "u_nonPowerOfTwo");
+	shader->windowCoords = qglGetUniformLocation(shader->program, "u_windowCoords");
 
-	shader->modelViewProjectionMatrix = glGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
+	shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
 
-	shader->modelMatrix = glGetUniformLocation(shader->program, "u_modelMatrix");
-	shader->textureMatrix = glGetUniformLocation(shader->program, "u_textureMatrix");
+	shader->modelMatrix = qglGetUniformLocation(shader->program, "u_modelMatrix");
+	shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
 
-	shader->attr_TexCoord = glGetAttribLocation(shader->program, "attr_TexCoord");
-	shader->attr_Tangent = glGetAttribLocation(shader->program, "attr_Tangent");
-	shader->attr_Bitangent = glGetAttribLocation(shader->program, "attr_Bitangent");
-	shader->attr_Normal = glGetAttribLocation(shader->program, "attr_Normal");
-	shader->attr_Vertex = glGetAttribLocation(shader->program, "attr_Vertex");
-	shader->attr_Color = glGetAttribLocation(shader->program, "attr_Color");
+	shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
+	shader->attr_Tangent = qglGetAttribLocation(shader->program, "attr_Tangent");
+	shader->attr_Bitangent = qglGetAttribLocation(shader->program, "attr_Bitangent");
+	shader->attr_Normal = qglGetAttribLocation(shader->program, "attr_Normal");
+	shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
+	shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
 
 	for (i = 0; i < MAX_VERTEX_PARMS; i++) {
 		idStr::snPrintf(buffer, sizeof(buffer), "u_vertexParm%d", i);
-		shader->u_vertexParm[i] = glGetAttribLocation(shader->program, buffer);
+		shader->u_vertexParm[i] = qglGetAttribLocation(shader->program, buffer);
 	}
 
 	for (i = 0; i < MAX_FRAGMENT_IMAGES; i++) {
 		idStr::snPrintf(buffer, sizeof(buffer), "u_fragmentMap%d", i);
-		shader->u_fragmentMap[i] = glGetUniformLocation(shader->program, buffer);
-		glUniform1i(shader->u_fragmentMap[i], i);
+		shader->u_fragmentMap[i] = qglGetUniformLocation(shader->program, buffer);
+		qglUniform1i(shader->u_fragmentMap[i], i);
 	}
 
 	GL_CheckErrors();

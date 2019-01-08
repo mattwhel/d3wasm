@@ -143,4 +143,26 @@ extern PFNGLPROGRAMLOCALPARAMETER4FVARBPROC	qglProgramLocalParameter4fvARB;
 // GL_EXT_depth_bounds_test
 extern PFNGLDEPTHBOUNDSEXTPROC              qglDepthBoundsEXT;
 
+// GLSL Shaders
+extern PFNGLENABLEVERTEXATTRIBARRAYPROC    qglEnableVertexAttribArray;
+extern PFNGLDISABLEVERTEXATTRIBARRAYPROC   qglDisableVertexAttribArray;
+extern PFNGLVERTEXATTRIBPOINTERPROC        qglVertexAttribPointer;
+extern PFNGLUSEPROGRAMPROC                 qglUseProgram;
+extern PFNGLUNIFORM1FVPROC                 qglUniform1fv;
+extern PFNGLUNIFORM4FVPROC                 qglUniform4fv;
+extern PFNGLUNIFORMMATRIX4FVPROC           qglUniformMatrix4fv;
+extern PFNGLLINKPROGRAMPROC								 qglLinkProgram;
+extern PFNGLGETPROGRAMIVPROC							 qglGetProgramiv;
+extern PFNGLGETPROGRAMINFOLOGPROC					 qglGetShaderInfoLog;
+extern PFNGLBINDATTRIBLOCATIONPROC         qglBindAttribLocation;
+extern PFNGLATTACHSHADERPROC               qglAttachShader;
+extern PFNGLCREATESHADERPROC               qglCreateShader;
+extern PFNGLSHADERSOURCEPROC               qglShaderSource;
+extern PFNGLCOMPILESHADERPROC              qglCompileShader;
+extern PFNGLGETUNIFORMLOCATIONPROC         qglGetUniformLocation;
+extern PFNGLCREATEPROGRAMPROC              qglCreateProgram;
+extern PFNGLVALIDATEPROGRAMPROC            qglValidateProgram;
+extern PFNGLGETATTRIBLOCATIONPROC          qglGetAttribLocation;
+extern PFNGLUNIFORM1IPROC                  qglUniform1i;
+
 #endif

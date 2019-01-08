@@ -144,10 +144,10 @@ void GL_UseProgram(shaderProgram_t *program)
 		return;
 	}
 
-	glUseProgram(program ? program->program : 0);
+	qglUseProgram(program ? program->program : 0);
 	backEnd.glState.currentProgram = program;
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 /*
@@ -163,9 +163,9 @@ void GL_Uniform1fv(GLint location, const GLfloat *value)
 		return;
 	}
 
-	glUniform1fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
+	qglUniform1fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 /*
@@ -181,9 +181,9 @@ void GL_Uniform4fv(GLint location, const GLfloat *value)
 		return;
 	}
 
-	glUniform4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
+	qglUniform4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 /*
@@ -199,9 +199,9 @@ void GL_UniformMatrix4fv(GLint location, const GLfloat *value)
 		return;
 	}
 
-	glUniformMatrix4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, GL_FALSE, value);
+	qglUniformMatrix4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, GL_FALSE, value);
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 /*
@@ -223,9 +223,9 @@ void GL_EnableVertexAttribArray(GLuint index)
 		return;
 	}
 
-	glEnableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
+	qglEnableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 /*
@@ -247,9 +247,9 @@ void GL_DisableVertexAttribArray(GLuint index)
 		return;
 	}
 
-	glDisableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
+	qglDisableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 /*
@@ -273,10 +273,10 @@ void GL_VertexAttribPointer(GLuint index, GLint size, GLenum type,
 		return;
 	}
 
-	glVertexAttribPointer(*(GLint *)((char *)backEnd.glState.currentProgram + index),
+	qglVertexAttribPointer(*(GLint *)((char *)backEnd.glState.currentProgram + index),
 												size, type, normalized, stride, pointer);
 
-	GL_CheckErrors();
+	//GL_CheckErrors();
 }
 
 

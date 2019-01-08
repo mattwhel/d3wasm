@@ -279,6 +279,28 @@ PFNGLBINDPROGRAMARBPROC					qglBindProgramARB;
 PFNGLPROGRAMENVPARAMETER4FVARBPROC		qglProgramEnvParameter4fvARB;
 PFNGLPROGRAMLOCALPARAMETER4FVARBPROC	qglProgramLocalParameter4fvARB;
 
+// GLSL Shaders                                                     // OpenGL 2.0
+PFNGLENABLEVERTEXATTRIBARRAYPROC    qglEnableVertexAttribArray;
+PFNGLDISABLEVERTEXATTRIBARRAYPROC   qglDisableVertexAttribArray;
+PFNGLVERTEXATTRIBPOINTERPROC        qglVertexAttribPointer;
+PFNGLUSEPROGRAMPROC                 qglUseProgram;
+PFNGLUNIFORM1FVPROC                 qglUniform1fv;
+PFNGLUNIFORM4FVPROC                 qglUniform4fv;
+PFNGLUNIFORMMATRIX4FVPROC           qglUniformMatrix4fv;
+PFNGLLINKPROGRAMPROC								qglLinkProgram;
+PFNGLGETPROGRAMIVPROC								qglGetProgramiv;
+PFNGLGETPROGRAMINFOLOGPROC					qglGetShaderInfoLog;
+PFNGLBINDATTRIBLOCATIONPROC         qglBindAttribLocation;
+PFNGLATTACHSHADERPROC               qglAttachShader;
+PFNGLCREATESHADERPROC               qglCreateShader;
+PFNGLSHADERSOURCEPROC               qglShaderSource;
+PFNGLCOMPILESHADERPROC              qglCompileShader;
+PFNGLGETUNIFORMLOCATIONPROC         qglGetUniformLocation;
+PFNGLCREATEPROGRAMPROC              qglCreateProgram;
+PFNGLVALIDATEPROGRAMPROC            qglValidateProgram;
+PFNGLGETATTRIBLOCATIONPROC          qglGetAttribLocation;
+PFNGLUNIFORM1IPROC                  qglUniform1i;
+
 // GL_EXT_depth_bounds_test
 PFNGLDEPTHBOUNDSEXTPROC                 qglDepthBoundsEXT;
 
@@ -474,9 +496,30 @@ static void R_CheckPortableExtensions( void ) {
 	// GL_ARB_shading_language_100
 #ifdef __EMSCRIPTEN__
 	glConfig.GLSLAvailable = true;
+	common->Printf( "...using %s\n", "GL_ARB_shading_language_100" );
 #else
   glConfig.GLSLAvailable = R_CheckExtension("GL_ARB_shading_language_100");
 #endif
+  qglEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)GLimp_ExtensionPointer("glEnableVertexAttribArray");
+  qglDisableVertexAttribArray	= (PFNGLDISABLEVERTEXATTRIBARRAYPROC)GLimp_ExtensionPointer("glDisableVertexAttribArray");
+  qglVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)GLimp_ExtensionPointer("glVertexAttribPointer");
+  qglUseProgram = (PFNGLUSEPROGRAMPROC)GLimp_ExtensionPointer("glUseProgram");
+  qglUniform1fv = (PFNGLUNIFORM1FVPROC)GLimp_ExtensionPointer("glUniform1fv");
+  qglUniform4fv = (PFNGLUNIFORM4FVPROC)GLimp_ExtensionPointer("glUniform4fv");
+  qglUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)GLimp_ExtensionPointer("glUniformMatrix4fv");
+	qglLinkProgram = (PFNGLLINKPROGRAMPROC)GLimp_ExtensionPointer("qglLinkProgram");
+	qglGetProgramiv = (PFNGLGETPROGRAMIVPROC)GLimp_ExtensionPointer("glGetProgramiv");
+	qglGetShaderInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)GLimp_ExtensionPointer("glGetShaderInfoLog");
+	qglBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC)GLimp_ExtensionPointer("glBindAttribLocation");
+  qglAttachShader = (PFNGLATTACHSHADERPROC)GLimp_ExtensionPointer("glAttachShader");
+  qglCreateShader = (PFNGLCREATESHADERPROC)GLimp_ExtensionPointer("glCreateShader");
+	qglShaderSource = (PFNGLSHADERSOURCEPROC)GLimp_ExtensionPointer("glShaderSource");
+	qglCompileShader = (PFNGLCOMPILESHADERPROC)GLimp_ExtensionPointer("glCompileShader");
+	qglGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)GLimp_ExtensionPointer("glGetUniformLocation");
+  qglCreateProgram = (PFNGLCREATEPROGRAMPROC)GLimp_ExtensionPointer("glCreateProgram");
+  qglValidateProgram = (PFNGLVALIDATEPROGRAMPROC)GLimp_ExtensionPointer("glValidateProgram");
+  qglGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)GLimp_ExtensionPointer("glGetAttribLocation");
+  qglUniform1i = (PFNGLUNIFORM1IPROC)GLimp_ExtensionPointer("glUniform1i");
 }
 
 
