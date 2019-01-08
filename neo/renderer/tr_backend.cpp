@@ -43,7 +43,9 @@ may touch, including the editor.
 void RB_SetDefaultGLState( void ) {
 	int		i;
 
-	qglClearDepth( 1.0f );
+	GL_UseProgram(NULL);
+
+	qglClearDepth(1.0f);
 	qglColor4f (1,1,1,1);
 
 	// the vertex array is always enabled
