@@ -31,6 +31,9 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "renderer/tr_local.h"
 
+#ifdef __EMSCRIPTEN__
+#else
+
 /*
 =========================================================================================
 
@@ -501,9 +504,6 @@ R_ARB2_Init
 */
 void R_ARB2_Init( void ) {
 	glConfig.allowARB2Path = false;
-#ifdef __EMSCRIPTEN__
-	return;
-#else
 	common->Printf( "ARB2 renderer: " );
 
 	if ( !glConfig.ARBVertexProgramAvailable || !glConfig.ARBFragmentProgramAvailable ) {
@@ -514,5 +514,6 @@ void R_ARB2_Init( void ) {
 	common->Printf( "Available.\n" );
 
 	glConfig.allowARB2Path = true;
-#endif
 }
+
+#endif
