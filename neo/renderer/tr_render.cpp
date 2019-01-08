@@ -147,8 +147,7 @@ Sets texcoord and vertex pointers
 */
 void RB_RenderTriangleSurface( const srfTriangles_t *tri ) {
 	if ( !tri->ambientCache ) {
-		// Should not pass here
-		//RB_DrawElementsImmediate( tri );
+		RB_DrawElementsImmediate( tri );
 		return;
 	}
 
