@@ -244,7 +244,7 @@ void RB_GLSL_DrawInteractions(void)
 
 	GL_SelectTexture(0);
 
-	GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+	//GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
 
 	//
@@ -314,7 +314,7 @@ void RB_GLSL_DrawInteractions(void)
 
 	GL_SelectTexture(0);
 
-	GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+	//GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
 }
 
