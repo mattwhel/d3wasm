@@ -72,7 +72,6 @@ class idActor;
 class idPlayer;
 class idCamera;
 class idWorldspawn;
-class idTestModel;
 class idSmokeParticles;
 class idEntityFx;
 class idTypeInfo;
@@ -278,7 +277,6 @@ public:
 	idPush					push;					// geometric pushing
 	idPVS					pvs;					// potential visible set
 
-	idTestModel *			testmodel;				// for development testing of models
 	idEntityFx *			testFx;					// for development testing of fx
 
 	idStr					sessionCommand;			// a target_sessionCommand can set this to return something to the session

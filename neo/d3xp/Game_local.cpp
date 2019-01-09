@@ -39,7 +39,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "gamesys/SysCmds.h"
 #include "script/Script_Thread.h"
 #include "ai/AI.h"
-#include "anim/Anim_Testmodel.h"
 #include "Camera.h"
 #include "SmokeParticles.h"
 #include "Player.h"
@@ -232,7 +231,6 @@ void idGameLocal::Clear( void ) {
 	random.SetSeed( 0 );
 	world = NULL;
 	frameCommandThread = NULL;
-	testmodel = NULL;
 	testFx = NULL;
 	clip.Shutdown();
 	pvs.Shutdown();
@@ -433,7 +431,7 @@ void idGameLocal::Shutdown( void ) {
 	idAI::FreeObstacleAvoidanceNodes();
 
 	// shutdown the model exporter
-	idModelExport::Shutdown();
+	//idModelExport::Shutdown();
 
 	idEvent::Shutdown();
 
@@ -578,7 +576,6 @@ void idGameLocal::SaveGame( idFile *f ) {
 	// push
 	// pvs
 
-	testmodel = NULL;
 	testFx = NULL;
 
 	savegame.WriteString( sessionCommand );
@@ -992,7 +989,6 @@ void idGameLocal::LoadMap( const char *mapName, int randseed ) {
 
 	camera			= NULL;
 	world			= NULL;
-	testmodel		= NULL;
 	testFx			= NULL;
 
 	lastAIAlertEntity = NULL;
@@ -2839,9 +2835,9 @@ void idGameLocal::CallObjectFrameCommand( idEntity *ent, const char *frameComman
 
 	func = ent->scriptObject.GetFunction( frameCommand );
 	if ( !func ) {
-		if ( !ent->IsType( idTestModel::Type ) ) {
-			Error( "Unknown function '%s' called for frame command on entity '%s'", frameCommand, ent->name.c_str() );
-		}
+		//if ( !ent->IsType( idTestModel::Type ) ) {
+		//	Error( "Unknown function '%s' called for frame command on entity '%s'", frameCommand, ent->name.c_str() );
+		//}
 	} else {
 		frameCommandThread->CallFunction( ent, func, true );
 		frameCommandThread->Execute();

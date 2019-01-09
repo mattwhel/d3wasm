@@ -35,7 +35,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "gamesys/SysCvar.h"
 #include "script/Script_Thread.h"
 #include "ai/AI.h"
-#include "anim/Anim_Testmodel.h"
 #include "Entity.h"
 #include "Moveable.h"
 #include "WorldSpawn.h"
@@ -1411,23 +1410,7 @@ Cmd_ExportModels_f
 ==================
 */
 static void Cmd_ExportModels_f( const idCmdArgs &args ) {
-	idModelExport	exporter;
-	idStr			name;
 
-	// don't allow exporting models when cheats are disabled,
-	// but if we're not in the game, it's ok
-	if ( gameLocal.GetLocalPlayer() && !gameLocal.CheatsOk( false ) ) {
-		return;
-	}
-
-	if ( args.Argc() < 2 ) {
-		exporter.ExportModels( "def", ".def" );
-	} else {
-		name = args.Argv( 1 );
-		name = "def/" + name;
-		name.DefaultFileExtension( ".def" );
-		exporter.ExportDefFile( name );
-	}
 }
 
 /*
@@ -1436,25 +1419,7 @@ Cmd_ReexportModels_f
 ==================
 */
 static void Cmd_ReexportModels_f( const idCmdArgs &args ) {
-	idModelExport	exporter;
-	idStr			name;
 
-	// don't allow exporting models when cheats are disabled,
-	// but if we're not in the game, it's ok
-	if ( gameLocal.GetLocalPlayer() && !gameLocal.CheatsOk( false ) ) {
-		return;
-	}
-
-	idAnimManager::forceExport = true;
-	if ( args.Argc() < 2 ) {
-		exporter.ExportModels( "def", ".def" );
-	} else {
-		name = args.Argv( 1 );
-		name = "def/" + name;
-		name.DefaultFileExtension( ".def" );
-		exporter.ExportDefFile( name );
-	}
-	idAnimManager::forceExport = false;
 }
 
 /*
@@ -2449,17 +2414,6 @@ void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "popLight",				Cmd_PopLight_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"removes the last created light" );
 	cmdSystem->AddCommand( "testDeath",				Cmd_TestDeath_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests death" );
 	cmdSystem->AddCommand( "testSave",				Cmd_TestSave_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"writes out a test savegame" );
-	cmdSystem->AddCommand( "testModel",				idTestModel::TestModel_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests a model", idTestModel::ArgCompletion_TestModel );
-	cmdSystem->AddCommand( "testSkin",				idTestModel::TestSkin_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests a skin on an existing testModel", idCmdSystem::ArgCompletion_Decl<DECL_SKIN> );
-	cmdSystem->AddCommand( "testShaderParm",		idTestModel::TestShaderParm_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"sets a shaderParm on an existing testModel" );
-	cmdSystem->AddCommand( "keepTestModel",			idTestModel::KeepTestModel_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"keeps the last test model in the game" );
-	cmdSystem->AddCommand( "testAnim",				idTestModel::TestAnim_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests an animation", idTestModel::ArgCompletion_TestAnim );
-	cmdSystem->AddCommand( "testParticleStopTime",	idTestModel::TestParticleStopTime_f,CMD_FL_GAME|CMD_FL_CHEAT,	"tests particle stop time on a test model" );
-	cmdSystem->AddCommand( "nextAnim",				idTestModel::TestModelNextAnim_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"shows next animation on test model" );
-	cmdSystem->AddCommand( "prevAnim",				idTestModel::TestModelPrevAnim_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"shows previous animation on test model" );
-	cmdSystem->AddCommand( "nextFrame",				idTestModel::TestModelNextFrame_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"shows next animation frame on test model" );
-	cmdSystem->AddCommand( "prevFrame",				idTestModel::TestModelPrevFrame_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"shows previous animation frame on test model" );
-	cmdSystem->AddCommand( "testBlend",				idTestModel::TestBlend_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests animation blending" );
 	cmdSystem->AddCommand( "reloadScript",			Cmd_ReloadScript_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"reloads scripts" );
 	cmdSystem->AddCommand( "script",				Cmd_Script_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"executes a line of script" );
 	cmdSystem->AddCommand( "listCollisionModels",	Cmd_ListCollisionModels_f,	CMD_FL_GAME,				"lists collision models" );

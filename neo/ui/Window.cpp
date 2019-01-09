@@ -43,8 +43,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "ui/GameSSDWindow.h"
 #include "ui/GameBearShootWindow.h"
 #include "ui/GameBustOutWindow.h"
-//  gui editor is more integrated into the window now
-#include "tools/guied/GEWindowWrapper.h"
 
 #include "ui/Window.h"
 
