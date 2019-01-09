@@ -32,6 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 
 shaderProgram_t	interactionShader;
 shaderProgram_t zfillShader;
+shaderProgram_t stencilShadowShader;
 
 static void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) );
 
@@ -161,6 +162,7 @@ RB_GLSL_CreateDrawInteractions
 void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf)
 {
 	if (!surf) {
+		GL_UseProgram(NULL);
 		return;
 	}
 
@@ -304,7 +306,6 @@ void RB_GLSL_DrawInteractions(void)
     //GL_UseProgram(&shadowShader);
 		RB_StencilShadowPass(vLight->localShadows);
     RB_GLSL_CreateDrawInteractions(vLight->globalInteractions);
-		GL_UseProgram(NULL);	// if there weren't any globalInteractions, it would have stayed on
 
 		// translucent surfaces never get stencil shadowed
 		if (r_skipTranslucent.GetBool()) {
@@ -526,6 +527,18 @@ static bool RB_GLSL_InitShaders(void)
 		return false;
 	} else {
 		RB_GLSL_GetUniformLocations(&interactionShader);
+	}
+
+	memset(&stencilShadowShader, 0, sizeof(shaderProgram_t));
+
+	// load interation shaders
+	R_LoadGLSLShader("shadow.vert", &stencilShadowShader, GL_VERTEX_SHADER);
+	R_LoadGLSLShader("shadow.frag", &stencilShadowShader, GL_FRAGMENT_SHADER);
+
+	if (!R_LinkGLSLShader(&stencilShadowShader, true) && !R_ValidateGLSLProgram(&stencilShadowShader)) {
+		return false;
+	} else {
+		RB_GLSL_GetUniformLocations(&stencilShadowShader);
 	}
 
   memset(&zfillShader, 0, sizeof(shaderProgram_t));
