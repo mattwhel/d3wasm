@@ -1144,13 +1144,6 @@ void idInteraction::AddActiveInteraction( void ) {
 						vertexCache.Touch( lightTris->lightingCache );
 					}
 
-					//if ( !lightTris->indexCache && r_useIndexBuffers.GetBool() ) {
-					//	vertexCache.Alloc( lightTris->indexes, lightTris->numIndexes * sizeof( lightTris->indexes[0] ), &lightTris->indexCache, true );
-					//}
-					//if ( lightTris->indexCache ) {
-					//	vertexCache.Touch( lightTris->indexCache );
-					//}
-
 					// add the surface to the light list
 
 					const idMaterial *shader = sint->shader;
@@ -1213,9 +1206,6 @@ void idInteraction::AddActiveInteraction( void ) {
 				if ( shadowTris->shadowVertexes ) {
 					// each interaction has unique vertexes
 					R_CreatePrivateShadowCache( shadowTris );
-				} else {
-					R_CreateVertexProgramShadowCache( sint->ambientTris );
-					shadowTris->shadowCache = sint->ambientTris->shadowCache;
 				}
 				// if we are out of vertex cache space, skip the interaction
 				if ( !shadowTris->shadowCache ) {
@@ -1225,11 +1215,6 @@ void idInteraction::AddActiveInteraction( void ) {
 
 			// touch the shadow surface so it won't get purged
 			vertexCache.Touch( shadowTris->shadowCache );
-
-			//if ( !shadowTris->indexCache && r_useIndexBuffers.GetBool() ) {
-			//	vertexCache.Alloc( shadowTris->indexes, shadowTris->numIndexes * sizeof( shadowTris->indexes[0] ), &shadowTris->indexCache, true );
-			//	vertexCache.Touch( shadowTris->indexCache );
-			//}
 
 			// see if we can avoid using the shadow volume caps
 			bool inside = R_PotentiallyInsideInfiniteShadow( sint->ambientTris, localViewOrigin, localLightOrigin );

@@ -52,6 +52,7 @@ void RB_SetDefaultGLState( void ) {
 	qglEnableClientState( GL_VERTEX_ARRAY );
 	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
 	qglDisableClientState( GL_COLOR_ARRAY );
+  qglDisableClientState( GL_NORMAL_ARRAY );
 
 	//
 	// make sure our GL state vector is set correctly

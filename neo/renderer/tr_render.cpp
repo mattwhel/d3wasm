@@ -38,39 +38,6 @@ If you have questions concerning this license or the applicable additional terms
 
 */
 
-
-/*
-=================
-RB_DrawElementsImmediate
-
-Draws with immediate mode commands, which is going to be very slow.
-This should never happen if the vertex cache is operating properly.
-=================
-*/
-void RB_DrawElementsImmediate( const srfTriangles_t *tri ) {
-
-	backEnd.pc.c_drawElements++;
-	backEnd.pc.c_drawIndexes += tri->numIndexes;
-	backEnd.pc.c_drawVertexes += tri->numVerts;
-
-	if ( tri->ambientSurface != NULL  ) {
-		if ( tri->indexes == tri->ambientSurface->indexes ) {
-			backEnd.pc.c_drawRefIndexes += tri->numIndexes;
-		}
-		if ( tri->verts == tri->ambientSurface->verts ) {
-			backEnd.pc.c_drawRefVertexes += tri->numVerts;
-		}
-	}
-
-	qglBegin( GL_TRIANGLES );
-	for ( int i = 0 ; i < tri->numIndexes ; i++ ) {
-		qglTexCoord2fv( tri->verts[ tri->indexes[i] ].st.ToFloatPtr() );
-		qglVertex3fv( tri->verts[ tri->indexes[i] ].xyz.ToFloatPtr() );
-	}
-	qglEnd();
-}
-
-
 /*
 ================
 RB_DrawElementsWithCounters
@@ -91,21 +58,7 @@ void RB_DrawElementsWithCounters( const srfTriangles_t *tri ) {
 		}
 	}
 
-	//if ( tri->indexCache && r_useIndexBuffers.GetBool() ) {
-	//	qglDrawElements( GL_TRIANGLES,
-	//					r_singleTriangle.GetBool() ? 3 : tri->numIndexes,
-	//					GL_INDEX_TYPE,
-	//					(int *)vertexCache.Position( tri->indexCache ) );
-	//	backEnd.pc.c_vboIndexes += tri->numIndexes;
-	//} else {
-	//	if ( r_useIndexBuffers.GetBool() ) {
-	//		vertexCache.UnbindIndex();
-	//	}
-		qglDrawElements( GL_TRIANGLES,
-						r_singleTriangle.GetBool() ? 3 : tri->numIndexes,
-						GL_INDEX_TYPE,
-						tri->indexes );
-	//}
+	qglDrawElements( GL_TRIANGLES, tri->numIndexes, GL_INDEX_TYPE, tri->indexes );
 }
 
 /*
@@ -120,21 +73,10 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 	backEnd.pc.c_shadowIndexes += numIndexes;
 	backEnd.pc.c_shadowVertexes += tri->numVerts;
 
-	//if ( tri->indexCache && r_useIndexBuffers.GetBool() ) {
-	//	qglDrawElements( GL_TRIANGLES,
-	//					r_singleTriangle.GetBool() ? 3 : numIndexes,
-	//					GL_INDEX_TYPE,
-	//					(int *)vertexCache.Position( tri->indexCache ) );
-	//	backEnd.pc.c_vboIndexes += numIndexes;
-	//} else {
-	//	if ( r_useIndexBuffers.GetBool() ) {
-	//		vertexCache.UnbindIndex();
-	//	}
-		qglDrawElements( GL_TRIANGLES,
-						r_singleTriangle.GetBool() ? 3 : numIndexes,
-						GL_INDEX_TYPE,
-						tri->indexes );
-	//}
+	qglDrawElements( GL_TRIANGLES,
+									 numIndexes,
+									 GL_INDEX_TYPE,
+									 tri->indexes );
 }
 
 
@@ -147,7 +89,7 @@ Sets texcoord and vertex pointers
 */
 void RB_RenderTriangleSurface( const srfTriangles_t *tri ) {
 	if ( !tri->ambientCache ) {
-		RB_DrawElementsImmediate( tri );
+		// Weird, something gone wrong in the VBOs....
 		return;
 	}
 

@@ -190,7 +190,7 @@ static void R_SpecularTableImage( idImage *image ) {
 
 	for (x=0 ; x<256 ; x++) {
 		float f = x/255.f;
-#if 0
+#if 1	// GAB TODO: it was 0
 		f = pow(f, 16);
 #else
 		// this is the behavior of the hacked up fragment programs that

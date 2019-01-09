@@ -42,9 +42,6 @@ typedef enum {
 
 typedef struct vertCache_s {
 	GLuint			vbo;
-	void			*virtMem;			// only one of vbo / virtMem will be set
-	bool			indexBuffer;		// holds indexes instead of vertexes
-
 	intptr_t		offset;
 	int				size;				// may be larger than the amount asked for, due
 										// to round up and minimum fragment sizes
@@ -60,9 +57,6 @@ public:
 	void			Init();
 	void			Shutdown();
 
-	// just for gfxinfo printing
-	bool			IsFast();
-
 	// called when vertex programs are enabled or disabled, because
 	// the cached data is no longer valid
 	void			PurgeAll();
@@ -72,15 +66,11 @@ public:
 	// Alloc does NOT do a touch, which allows purging of things
 	// created at level load time even if a frame hasn't passed yet.
 	// These allocations can be purged, which will zero the pointer.
-	void			Alloc( void *data, int bytes, vertCache_t **buffer, bool indexBuffer = false );
+	void			Alloc( void *data, int bytes, vertCache_t **buffer );
 
 	// This will be a real pointer with virtual memory,
 	// but it will be an int offset cast to a pointer of ARB_vertex_buffer_object
 	void *			Position( vertCache_t *buffer );
-
-	// if r_useIndexBuffers is enabled, but you need to draw something without
-	// an indexCache, this must be called to reset GL_ELEMENT_ARRAY_BUFFER_ARB
-	void			UnbindIndex();
 
 	// automatically freed at the end of the next frame
 	// used for specular texture coordinates and gui drawing, which
@@ -123,8 +113,6 @@ private:
 
 	int				currentFrame;			// for purgable block tracking
 	int				listNum;				// currentFrame % NUM_VERTEX_FRAMES, determines which tempBuffers to use
-
-	bool			virtualMemory;			// not fast stuff
 
 	bool			allocatingTempBuffer;	// force GL_STREAM_DRAW_ARB
 

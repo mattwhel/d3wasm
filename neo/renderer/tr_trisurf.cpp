@@ -351,10 +351,6 @@ void R_FreeStaticTriSurfVertexCaches( srfTriangles_t *tri ) {
 		vertexCache.Free( tri->lightingCache );
 		tri->lightingCache = NULL;
 	}
-	//if ( tri->indexCache ) {
-	//	vertexCache.Free( tri->indexCache );
-	//	tri->indexCache = NULL;
-	//}
 	if ( tri->shadowCache && ( tri->shadowVertexes != NULL || tri->verts != NULL ) ) {
 		// if we don't have tri->shadowVertexes, these are a reference to a
 		// shadowCache on the original surface, which a vertex program

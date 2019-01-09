@@ -74,7 +74,7 @@ If you have questions concerning this license or the applicable additional terms
 // Turns on/off DeriveTriPlanes, DeriveTangents, DeriveUnsmoothedTangents, NormalizeTangents
 #define ENABLE_DERIVE
 
-// Turns on/off CreateTextureSpaceLightVectors, CreateShadowCache, CreateVertexProgramShadowCache
+// Turns on/off CreateTextureSpaceLightVectors, CreateShadowCache
 #define ENABLE_CREATE
 
 // Turns on/off the sound routines
@@ -89,7 +89,7 @@ If you have questions concerning this license or the applicable additional terms
 // performance hit from having to do unaligned stores
 //#define SOUND_DEST_ALIGNED
 
-// This assumes that the vertexCache array to CreateShadowCache and CreateVertexProgramShadowCache is aligned. If it's not,
+// This assumes that the vertexCache array to CreateShadowCache and is aligned. If it's not,
 // then we take a big performance hit from unaligned stores.
 //#define VERTEXCACHE_ALIGNED
 
@@ -234,7 +234,6 @@ public:
 	virtual void VPCALL CreateTextureSpaceLightVectors( idVec3 *lightVectors, const idVec3 &lightOrigin, const idDrawVert *verts, const int numVerts, const int *indexes, const int numIndexes );
 	virtual void VPCALL CreateSpecularTextureCoords( idVec4 *texCoords, const idVec3 &lightOrigin, const idVec3 &viewOrigin, const idDrawVert *verts, const int numVerts, const int *indexes, const int numIndexes );
 	virtual int  VPCALL CreateShadowCache( idVec4 *vertexCache, int *vertRemap, const idVec3 &lightOrigin, const idDrawVert *verts, const int numVerts );
-	virtual int  VPCALL CreateVertexProgramShadowCache( idVec4 *vertexCache, const idDrawVert *verts, const int numVerts );
 #endif
 
 #ifdef ENABLE_SOUND_ROUTINES

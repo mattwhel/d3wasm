@@ -83,11 +83,6 @@ bool R_CreateLightingCache( const idRenderEntityLocal *ent, const idRenderLightL
 		return true;
 	}
 
-	// not needed if we have vertex programs
-	//if ( tr.backEndRendererHasVertexPrograms ) {
-	//	return true;
-	//}
-
 	R_GlobalPointToLocal( ent->modelMatrix, light->globalLightOrigin, localLightOrigin );
 
 	int	size = tri->ambientSurface->numVerts * sizeof( lightingCache_t );
@@ -146,46 +141,6 @@ void R_CreatePrivateShadowCache( srfTriangles_t *tri ) {
 	}
 
 	vertexCache.Alloc( tri->shadowVertexes, tri->numVerts * sizeof( *tri->shadowVertexes ), &tri->shadowCache );
-}
-
-/*
-==================
-R_CreateVertexProgramShadowCache
-
-This is constant for any number of lights, the vertex program
-takes care of projecting the verts to infinity.
-==================
-*/
-void R_CreateVertexProgramShadowCache( srfTriangles_t *tri ) {
-	if ( tri->verts == NULL ) {
-		return;
-	}
-
-	shadowCache_t *temp = (shadowCache_t *)_alloca16( tri->numVerts * 2 * sizeof( shadowCache_t ) );
-
-#if 1
-
-	SIMDProcessor->CreateVertexProgramShadowCache( &temp->xyz, tri->verts, tri->numVerts );
-
-#else
-
-	int numVerts = tri->numVerts;
-	const idDrawVert *verts = tri->verts;
-	for ( int i = 0; i < numVerts; i++ ) {
-		const float *v = verts[i].xyz.ToFloatPtr();
-		temp[i*2+0].xyz[0] = v[0];
-		temp[i*2+1].xyz[0] = v[0];
-		temp[i*2+0].xyz[1] = v[1];
-		temp[i*2+1].xyz[1] = v[1];
-		temp[i*2+0].xyz[2] = v[2];
-		temp[i*2+1].xyz[2] = v[2];
-		temp[i*2+0].xyz[3] = 1.0f;		// on the model surface
-		temp[i*2+1].xyz[3] = 0.0f;		// will be projected to infinity
-	}
-
-#endif
-
-	vertexCache.Alloc( temp, tri->numVerts * 2 * sizeof( shadowCache_t ), &tri->shadowCache );
 }
 
 /*
@@ -692,21 +647,6 @@ void R_LinkLightSurf( const drawSurf_t **link, const srfTriangles_t *tri, const 
 			drawSurf->shaderRegisters = regs;
 			shader->EvaluateRegisters( regs, space->entityDef->parms.shaderParms, tr.viewDef, space->entityDef->parms.referenceSound );
 		}
-
-		// calculate the specular coordinates if we aren't using vertex programs
-
-		// GAB Note: Does not seem to be used because:
-			// ARB2 do have vertex programs, and this code is not authorized for ARB (apparently it was done for NV10 only)
-			// and drawSurf->dynamicTexCoords are only used for WobbleskyTexGen and SkyboxTexGen, but does not seem to be related to specular
-
-		/*if ( !tr.backEndRendererHasVertexPrograms && !r_skipSpecular.GetBool() && tr.backEndRenderer != BE_ARB ) {
-				R_SpecularTexGen( drawSurf, light->globalLightOrigin, tr.viewDef->renderView.vieworg );
-			 	if we failed to allocate space for the specular calculations, drop the surface
-					if ( !drawSurf->dynamicTexCoords ) {
-						return;
-				}
-			}
-		 */
 	}
 
 	// actually link it in
@@ -1046,13 +986,6 @@ void R_AddLightSurfaces( void ) {
 
 			// touch the shadow surface so it won't get purged
 			vertexCache.Touch( tri->shadowCache );
-
-			//if ( !tri->indexCache && r_useIndexBuffers.GetBool() ) {
-			//	vertexCache.Alloc( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), &tri->indexCache, true );
-			//}
-			//if ( tri->indexCache ) {
-			//	vertexCache.Touch( tri->indexCache );
-			//}
 
 			R_LinkLightSurf( &vLight->globalShadows, tri, NULL, light, NULL, vLight->scissorRect, true /* FIXME? */ );
 		}
@@ -1420,13 +1353,6 @@ static void R_AddAmbientDrawsurfs( viewEntity_t *vEntity ) {
 			}
 			// touch it so it won't get purged
 			vertexCache.Touch( tri->ambientCache );
-
-			//if ( r_useIndexBuffers.GetBool() && !tri->indexCache ) {
-			//	vertexCache.Alloc( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), &tri->indexCache, true );
-			//}
-			//if ( tri->indexCache ) {
-			//	vertexCache.Touch( tri->indexCache );
-			//}
 
 			// add the surface for drawing
 			R_AddDrawSurf( tri, vEntity, &vEntity->entityDef->parms, shader, vEntity->scissorRect );

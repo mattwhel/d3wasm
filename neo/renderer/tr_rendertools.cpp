@@ -2371,7 +2371,6 @@ void RB_RenderDebugTools( drawSurf_t **drawSurfs, int numDrawSurfs ) {
 	RB_ShowDebugLines();
 	RB_ShowDebugText();
 	RB_ShowDebugPolygons();
-	RB_ShowTrace( drawSurfs, numDrawSurfs );
 }
 
 /*

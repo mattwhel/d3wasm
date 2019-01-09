@@ -2829,25 +2829,6 @@ int VPCALL idSIMD_Generic::CreateShadowCache( idVec4 *vertexCache, int *vertRema
 	return outVerts;
 }
 
-/*
-============
-idSIMD_Generic::CreateVertexProgramShadowCache
-============
-*/
-int VPCALL idSIMD_Generic::CreateVertexProgramShadowCache( idVec4 *vertexCache, const idDrawVert *verts, const int numVerts ) {
-	for ( int i = 0; i < numVerts; i++ ) {
-		const float *v = verts[i].xyz.ToFloatPtr();
-		vertexCache[i*2+0][0] = v[0];
-		vertexCache[i*2+1][0] = v[0];
-		vertexCache[i*2+0][1] = v[1];
-		vertexCache[i*2+1][1] = v[1];
-		vertexCache[i*2+0][2] = v[2];
-		vertexCache[i*2+1][2] = v[2];
-		vertexCache[i*2+0][3] = 1.0f;
-		vertexCache[i*2+1][3] = 0.0f;
-	}
-	return numVerts * 2;
-}
 
 /*
 ============

@@ -73,9 +73,6 @@ typedef struct glconfig_s {
 	bool				texture3DAvailable;
 	bool				sharedTexturePaletteAvailable;
 	bool				ARBVertexBufferObjectAvailable;
-	bool				ARBVertexProgramAvailable;
-	bool				ARBFragmentProgramAvailable;
-	bool				twoSidedStencilAvailable;
 	bool				textureNonPowerOfTwoAvailable;
 	bool				depthBoundsTestAvailable;
 	bool				GLSLAvailable;
@@ -86,7 +83,6 @@ typedef struct glconfig_s {
 
 	bool				isFullscreen;
 
-	bool				allowARB2Path;
 	bool				allowGLSLPath;
 
 	bool				isInitialized;
