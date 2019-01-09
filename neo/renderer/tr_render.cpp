@@ -357,6 +357,7 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 RB_BindStageTexture
 ======================
 */
+/*
 void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf ) {
 	// image
 	RB_BindVariableStageImage( texture, shaderRegisters );
@@ -392,12 +393,14 @@ void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *te
 		RB_LoadShaderTextureMatrix( shaderRegisters, texture );
 	}
 }
+*/
 
 /*
 ======================
 RB_FinishStageTexture
 ======================
 */
+/*
 void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf ) {
 	if ( texture->texgen == TG_DIFFUSE_CUBE || texture->texgen == TG_SKYBOX_CUBE
 		|| texture->texgen == TG_WOBBLESKY_CUBE ) {
@@ -425,7 +428,7 @@ void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *sur
 		qglMatrixMode( GL_MODELVIEW );
 	}
 }
-
+*/
 
 
 //=============================================================================================
