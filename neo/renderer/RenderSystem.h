@@ -67,14 +67,9 @@ typedef struct glconfig_s {
 	bool				textureLODBiasAvailable;
 	bool				textureEnvAddAvailable;
 	bool				textureEnvCombineAvailable;
-	bool				registerCombinersAvailable;
 	bool				cubeMapAvailable;
 	bool				envDot3Available;
-	bool				texture3DAvailable;
-	bool				sharedTexturePaletteAvailable;
 	bool				ARBVertexBufferObjectAvailable;
-	bool				textureNonPowerOfTwoAvailable;
-	bool				depthBoundsTestAvailable;
 	bool				GLSLAvailable;
 
 	int					vidWidth, vidHeight;	// passed to R_BeginFrame

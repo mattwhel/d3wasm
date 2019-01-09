@@ -1080,11 +1080,6 @@ static void RB_T_Shadow(const drawSurf_t *surf) {
     numIndexes = tri->numIndexes;
   }
 
-  // set depth bounds
-  if (glConfig.depthBoundsTestAvailable && r_useDepthBoundsTest.GetBool()) {
-    qglDepthBoundsEXT(surf->scissorRect.zmin, surf->scissorRect.zmax);
-  }
-
   // debug visualization
   if (r_showShadows.GetInteger()) {
     if (r_showShadows.GetInteger() == 3) {
@@ -1186,20 +1181,12 @@ void RB_StencilShadowPass(const drawSurf_t *drawSurfs) {
 
   qglStencilFunc(GL_ALWAYS, 1, 255);
 
-  if (glConfig.depthBoundsTestAvailable && r_useDepthBoundsTest.GetBool()) {
-    qglEnable(GL_DEPTH_BOUNDS_TEST_EXT);
-  }
-
   RB_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_Shadow);
 
   GL_Cull(CT_FRONT_SIDED);
 
   if (r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
     qglDisable(GL_POLYGON_OFFSET_FILL);
-  }
-
-  if (glConfig.depthBoundsTestAvailable && r_useDepthBoundsTest.GetBool()) {
-    qglDisable(GL_DEPTH_BOUNDS_TEST_EXT);
   }
 
   qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1686,5 +1673,8 @@ void RB_STD_DrawView(void) {
     RB_STD_DrawShaderPasses(drawSurfs + processed, numDrawSurfs - processed);
   }
 
-  //RB_RenderDebugTools( drawSurfs, numDrawSurfs );
+#ifdef __EMSCRIPTEN__
+#else
+  RB_RenderDebugTools( drawSurfs, numDrawSurfs );
+#endif
 }

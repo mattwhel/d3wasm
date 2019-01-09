@@ -141,8 +141,6 @@ idCVar r_flareSize( "r_flareSize", "1", CVAR_RENDERER | CVAR_FLOAT, "scale the f
 idCVar r_useExternalShadows( "r_useExternalShadows", "1", CVAR_RENDERER | CVAR_INTEGER, "1 = skip drawing caps when outside the light volume, 2 = force to no caps for testing", 0, 2, idCmdSystem::ArgCompletion_Integer<0,2> );
 idCVar r_useOptimizedShadows( "r_useOptimizedShadows", "1", CVAR_RENDERER | CVAR_BOOL, "use the dmap generated static shadow volumes" );
 idCVar r_useScissor( "r_useScissor", "1", CVAR_RENDERER | CVAR_BOOL, "scissor clip as portals and lights are processed" );
-idCVar r_useCombinerDisplayLists( "r_useCombinerDisplayLists", "1", CVAR_RENDERER | CVAR_BOOL | CVAR_NOCHEAT, "put all nvidia register combiner programming in display lists" );
-idCVar r_useDepthBoundsTest( "r_useDepthBoundsTest", "1", CVAR_RENDERER | CVAR_BOOL, "use depth bounds test to reduce shadow fill" );
 
 idCVar r_screenFraction( "r_screenFraction", "100", CVAR_RENDERER | CVAR_INTEGER, "for testing fill rate, the resolution of the entire screen can be changed" );
 idCVar r_demonstrateBug( "r_demonstrateBug", "0", CVAR_RENDERER | CVAR_BOOL, "used during development to show IHV's their problems" );
@@ -221,12 +219,6 @@ idCVar r_scaleMenusTo43( "r_scaleMenusTo43", "1", CVAR_RENDERER | CVAR_ARCHIVE |
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
 void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
 
-// EXT_texture3D                                                 // OpenGL 1.2
-void (APIENTRY *qglTexImage3D)(GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid *);
-
-// EXT_shared_texture_palete
-void (APIENTRY * qglColorTableEXT)( int, int, int, int, int, const void * );
-
 // ARB_texture_compression                                        // OpenGL 1.3
 PFNGLCOMPRESSEDTEXIMAGE2DARBPROC		qglCompressedTexImage2DARB;
 PFNGLGETCOMPRESSEDTEXIMAGEARBPROC		qglGetCompressedTexImageARB;
@@ -258,9 +250,6 @@ PFNGLCREATEPROGRAMPROC              qglCreateProgram;
 PFNGLVALIDATEPROGRAMPROC            qglValidateProgram;
 PFNGLGETATTRIBLOCATIONPROC          qglGetAttribLocation;
 PFNGLUNIFORM1IPROC                  qglUniform1i;
-
-// GL_EXT_depth_bounds_test
-PFNGLDEPTHBOUNDSEXTPROC                 qglDepthBoundsEXT;
 
 /*
 =================
@@ -308,10 +297,7 @@ static void R_CheckPortableExtensions( void ) {
 #else
 	glConfig.multitextureAvailable = R_CheckExtension( "GL_ARB_multitexture" );
 	if ( glConfig.multitextureAvailable ) {
-	  // Not used in the code
-		//qglMultiTexCoord2fARB = (void(APIENTRY *)(GLenum, GLfloat, GLfloat))GLimp_ExtensionPointer( "glMultiTexCoord2fARB" );
-		//qglMultiTexCoord2fvARB = (void(APIENTRY *)(GLenum, GLfloat *))GLimp_ExtensionPointer( "glMultiTexCoord2fvARB" );
-		qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTextureARB" );
+	  qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTextureARB" );
 		qglClientActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glClientActiveTextureARB" );
 		qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
 		if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
@@ -336,9 +322,6 @@ static void R_CheckPortableExtensions( void ) {
 
 	// GL_ARB_texture_env_add / OpenGL 1.3
 	glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
-
-  // GL_ARB_texture_non_power_of_two / OpenGL 2.0
-	glConfig.textureNonPowerOfTwoAvailable = R_CheckExtension( "GL_ARB_texture_non_power_of_two" );
 
 	// GL_ARB_texture_compression / OpenGL 1.3 + GL_S3_s3tc (extension only)
 	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
@@ -370,20 +353,6 @@ static void R_CheckPortableExtensions( void ) {
 		glConfig.textureLODBiasAvailable = false;
 	}
 
-	// GL_EXT_shared_texture_palette (extension only)
-	glConfig.sharedTexturePaletteAvailable = R_CheckExtension( "GL_EXT_shared_texture_palette" );
-	if ( glConfig.sharedTexturePaletteAvailable ) {
-		qglColorTableEXT = ( void ( APIENTRY * ) ( int, int, int, int, int, const void * ) ) GLimp_ExtensionPointer( "glColorTableEXT" );
-	}
-
-	// GL_EXT_texture3D / OpenGL 1.2
-	glConfig.texture3DAvailable = R_CheckExtension( "GL_EXT_texture3D" );
-	if ( glConfig.texture3DAvailable ) {
-		qglTexImage3D =
-			(void (APIENTRY *)(GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid *) )
-			GLimp_ExtensionPointer( "glTexImage3D" );
-	}
-
 	// EXT_stencil_wrap / OpenGL 1.4
 	// This isn't very important, but some pathological case might cause a clamp error and give a shadow bug.
 	// Nvidia also believes that future hardware may be able to run faster with this enabled to avoid the
@@ -409,27 +378,11 @@ static void R_CheckPortableExtensions( void ) {
 
 	if(glConfig.ARBVertexBufferObjectAvailable) {
 		qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBufferARB");
-		// Not used
-		//qglDeleteBuffersARB = (PFNGLDELETEBUFFERSARBPROC)GLimp_ExtensionPointer( "glDeleteBuffersARB");
 		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)GLimp_ExtensionPointer( "glGenBuffersARB");
-		// Not used
-		//qglIsBufferARB = (PFNGLISBUFFERARBPROC)GLimp_ExtensionPointer( "glIsBufferARB");
 		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)GLimp_ExtensionPointer( "glBufferDataARB");
 		qglBufferSubDataARB = (PFNGLBUFFERSUBDATAARBPROC)GLimp_ExtensionPointer( "glBufferSubDataARB");
-		// Not used
-		//qglGetBufferSubDataARB = (PFNGLGETBUFFERSUBDATAARBPROC)GLimp_ExtensionPointer( "glGetBufferSubDataARB");
-		//qglMapBufferARB = (PFNGLMAPBUFFERARBPROC)GLimp_ExtensionPointer( "glMapBufferARB");
-		//qglUnmapBufferARB = (PFNGLUNMAPBUFFERARBPROC)GLimp_ExtensionPointer( "glUnmapBufferARB");
-		//qglGetBufferParameterivARB = (PFNGLGETBUFFERPARAMETERIVARBPROC)GLimp_ExtensionPointer( "glGetBufferParameterivARB");
-		//qglGetBufferPointervARB = (PFNGLGETBUFFERPOINTERVARBPROC)GLimp_ExtensionPointer( "glGetBufferPointervARB");
 	}
 #endif
-
-	// GL_EXT_depth_bounds_test (extension only)
-	glConfig.depthBoundsTestAvailable = R_CheckExtension( "EXT_depth_bounds_test" );
-	if ( glConfig.depthBoundsTestAvailable ) {
-		qglDepthBoundsEXT = (PFNGLDEPTHBOUNDSEXTPROC)GLimp_ExtensionPointer( "glDepthBoundsEXT" );
-	}
 
 	// GL_ARB_shading_language_100 / OpenGL 2.0
 #ifdef __EMSCRIPTEN__

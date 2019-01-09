@@ -858,10 +858,8 @@ extern idCVar r_useInfiniteFarZ;		// 1 = use the no-far-clip-plane trick
 extern idCVar r_useScissor;				// 1 = scissor clip as portals and lights are processed
 extern idCVar r_usePortals;				// 1 = use portals to perform area culling, otherwise draw everything
 extern idCVar r_useStateCaching;		// avoid redundant state changes in GL_*() calls
-extern idCVar r_useCombinerDisplayLists;// if 1, put all nvidia register combiner programming in display lists
 extern idCVar r_useEntityCallbacks;		// if 0, issue the callback immediately at update time, rather than defering
 extern idCVar r_lightAllBackFaces;		// light all the back faces, even when they would be shadowed
-extern idCVar r_useDepthBoundsTest;     // use depth bounds test to reduce shadow fill
 
 extern idCVar r_skipPostProcess;		// skip all post-process renderings
 extern idCVar r_skipSuppress;			// ignore the per-view suppressions

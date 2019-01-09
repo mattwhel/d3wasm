@@ -138,7 +138,6 @@ typedef enum {
 typedef enum {
 	TT_DISABLED,
 	TT_2D,
-	TT_3D,
 	TT_CUBIC,
 	TT_RECT
 } textureType_t;
@@ -156,7 +155,7 @@ public:
 				idImage();
 
 	// Makes this image active on the current GL texture unit.
-	// automatically enables or disables cube mapping or texture3D
+	// automatically enables or disables cube mapping
 	// May perform file loading if the image was not preloaded.
 	// May start a background image read.
 	void		Bind();
@@ -174,9 +173,6 @@ public:
 	void		GenerateImage( const byte *pic, int width, int height,
 					   textureFilter_t filter, bool allowDownSize,
 					   textureRepeat_t repeat, textureDepth_t depth );
-	void		Generate3DImage( const byte *pic, int width, int height, int depth,
-						textureFilter_t filter, bool allowDownSize,
-						textureRepeat_t repeat, textureDepth_t minDepth );
 	void		GenerateCubeImage( const byte *pic[6], int size,
 						textureFilter_t filter, bool allowDownSize,
 						textureDepth_t depth );

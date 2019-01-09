@@ -1023,9 +1023,6 @@ static const filterName_t textureFilters[] = {
 		case TT_2D:
 			texEnum = GL_TEXTURE_2D;
 			break;
-		case TT_3D:
-			texEnum = GL_TEXTURE_3D;
-			break;
 		case TT_CUBIC:
 			texEnum = GL_TEXTURE_CUBE_MAP_EXT;
 			break;
@@ -1430,18 +1427,7 @@ void idImageManager::SetNormalPalette( void ) {
 	temptable[255*3+1] =
 	temptable[255*3+2] = 128;
 
-	if ( !glConfig.sharedTexturePaletteAvailable ) {
-		return;
-	}
-
-	qglColorTableEXT( GL_SHARED_TEXTURE_PALETTE_EXT,
-					   GL_RGB,
-					   256,
-					   GL_RGB,
-					   GL_UNSIGNED_BYTE,
-					   temptable );
-
-	qglEnable( GL_SHARED_TEXTURE_PALETTE_EXT );
+	return;
 }
 
 /*
@@ -1973,8 +1959,6 @@ void idImageManager::BindNull() {
 
 	if ( tmu->textureType == TT_CUBIC ) {
 		qglDisable( GL_TEXTURE_CUBE_MAP_EXT );
-	} else if ( tmu->textureType == TT_3D ) {
-		qglDisable( GL_TEXTURE_3D );
 	} else if ( tmu->textureType == TT_2D ) {
 		qglDisable( GL_TEXTURE_2D );
 	}

@@ -101,18 +101,10 @@ extern PFNGLBINDBUFFERARBPROC qglBindBufferARB;
 extern PFNGLGENBUFFERSARBPROC qglGenBuffersARB;
 extern PFNGLBUFFERDATAARBPROC qglBufferDataARB;
 extern PFNGLBUFFERSUBDATAARBPROC qglBufferSubDataARB;
-// 3D textures
-extern void ( APIENTRY *qglTexImage3D)(GLenum, GLint, GLint, GLsizei, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid *);
-
-// shared texture palette
-extern	void ( APIENTRY *qglColorTableEXT)( int, int, int, int, int, const void * );
 
 // ARB_texture_compression
 extern	PFNGLCOMPRESSEDTEXIMAGE2DARBPROC	qglCompressedTexImage2DARB;
 extern	PFNGLGETCOMPRESSEDTEXIMAGEARBPROC	qglGetCompressedTexImageARB;
-
-// GL_EXT_depth_bounds_test
-extern PFNGLDEPTHBOUNDSEXTPROC              qglDepthBoundsEXT;
 
 // GLSL Shaders
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC    qglEnableVertexAttribArray;
