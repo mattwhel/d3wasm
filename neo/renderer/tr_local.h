@@ -674,6 +674,13 @@ typedef struct {
 const int MAX_GUI_SURFACES	= 1024;		// default size of the drawSurfs list for guis, will
 										// be automatically expanded as needed
 
+typedef enum {
+	BE_ARB,
+	BE_ARB2,
+	BE_GLSL,
+	BE_BAD
+} backEndName_t;
+
 typedef struct {
 	int		x, y, width, height;	// these are in physical, OpenGL Y-at-bottom pixels
 } renderCrop_t;
@@ -733,6 +740,7 @@ public:
 							~idRenderSystemLocal( void );
 
 	void					Clear( void );
+	void					SetBackEndRenderer();			// sets tr.backEndRenderer based on cvars
 	void					RenderViewToViewport( const renderView_t *renderView, idScreenRect *viewport );
 
 public:
@@ -752,6 +760,8 @@ public:
 	int						viewportOffset[2];	// for doing larger-than-window tiled renderings
 	int						tiledViewport[2];
 
+	// determines which back end to use, and if vertex programs are in use
+	backEndName_t			backEndRenderer;
 	float					backEndRendererMaxLight;	// 1.0 for standard, unlimited for floats
 														// determines how much overbrighting needs
 														// to be done post-process
@@ -963,13 +973,6 @@ GL wrapper/helper functions
 */
 
 void	GL_SelectTexture( int unit );
-void	GL_UseProgram(shaderProgram_s *program);
-void	GL_Uniform1fv(GLint location, const GLfloat *value);
-void	GL_Uniform4fv(GLint location, const GLfloat *value);
-void	GL_UniformMatrix4fv(GLint location, const GLfloat *value);
-void	GL_EnableVertexAttribArray(GLuint index);
-void	GL_DisableVertexAttribArray(GLuint index);
-void	GL_VertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
 void	GL_CheckErrors( void );
 void	GL_ClearStateDelta( void );
 void	GL_State( int stateVector );
@@ -1218,9 +1221,6 @@ RENDER
 void RB_EnterWeaponDepthHack();
 void RB_EnterModelDepthHack( float depth );
 void RB_LeaveDepthHack();
-void RB_EnterWeaponDepthHack_GLSL(const drawSurf_t *surf);
-void RB_EnterModelDepthHack_GLSL(const drawSurf_t *surf);
-void RB_LeaveDepthHack_GLSL(const drawSurf_t *surf);
 void RB_RenderTriangleSurface( const srfTriangles_t *tri );
 void RB_T_RenderTriangleSurface( const drawSurf_t *surf );
 void RB_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
@@ -1229,9 +1229,7 @@ void RB_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
 										void (*triFunc_)( const drawSurf_t *) );
 void RB_DrawShaderPasses( drawSurf_t **drawSurfs, int numDrawSurfs );
 void RB_LoadShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture );
-void RB_LoadShaderTextureMatrix_GLSL( const float *shaderRegisters, const textureStage_t *texture );
 void RB_GetShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture, float matrix[16] );
-void RB_CreateSingleDrawInteractions( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) );
 
 const shaderStage_t *RB_SetLightTexture( const idRenderLightLocal *light );
 
@@ -1251,7 +1249,6 @@ DRAW_STANDARD
 
 void RB_DrawElementsWithCounters( const srfTriangles_t *tri );
 void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexes );
-void RB_STD_FillDepthBuffer( drawSurf_t **drawSurfs, int numDrawSurfs );
 void RB_BindVariableStageImage( const textureStage_t *texture, const float *shaderRegisters );
 void RB_StencilShadowPass( const drawSurf_t *drawSurfs );
 void RB_STD_DrawView( void );
@@ -1398,8 +1395,7 @@ typedef struct shaderProgram_s {
 
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
-void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf);
-void RB_GLSL_DrawInteraction(const drawInteraction_t *din);
+void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t zfillShader;
 extern shaderProgram_t stencilShadowShader;
