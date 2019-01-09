@@ -1407,6 +1407,7 @@ void RB_GLSL_DrawInteraction(const drawInteraction_t *din);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t zfillShader;
 extern shaderProgram_t stencilShadowShader;
+extern shaderProgram_t defaultShader;
 
 /*
 ============================================================
