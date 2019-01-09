@@ -297,13 +297,16 @@ void RB_GLSL_DrawInteractions(void)
 			qglStencilFunc(GL_ALWAYS, 128, 255);
 		}
 
-    GL_UseProgram(NULL);
+
+		GL_UseProgram(NULL);
     //GL_UseProgram(&shadowShader);
-		//RB_StencilShadowPass(vLight->globalShadows);
+		RB_StencilShadowPass(vLight->globalShadows);
+    backEnd.depthFunc = GLS_DEPTHFUNC_ALWAYS;
 		RB_GLSL_CreateDrawInteractions(vLight->localInteractions);
     GL_UseProgram(NULL);
     //GL_UseProgram(&shadowShader);
-		//RB_StencilShadowPass(vLight->localShadows);
+		RB_StencilShadowPass(vLight->localShadows);
+    backEnd.depthFunc = GLS_DEPTHFUNC_ALWAYS;
 		RB_GLSL_CreateDrawInteractions(vLight->globalInteractions);
 		GL_UseProgram(NULL);	// if there weren't any globalInteractions, it would have stayed on
 
@@ -313,7 +316,6 @@ void RB_GLSL_DrawInteractions(void)
 		}
 
 		qglStencilFunc(GL_ALWAYS, 128, 255);
-
 		backEnd.depthFunc = GLS_DEPTHFUNC_LESS;
 		RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions);
 
