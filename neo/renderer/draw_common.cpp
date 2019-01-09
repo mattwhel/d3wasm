@@ -87,7 +87,7 @@ void RB_PrepareStageTexturing(const shaderStage_t *pStage,  const drawSurf_t *su
   }
 
   // set the texture matrix if needed
-  RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+  RB_LoadShaderTextureMatrix_GLSL(surf->shaderRegisters, &pStage->texture);
 
   // texgens
   if (pStage->texture.texgen == TG_DIFFUSE_CUBE) {
@@ -267,7 +267,7 @@ void RB_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t *surf
 
 		GL_SelectTexture(1);
 
-		RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+		RB_LoadShaderTextureMatrix_GLSL(surf->shaderRegisters, &pStage->texture);
 
 		glDisable(GL_TEXTURE_GEN_S);
 		glDisable(GL_TEXTURE_GEN_T);

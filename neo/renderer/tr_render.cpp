@@ -309,6 +309,23 @@ void RB_GetShaderTextureMatrix( const float *shaderRegisters,
 RB_LoadShaderTextureMatrix
 ======================
 */
+void RB_LoadShaderTextureMatrix_GLSL(const float *shaderRegisters, const textureStage_t *texture)
+{
+	float	matrix[16];
+
+	if (texture->hasMatrix) {
+		RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
+		GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
+	} else {
+		GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+	}
+}
+
+/*
+======================
+RB_LoadShaderTextureMatrix
+======================
+*/
 void RB_LoadShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture ) {
 	float	matrix[16];
 
