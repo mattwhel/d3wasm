@@ -341,7 +341,7 @@ loads GLSL vertex or fragment shaders
 */
 static void R_LoadGLSLShader(const char *name, shaderProgram_t *shaderProgram, GLenum type)
 {
-	idStr	fullPath = "gl2progs/";
+	idStr	fullPath = "glsl/";
 	fullPath += name;
 	char	*fileBuffer;
 	char	*buffer;
