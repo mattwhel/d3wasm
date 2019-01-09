@@ -34,9 +34,6 @@ shaderProgram_t	interactionShader;
 shaderProgram_t zfillShader;
 
 static void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) );
-static void RB_EnterWeaponDepthHack_GLSL(const drawSurf_t *surf);
-static void RB_EnterModelDepthHack_GLSL(const drawSurf_t *surf);
-static void RB_LeaveDepthHack_GLSL(const drawSurf_t *surf);
 
 // Externs
 void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,

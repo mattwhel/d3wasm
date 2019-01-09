@@ -348,25 +348,76 @@ FILL DEPTH BUFFER
 
 =============================================================================================
 */
+/*
+================
+RB_PrepareStageTexturing
+================
+*/
+void RB_PrepareStageTexturing_GLSL(const shaderStage_t *pStage,  const drawSurf_t *surf, idDrawVert *ac)
+{
+  // set privatePolygonOffset if necessary
+  if (pStage->privatePolygonOffset) {
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * pStage->privatePolygonOffset);
+  }
 
+  // set the texture matrix if needed
+  RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+
+  // texgens
+  if (pStage->texture.texgen == TG_DIFFUSE_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                           ac->normal.ToFloatPtr());
+  }
+
+  if (pStage->texture.texgen == TG_SKYBOX_CUBE || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, 0,
+                           vertexCache.Position(surf->dynamicTexCoords));
+  }
+}
+
+/*
+================
+RB_FinishStageTexturing
+================
+*/
+void RB_FinishStageTexturing_GLSL(const shaderStage_t *pStage, const drawSurf_t *surf, idDrawVert *ac)
+{
+  // unset privatePolygonOffset if necessary
+  if (pStage->privatePolygonOffset && !surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
+    glDisable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  if (pStage->texture.texgen == TG_DIFFUSE_CUBE || pStage->texture.texgen == TG_SKYBOX_CUBE
+      || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), (void *)&ac->st);
+  }
+
+  if (pStage->texture.hasMatrix) {
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+  }
+}
 
 /*
 ==================
 RB_T_FillDepthBuffer
 ==================
 */
-void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
-
+void RB_T_FillDepthBuffer(const drawSurf_t *surf)
+{
   int stage;
   const idMaterial *shader;
   const shaderStage_t *pStage;
   const float *regs;
   float color[4];
   const srfTriangles_t *tri;
+  const float	one[1] = { 1 };
 
   tri = surf->geo;
   shader = surf->material;
 
+#if 0
+  // CLIP PLANES TODO
   // update the clip plane if needed
   if (backEnd.viewDef->numClipPlanes && surf->space != backEnd.currentSpace) {
     GL_SelectTexture(1);
@@ -378,6 +429,7 @@ void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
     qglTexGenfv(GL_S, GL_OBJECT_PLANE, plane.ToFloatPtr());
     GL_SelectTexture(0);
   }
+#endif
 
   if (!shader->IsDrawn()) {
     return;
@@ -436,8 +488,10 @@ void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
   }
 
   idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
-  qglVertexPointer(3, GL_FLOAT, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
-  qglTexCoordPointer(2, GL_FLOAT, sizeof(idDrawVert), reinterpret_cast<void *>(&ac->st));
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), reinterpret_cast<void *>(&ac->st));
 
   bool drawSolid = false;
 
@@ -451,7 +505,6 @@ void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
     // draw a normal opaque surface
     bool didDraw = false;
 
-    qglEnable(GL_ALPHA_TEST);
     // perforated surfaces may have multiple alpha tested stages
     for (stage = 0; stage < shader->GetNumStages(); stage++) {
       pStage = shader->GetStage(stage);
@@ -476,22 +529,21 @@ void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
       if (color[3] <= 0) {
         continue;
       }
-      qglColor4fv(color);
-
-      qglAlphaFunc(GL_GREATER, regs[pStage->alphaTestRegister]);
+      GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
+      GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), &regs[pStage->alphaTestRegister]);
 
       // bind the texture
       pStage->texture.image->Bind();
 
       // set texture matrix and texGens
-      RB_PrepareStageTexturing(pStage, surf, ac);
+      RB_PrepareStageTexturing_GLSL(pStage, surf, ac);
 
       // draw it
       RB_DrawElementsWithCounters(tri);
 
-      RB_FinishStageTexturing(pStage, surf, ac);
+      RB_FinishStageTexturing_GLSL(pStage, surf, ac);
     }
-    qglDisable(GL_ALPHA_TEST);
+
     if (!didDraw) {
       drawSolid = true;
     }
@@ -499,13 +551,13 @@ void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
 
   // draw the entire surface solid
   if (drawSolid) {
-    qglColor4fv(color);
+    GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
+    GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
     globalImages->whiteImage->Bind();
 
     // draw it
     RB_DrawElementsWithCounters(tri);
   }
-
 
   // reset polygon offset
   if (shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
@@ -517,6 +569,10 @@ void RB_T_FillDepthBuffer(const drawSurf_t *surf) {
     GL_State(GLS_DEPTHFUNC_LESS);
   }
 
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  qglEnableClientState( GL_VERTEX_ARRAY );
+  qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 }
 
 /*
@@ -527,12 +583,17 @@ If we are rendering a subview with a near clip plane, use a second texture
 to force the alpha test to fail when behind that clip plane
 =====================
 */
-void RB_STD_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
+void RB_STD_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
+{
   // if we are just doing 2D rendering, no need to fill the depth buffer
   if (!backEnd.viewDef->viewEntitys) {
     return;
   }
 
+  GL_UseProgram(&zfillShader);
+
+#if 0
+  // CLIP PLANES TODO
   // enable the second texture for mirror plane clipping if needed
   if (backEnd.viewDef->numClipPlanes) {
     GL_SelectTexture(1);
@@ -541,10 +602,11 @@ void RB_STD_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
     qglEnable(GL_TEXTURE_GEN_S);
     qglTexCoord2f(1, 0.5);
   }
+#endif
 
   // the first texture will be used for alpha tested surfaces
   GL_SelectTexture(0);
-  qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // decal surfaces may enable polygon offset
   qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
@@ -559,13 +621,19 @@ void RB_STD_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
   RB_RenderDrawSurfListWithFunction(drawSurfs, numDrawSurfs, RB_T_FillDepthBuffer);
 
+#if 0
+  // CLIP PLANES TODO
   if (backEnd.viewDef->numClipPlanes) {
     GL_SelectTexture(1);
     globalImages->BindNull();
     qglDisable(GL_TEXTURE_GEN_S);
     GL_SelectTexture(0);
   }
+#endif
 
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
+  GL_UseProgram(NULL);
 }
 
 /*

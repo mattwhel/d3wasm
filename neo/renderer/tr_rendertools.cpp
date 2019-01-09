@@ -545,6 +545,7 @@ plane extends from, allowing you to see doubled edges
 =================
 */
 void RB_ShowSilhouette( void ) {
+#if 0
 	int		i;
 	const drawSurf_t	*surf;
 	const viewLight_t	*vLight;
@@ -616,6 +617,7 @@ void RB_ShowSilhouette( void ) {
 	GL_State( GLS_DEFAULT );
 	qglColor3f( 1,1,1 );
 	GL_Cull( CT_FRONT_SIDED );
+#endif
 }
 
 
@@ -735,6 +737,7 @@ Debugging tool
 =====================
 */
 static void RB_ShowTris( drawSurf_t **drawSurfs, int numDrawSurfs ) {
+#if 0
 	idVec3 end;
 
 	if ( !r_showTris.GetInteger() ) {
@@ -775,6 +778,7 @@ static void RB_ShowTris( drawSurf_t **drawSurfs, int numDrawSurfs ) {
 	qglDepthRange( 0, 1 );
 	GL_State( GLS_DEFAULT );
 	GL_Cull( CT_FRONT_SIDED );
+#endif
 }
 
 

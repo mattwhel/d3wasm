@@ -172,47 +172,54 @@ matrix will already have been loaded, and backEnd.currentSpace will
 be updated after the triangle function completes.
 ====================
 */
-void RB_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
-											  void (*triFunc_)( const drawSurf_t *) ) {
-	int				i;
-	const drawSurf_t		*drawSurf;
+void RB_RenderDrawSurfListWithFunction(drawSurf_t **drawSurfs, int numDrawSurfs,
+                                       void (*triFunc_)(const drawSurf_t *))
+{
+  int				i;
+  const drawSurf_t		*drawSurf;
 
-	backEnd.currentSpace = NULL;
+  backEnd.currentSpace = NULL;
 
-	for (i = 0  ; i < numDrawSurfs ; i++ ) {
-		drawSurf = drawSurfs[i];
+  for (i = 0  ; i < numDrawSurfs ; i++) {
+    drawSurf = drawSurfs[i];
 
-		// change the matrix if needed
-		if ( drawSurf->space != backEnd.currentSpace ) {
-			qglLoadMatrixf( drawSurf->space->modelViewMatrix );
-		}
+    // change the matrix if needed
+    if (drawSurf->space != backEnd.currentSpace) {
+      float	mat[16];
+      myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 
-		if ( drawSurf->space->weaponDepthHack ) {
-			RB_EnterWeaponDepthHack();
-		}
+      // we need the model matrix without it being combined with the view matrix
+      // so we can transform local vectors to global coordinates
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelMatrix), drawSurf->space->modelMatrix);
+    }
 
-		if ( drawSurf->space->modelDepthHack != 0.0f ) {
-			RB_EnterModelDepthHack( drawSurf->space->modelDepthHack );
-		}
+    if (drawSurf->space->weaponDepthHack) {
+      RB_EnterWeaponDepthHack_GLSL(drawSurf);
+    }
 
-		// change the scissor if needed
-		if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
-			backEnd.currentScissor = drawSurf->scissorRect;
-			qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-				backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-				backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-				backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
-		}
+    if (drawSurf->space->modelDepthHack != 0.0f) {
+      RB_EnterModelDepthHack_GLSL(drawSurf);
+    }
 
-		// render it
-		triFunc_( drawSurf );
+    // change the scissor if needed
+    if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(drawSurf->scissorRect)) {
+      backEnd.currentScissor = drawSurf->scissorRect;
+      qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+                backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+                backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+                backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
+    }
 
-		if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
-			RB_LeaveDepthHack();
-		}
+    // render it
+    triFunc_(drawSurf);
 
-		backEnd.currentSpace = drawSurf->space;
-	}
+    if (drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f) {
+      RB_LeaveDepthHack_GLSL(drawSurf);
+    }
+
+    backEnd.currentSpace = drawSurf->space;
+  }
 }
 
 /*
