@@ -765,6 +765,7 @@ void RB_STD_T_RenderShaderPasses(const drawSurf_t *surf) {
     // see if we are a new-style stage
     newShaderStage_t *newStage = pStage->newStage;
     if (newStage) {
+      continue;
       //--------------------------
       //
       // new style stages
