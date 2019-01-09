@@ -327,9 +327,6 @@ private:
 #endif
 
 #ifdef __EMSCRIPTEN__
-  void emcommonframe_pre();
-  void emcommonframe_mid();
-  void emcommonframe_last();
 #else
   SDL_TimerID async_timer;
 #endif
@@ -2546,8 +2543,13 @@ void idCommonLocal::InitSIMD(void) {
   com_forceGenericSIMD.ClearModified();
 }
 
-#ifdef __EMSCRIPTEN__
-void idCommonLocal::emcommonframe_pre() {
+/*
+=================
+idCommonLocal::Frame
+=================
+*/
+void idCommonLocal::Frame(void) {
+
   common->Async();
   // Disable background download thread for now (not really used)
   //fileSystem->RunThread();
@@ -2563,45 +2565,12 @@ void idCommonLocal::emcommonframe_pre() {
   //if ( com_forceGenericSIMD.IsModified() ) {
   //    InitSIMD();
   //}
-}
-
-void idCommonLocal::emcommonframe_mid() {
-  com_frameTime = com_ticNumber * USERCMD_MSEC;
-
-  idAsyncNetwork::RunFrame();
-}
-
-void idCommonLocal::emcommonframe_last() {
-  // report timing information
-  if ( com_speeds.GetBool() ) {
-      static int	lastTime;
-      int		nowTime = Sys_Milliseconds();
-      int		com_frameMsec = nowTime - lastTime;
-      lastTime = nowTime;
-      Printf( "frame:%i all:%3i gfr:%3i rf:%3i bk:%3i\n", com_frameNumber, com_frameMsec, time_gameFrame, time_frontend, time_backend );
-      time_gameFrame = 0;
-      time_gameDraw = 0;
-    }
-
-    com_frameNumber++;
-
-    // set idLib frame number for frame based memory dumps
-    idLib::frameNumber = com_frameNumber;
-}
-#endif
-
-/*
-=================
-idCommonLocal::Frame
-=================
-*/
-void idCommonLocal::Frame(void) {
-
-  emcommonframe_pre();
 
   eventLoop->RunEventLoop();               // This function might yields (ie. Level load => inline loading screen update)
 
-  emcommonframe_mid();
+  com_frameTime = com_ticNumber * USERCMD_MSEC;
+
+  idAsyncNetwork::RunFrame();
 
   if (idAsyncNetwork::IsActive()) {
     if (idAsyncNetwork::serverDedicated.GetInteger() != 1) {
@@ -2614,7 +2583,21 @@ void idCommonLocal::Frame(void) {
     session->UpdateScreen( false );
   }
 
-  emcommonframe_last();
+  // report timing information
+  if ( com_speeds.GetBool() ) {
+    static int	lastTime;
+    int		nowTime = Sys_Milliseconds();
+    int		com_frameMsec = nowTime - lastTime;
+    lastTime = nowTime;
+    Printf( "frame:%i all:%3i gfr:%3i rf:%3i bk:%3i\n", com_frameNumber, com_frameMsec, time_gameFrame, time_frontend, time_backend );
+    time_gameFrame = 0;
+    time_gameDraw = 0;
+  }
+
+  com_frameNumber++;
+
+  // set idLib frame number for frame based memory dumps
+  idLib::frameNumber = com_frameNumber;
 }
 
 /*
