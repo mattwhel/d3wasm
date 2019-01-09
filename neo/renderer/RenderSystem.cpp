@@ -532,57 +532,6 @@ void idRenderSystemLocal::DrawBigStringExt( int x, int y, const char *string, co
 //======================================================================================
 
 /*
-==================
-SetBackEndRenderer
-
-Check for changes in the back end renderSystem, possibly invalidating cached data
-==================
-*/
-void idRenderSystemLocal::SetBackEndRenderer() {
-	if ( !r_renderer.IsModified() ) {
-		return;
-	}
-
-	backEndRenderer = BE_BAD;
-
-	if (idStr::Icmp(r_renderer.GetString(), "arb") == 0) {
-		backEndRenderer = BE_ARB;
-	}
-	else if (idStr::Icmp(r_renderer.GetString(), "glsl") == 0) {
-		if (glConfig.allowGLSLPath) {
-			backEndRenderer = BE_GLSL;
-		}
-	}
-	else if (idStr::Icmp(r_renderer.GetString(), "best") == 0) {
-		if (glConfig.allowGLSLPath) {
-			backEndRenderer = BE_GLSL;
-		}
-	}
-
-	// fallback
-	if ( backEndRenderer == BE_BAD ) {
-			// the others are considered experimental
-			backEndRenderer = BE_ARB;
-	}
-
-	backEndRendererMaxLight = 1.0;
-
-	switch( backEndRenderer ) {
-	case BE_ARB:
-	  common->Printf( "using ARB renderSystem\n" );
-		break;
-	case BE_GLSL:
-		common->Printf("using GLSL renderSystem\n");
-		backEndRendererMaxLight = 999;
-		break;
-	default:
-		common->FatalError( "SetbackEndRenderer: bad back end" );
-	}
-
-	r_renderer.ClearModified();
-}
-
-/*
 ====================
 BeginFrame
 ====================
@@ -593,9 +542,6 @@ void idRenderSystemLocal::BeginFrame( int windowWidth, int windowHeight ) {
 	if ( !glConfig.isInitialized ) {
 		return;
 	}
-
-	// determine which back end we will use
-	SetBackEndRenderer();
 
 	guiModel->Clear();
 

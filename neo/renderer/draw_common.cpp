@@ -1667,17 +1667,7 @@ void RB_STD_DrawView(void) {
   RB_STD_FillDepthBuffer(drawSurfs, numDrawSurfs);
 
   // main light renderer
-  switch (tr.backEndRenderer) {
-    case BE_ARB:
-      RB_ARB_DrawInteractions();
-      break;
-    case BE_GLSL:
-      RB_GLSL_DrawInteractions();
-      break;
-    default:
-      RB_ARB_DrawInteractions();
-      break;
-  }
+  RB_GLSL_DrawInteractions();
 
   // disable stencil shadow test
   qglStencilFunc(GL_ALWAYS, 128, 255);

@@ -430,7 +430,6 @@ set(src_renderer
         renderer/RenderWorld_load.cpp
         renderer/RenderWorld_portals.cpp
         renderer/VertexCache.cpp
-        renderer/draw_arb.cpp
         renderer/draw_glsl.cpp
         renderer/draw_common.cpp
         renderer/tr_backend.cpp

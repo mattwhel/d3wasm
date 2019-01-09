@@ -83,8 +83,6 @@ typedef struct glconfig_s {
 
 	bool				isFullscreen;
 
-	bool				allowGLSLPath;
-
 	bool				isInitialized;
 } glconfig_t;
 

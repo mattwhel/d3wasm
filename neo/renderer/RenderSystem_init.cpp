@@ -51,8 +51,6 @@ If you have questions concerning this license or the applicable additional terms
 
 glconfig_t	glConfig;
 
-const char *r_rendererArgs[] = { "best", "glsl", NULL };
-
 idCVar r_useLightPortalFlow( "r_useLightPortalFlow", "1", CVAR_RENDERER | CVAR_BOOL, "use a more precise area reference determination" );
 idCVar r_multiSamples( "r_multiSamples", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "number of antialiasing samples" );
 idCVar r_mode( "r_mode", "5", CVAR_ARCHIVE | CVAR_RENDERER | CVAR_INTEGER, "video mode number" );
@@ -83,8 +81,6 @@ idCVar r_swapInterval( "r_swapInterval", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVA
 
 idCVar r_gamma( "r_gamma", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_FLOAT, "changes gamma tables", 0.5f, 3.0f );
 idCVar r_brightness( "r_brightness", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_FLOAT, "changes gamma tables", 0.5f, 2.0f );
-
-idCVar r_renderer( "r_renderer", "best", CVAR_RENDERER | CVAR_ARCHIVE, "hardware specific renderer path to use", r_rendererArgs, idCmdSystem::ArgCompletion_String<r_rendererArgs> );
 
 idCVar r_jitter( "r_jitter", "0", CVAR_RENDERER | CVAR_BOOL, "randomly subpixel jitter the projection matrix" );
 
@@ -429,12 +425,6 @@ static void R_CheckPortableExtensions( void ) {
 	}
 #endif
 
-	// check for minimum set
-	if ( !glConfig.multitextureAvailable || !glConfig.textureEnvCombineAvailable || !glConfig.cubeMapAvailable
-		|| !glConfig.envDot3Available || !glConfig.ARBVertexBufferObjectAvailable ) {
-			common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
-	}
-
 	// GL_EXT_depth_bounds_test (extension only)
 	glConfig.depthBoundsTestAvailable = R_CheckExtension( "EXT_depth_bounds_test" );
 	if ( glConfig.depthBoundsTestAvailable ) {
@@ -447,27 +437,37 @@ static void R_CheckPortableExtensions( void ) {
 	common->Printf( "...using %s\n", "OpenGL 2.0 Shaders" );
 #else
   glConfig.GLSLAvailable = R_CheckExtension("GL_ARB_shading_language_100");
+	if (glConfig.GLSLAvailable)
 #endif
-  qglEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC)GLimp_ExtensionPointer("glEnableVertexAttribArray");
-  qglDisableVertexAttribArray	= (PFNGLDISABLEVERTEXATTRIBARRAYPROC)GLimp_ExtensionPointer("glDisableVertexAttribArray");
-  qglVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)GLimp_ExtensionPointer("glVertexAttribPointer");
-  qglUseProgram = (PFNGLUSEPROGRAMPROC)GLimp_ExtensionPointer("glUseProgram");
-  qglUniform1fv = (PFNGLUNIFORM1FVPROC)GLimp_ExtensionPointer("glUniform1fv");
-  qglUniform4fv = (PFNGLUNIFORM4FVPROC)GLimp_ExtensionPointer("glUniform4fv");
-  qglUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)GLimp_ExtensionPointer("glUniformMatrix4fv");
-	qglLinkProgram = (PFNGLLINKPROGRAMPROC)GLimp_ExtensionPointer("glLinkProgram");
-	qglGetProgramiv = (PFNGLGETPROGRAMIVPROC)GLimp_ExtensionPointer("glGetProgramiv");
-	qglGetShaderInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)GLimp_ExtensionPointer("glGetShaderInfoLog");
-	qglBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC)GLimp_ExtensionPointer("glBindAttribLocation");
-  qglAttachShader = (PFNGLATTACHSHADERPROC)GLimp_ExtensionPointer("glAttachShader");
-  qglCreateShader = (PFNGLCREATESHADERPROC)GLimp_ExtensionPointer("glCreateShader");
-	qglShaderSource = (PFNGLSHADERSOURCEPROC)GLimp_ExtensionPointer("glShaderSource");
-	qglCompileShader = (PFNGLCOMPILESHADERPROC)GLimp_ExtensionPointer("glCompileShader");
-	qglGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)GLimp_ExtensionPointer("glGetUniformLocation");
-  qglCreateProgram = (PFNGLCREATEPROGRAMPROC)GLimp_ExtensionPointer("glCreateProgram");
-  qglValidateProgram = (PFNGLVALIDATEPROGRAMPROC)GLimp_ExtensionPointer("glValidateProgram");
-  qglGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC)GLimp_ExtensionPointer("glGetAttribLocation");
-  qglUniform1i = (PFNGLUNIFORM1IPROC)GLimp_ExtensionPointer("glUniform1i");
+	{
+		qglEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC) GLimp_ExtensionPointer("glEnableVertexAttribArray");
+		qglDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC) GLimp_ExtensionPointer(
+				"glDisableVertexAttribArray");
+		qglVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC) GLimp_ExtensionPointer("glVertexAttribPointer");
+		qglUseProgram = (PFNGLUSEPROGRAMPROC) GLimp_ExtensionPointer("glUseProgram");
+		qglUniform1fv = (PFNGLUNIFORM1FVPROC) GLimp_ExtensionPointer("glUniform1fv");
+		qglUniform4fv = (PFNGLUNIFORM4FVPROC) GLimp_ExtensionPointer("glUniform4fv");
+		qglUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC) GLimp_ExtensionPointer("glUniformMatrix4fv");
+		qglLinkProgram = (PFNGLLINKPROGRAMPROC) GLimp_ExtensionPointer("glLinkProgram");
+		qglGetProgramiv = (PFNGLGETPROGRAMIVPROC) GLimp_ExtensionPointer("glGetProgramiv");
+		qglGetShaderInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) GLimp_ExtensionPointer("glGetShaderInfoLog");
+		qglBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC) GLimp_ExtensionPointer("glBindAttribLocation");
+		qglAttachShader = (PFNGLATTACHSHADERPROC) GLimp_ExtensionPointer("glAttachShader");
+		qglCreateShader = (PFNGLCREATESHADERPROC) GLimp_ExtensionPointer("glCreateShader");
+		qglShaderSource = (PFNGLSHADERSOURCEPROC) GLimp_ExtensionPointer("glShaderSource");
+		qglCompileShader = (PFNGLCOMPILESHADERPROC) GLimp_ExtensionPointer("glCompileShader");
+		qglGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) GLimp_ExtensionPointer("glGetUniformLocation");
+		qglCreateProgram = (PFNGLCREATEPROGRAMPROC) GLimp_ExtensionPointer("glCreateProgram");
+		qglValidateProgram = (PFNGLVALIDATEPROGRAMPROC) GLimp_ExtensionPointer("glValidateProgram");
+		qglGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) GLimp_ExtensionPointer("glGetAttribLocation");
+		qglUniform1i = (PFNGLUNIFORM1IPROC) GLimp_ExtensionPointer("glUniform1i");
+	}
+
+	// check for minimum set
+	if ( !glConfig.multitextureAvailable || !glConfig.textureEnvCombineAvailable || !glConfig.cubeMapAvailable
+			 || !glConfig.envDot3Available || !glConfig.ARBVertexBufferObjectAvailable ||!glConfig.GLSLAvailable ) {
+		common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
+	}
 }
 
 
@@ -722,19 +722,13 @@ void R_InitOpenGL( void ) {
 	// recheck all the extensions (FIXME: this might be dangerous)
 	R_CheckPortableExtensions();
 
-	// parse our vertex and fragment programs, possibly disably support for
-	// one of the paths if there was an error
-	R_GLSL_Init();
-
 	cmdSystem->AddCommand("reloadGLSLprograms", R_ReloadGLSLPrograms_f, CMD_FL_RENDERER, "reloads GLSL programs");
 	R_ReloadGLSLPrograms_f(idCmdArgs());
 
 	// allocate the vertex array range or vertex objects
 	vertexCache.Init();
 
-	// select which renderSystem we are going to use
-	r_renderer.SetModified();
-	tr.SetBackEndRenderer();
+	common->Printf("using GLSL renderSystem\n");
 
 	// allocate the frame data, which may be more if smp is enabled
 	R_InitFrameData();
@@ -1827,15 +1821,6 @@ static void GfxInfo_f( const idCmdArgs &args ) {
 		common->Printf( "N/A\n" );
 	}
 
-	const char *active[2] = { "", " (ACTIVE)" };
-	common->Printf( "ARB path ENABLED%s\n", active[tr.backEndRenderer == BE_ARB] );
-
-	if ( glConfig.allowGLSLPath ) {
-		common->Printf( "GLSL path ENABLED%s\n", active[tr.backEndRenderer == BE_GLSL] );
-	} else {
-		common->Printf( "GLSL path disabled\n" );
-	}
-
 	if ( r_finish.GetBool() ) {
 		common->Printf( "Forcing glFinish\n" );
 	} else {
@@ -2069,8 +2054,7 @@ void idRenderSystemLocal::Clear( void ) {
 	viewportOffset[1] = 0;
 	tiledViewport[0] = 0;
 	tiledViewport[1] = 0;
-	backEndRenderer = BE_BAD;
-	backEndRendererMaxLight = 1.0f;
+	backEndRendererMaxLight = 999;
 	ambientLightVector.Zero();
 	sortOffset = 0;
 	worlds.Clear();

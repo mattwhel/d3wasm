@@ -675,7 +675,6 @@ const int MAX_GUI_SURFACES	= 1024;		// default size of the drawSurfs list for gu
 										// be automatically expanded as needed
 
 typedef enum {
-	BE_ARB,
 	BE_GLSL,
 	BE_BAD
 } backEndName_t;
@@ -739,7 +738,6 @@ public:
 							~idRenderSystemLocal( void );
 
 	void					Clear( void );
-	void					SetBackEndRenderer();			// sets tr.backEndRenderer based on cvars
 	void					RenderViewToViewport( const renderView_t *renderView, idScreenRect *viewport );
 
 public:
@@ -759,8 +757,6 @@ public:
 	int						viewportOffset[2];	// for doing larger-than-window tiled renderings
 	int						tiledViewport[2];
 
-	// determines which back end to use, and if vertex programs are in use
-	backEndName_t			backEndRenderer;
 	float					backEndRendererMaxLight;	// 1.0 for standard, unlimited for floats
 														// determines how much overbrighting needs
 														// to be done post-process
@@ -831,8 +827,6 @@ extern idCVar r_flareSize;				// scale the flare deforms from the material def
 
 extern idCVar r_gamma;					// changes gamma tables
 extern idCVar r_brightness;				// changes gamma tables
-
-extern idCVar r_renderer;				// arb2, etc
 
 extern idCVar r_checkBounds;			// compare all surface bounds with precalculated ones
 
@@ -1277,8 +1271,6 @@ DRAW_*
 
 ============================================================
 */
-
-void	RB_ARB_DrawInteractions( void );
 int		R_FindARBProgram( GLenum target, const char *program );
 
 typedef enum {
@@ -1411,7 +1403,6 @@ typedef struct shaderProgram_s {
 } shaderProgram_t;
 
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
-void R_GLSL_Init(void);
 void RB_GLSL_DrawInteractions(void);
 void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf);
 void RB_GLSL_DrawInteraction(const drawInteraction_t *din);

@@ -558,30 +558,7 @@ void R_ReloadGLSLPrograms_f(const idCmdArgs &args)
 		common->Printf("GLSL shaders failed to init.\n");
 	}
 
-  if (!glConfig.GLSLAvailable) {
-    common->Printf("Not available.\n");
-    return;
-  }
-
-	glConfig.allowGLSLPath = true;
-
 	common->Printf("-------------------------------\n");
-}
-
-void R_GLSL_Init(void)
-{
-	glConfig.allowGLSLPath = false;
-
-	common->Printf("---------- R_GLSL_Init ----------\n");
-
-	if (!glConfig.GLSLAvailable) {
-		common->Printf("Not available.\n");
-		return;
-	}
-
-	common->Printf("Available.\n");
-
-	common->Printf("---------------------------------\n");
 }
 
 /*
