@@ -1,12 +1,11 @@
 #version 100
 
-precision mediump float;
+precision highp float;
 
-attribute vec4 attr_Dummy;
 attribute vec4 attr_TexCoord;
-attribute highp vec4 attr_Vertex;
+attribute vec4 attr_Vertex;
 
-uniform highp mat4 u_modelViewProjectionMatrix;
+uniform mat4 u_modelViewProjectionMatrix;
 
 varying vec2 var_TexDiffuse;
 

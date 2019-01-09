@@ -1,8 +1,8 @@
 #version 100
 
-precision lowp float;
+precision mediump float;
 
-varying lowp vec4 var_Color;
+varying vec4 var_Color;
 
 void main(void)
 {

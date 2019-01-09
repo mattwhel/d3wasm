@@ -1,6 +1,6 @@
 #version 100
 
-precision mediump float;
+precision highp float;
 
 /*
  * Pixel values between vertices are interpolated by Gouraud shading by default,
@@ -20,7 +20,7 @@ varying vec2 var_TexDiffuse;
 varying vec2 var_TexNormal;
 varying vec2 var_TexSpecular;
 varying vec4 var_TexLight;
-varying lowp vec4 var_Color;
+varying mediump vec4 var_Color;
 varying vec3 var_L;
 #if defined(BLINN_PHONG)
 varying vec3 var_H;

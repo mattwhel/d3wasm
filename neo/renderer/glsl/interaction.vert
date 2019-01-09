@@ -1,6 +1,6 @@
 #version 100
 
-precision mediump float;
+precision highp float;
 
 /*
  * Pixel values between vertices are interpolated by Gouraud shading by default,
@@ -12,28 +12,27 @@ varying vec2 var_TexDiffuse;
 varying vec2 var_TexNormal;
 varying vec2 var_TexSpecular;
 varying vec4 var_TexLight;
-varying lowp vec4 var_Color;
+varying mediump vec4 var_Color;
 varying vec3 var_L;
 varying vec3 var_V;
 #if defined(BLINN_PHONG)
 varying vec3 var_H;
 #endif
 
-attribute vec4 attr_Dummy;
 attribute vec4 attr_TexCoord;
 attribute vec3 attr_Tangent;
 attribute vec3 attr_Bitangent;
 attribute vec3 attr_Normal;
-attribute highp vec4 attr_Vertex;
-attribute lowp vec4 attr_Color;
+attribute vec4 attr_Vertex;
+attribute mediump vec4 attr_Color;
 
 uniform vec4 u_lightProjectionS;
 uniform vec4 u_lightProjectionT;
 uniform vec4 u_lightFalloff;
 uniform vec4 u_lightProjectionQ;
-uniform lowp vec4 u_colorModulate;
-uniform lowp vec4 u_colorAdd;
-uniform lowp vec4 u_glColor;
+uniform mediump vec4 u_colorModulate;
+uniform mediump vec4 u_colorAdd;
+uniform mediump vec4 u_glColor;
 
 uniform vec4 u_lightOrigin;
 uniform vec4 u_viewOrigin;
@@ -45,7 +44,7 @@ uniform vec4 u_diffuseMatrixT;
 uniform vec4 u_specularMatrixS;
 uniform vec4 u_specularMatrixT;
 
-uniform highp mat4 u_modelViewProjectionMatrix;
+uniform mat4 u_modelViewProjectionMatrix;
 
 void main(void)
 {

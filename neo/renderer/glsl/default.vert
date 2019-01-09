@@ -1,19 +1,18 @@
 #version 100
 
-precision mediump float;
+precision highp float;
 
-attribute vec4 attr_Dummy;
-attribute lowp vec4 attr_Color;
+attribute mediump vec4 attr_Color;
 attribute vec4 attr_TexCoord;
-attribute highp vec4 attr_Vertex;
+attribute vec4 attr_Vertex;
 
-uniform highp mat4 u_modelViewProjectionMatrix;
+uniform mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_textureMatrix;
-uniform lowp vec4 u_colorAdd;
-uniform lowp vec4 u_colorModulate;
+uniform mediump vec4 u_colorAdd;
+uniform mediump vec4 u_colorModulate;
 
 varying vec2 var_TexDiffuse;
-varying lowp vec4 var_Color;
+varying mediump vec4 var_Color;
 
 void main(void)
 {
