@@ -1635,13 +1635,10 @@ RB_STD_DrawView
 =============
 */
 void RB_STD_DrawView(void) {
-  drawSurf_t **drawSurfs;
-  int numDrawSurfs;
-
   backEnd.depthFunc = GLS_DEPTHFUNC_EQUAL;
 
-  drawSurfs = (drawSurf_t * *) & backEnd.viewDef->drawSurfs[0];
-  numDrawSurfs = backEnd.viewDef->numDrawSurfs;
+  drawSurf_t **drawSurfs = (drawSurf_t * *) & backEnd.viewDef->drawSurfs[0];
+  const int numDrawSurfs = backEnd.viewDef->numDrawSurfs;
 
   // clear the z buffer, set the projection matrix, etc
   RB_BeginDrawingView();
@@ -1663,7 +1660,7 @@ void RB_STD_DrawView(void) {
   RB_STD_LightScale();
 
   // now draw any non-light dependent shading passes
-  int processed = RB_STD_DrawShaderPasses(drawSurfs, numDrawSurfs);
+  const int processed = RB_STD_DrawShaderPasses(drawSurfs, numDrawSurfs);
 
   // fob and blend lights
   RB_STD_FogAllLights();
