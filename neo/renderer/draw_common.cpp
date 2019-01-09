@@ -970,18 +970,15 @@ int RB_STD_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
       return 0;
     }
 
-    // GAB TODO: Maybe should be done in all cases??
-#ifdef __EMSCRIPTEN__
-#else
     // only dump if in a 3d view
-    if (backEnd.viewDef->viewEntitys && tr.backEndRenderer == BE_ARB2) {
+		if (backEnd.viewDef->viewEntitys) {
       globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
                                                         backEnd.viewDef->viewport.y1,
                                                         backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
                                                         backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1,
                                                         true);
     }
-#endif
+
     backEnd.currentRenderCopied = true;
   }
 
@@ -1040,8 +1037,9 @@ RB_T_Shadow
 the shadow volumes face INSIDE
 =====================
 */
-static void RB_T_Shadow(const drawSurf_t *surf) {
-  const srfTriangles_t *tri;
+static void RB_T_Shadow(const drawSurf_t *surf)
+{
+  const srfTriangles_t	*tri;
 
   tri = surf->geo;
 
@@ -1052,12 +1050,12 @@ static void RB_T_Shadow(const drawSurf_t *surf) {
   qglVertexPointer(4, GL_FLOAT, sizeof(shadowCache_t), vertexCache.Position(tri->shadowCache));
 
   // we always draw the sil planes, but we may not need to draw the front or rear caps
-  int numIndexes;
+  int	numIndexes;
   bool external = false;
 
   if (!r_useExternalShadows.GetInteger()) {
     numIndexes = tri->numIndexes;
-  } else if (r_useExternalShadows.GetInteger() == 2) { // force to no caps for testing
+  } else if (r_useExternalShadows.GetInteger() == 2) {   // force to no caps for testing
     numIndexes = tri->numShadowIndexesNoCaps;
   } else if (!(surf->dsFlags & DSF_VIEW_INSIDE_SHADOW)) {
     // if we aren't inside the shadow projection, no caps are ever needed needed
@@ -1074,6 +1072,7 @@ static void RB_T_Shadow(const drawSurf_t *surf) {
       // we don't need to draw any caps
       numIndexes = tri->numShadowIndexesNoCaps;
     }
+
     external = true;
   } else {
     // must draw everything
@@ -1130,7 +1129,7 @@ static void RB_T_Shadow(const drawSurf_t *surf) {
     RB_DrawShadowElementsWithCounters(tri, numIndexes);
   }
 
-  // traditional depth-pass stencil shadows
+    // traditional depth-pass stencil shadows
   qglStencilOp(GL_KEEP, GL_KEEP, tr.stencilIncr);
   GL_Cull(CT_FRONT_SIDED);
   RB_DrawShadowElementsWithCounters(tri, numIndexes);
@@ -1148,7 +1147,8 @@ Stencil test should already be enabled, and the stencil buffer should have
 been set to 128 on any surfaces that might receive shadows
 =====================
 */
-void RB_StencilShadowPass(const drawSurf_t *drawSurfs) {
+void RB_StencilShadowPass(const drawSurf_t *drawSurfs)
+{
   if (!r_shadows.GetBool()) {
     return;
   }
@@ -1194,8 +1194,6 @@ void RB_StencilShadowPass(const drawSurf_t *drawSurfs) {
   qglStencilFunc(GL_GEQUAL, 128, 255);
   qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 }
-
-
 
 /*
 =============================================================================================
