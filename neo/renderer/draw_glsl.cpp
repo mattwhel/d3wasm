@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "tr_local.h"
 
 shaderProgram_t	interactionShader;
+shaderProgram_t zfillShader;
 
 static void RB_CreateSingleDrawInteractions_GLSL( const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *) );
 static void RB_EnterWeaponDepthHack_GLSL(const drawSurf_t *surf);
@@ -531,6 +532,19 @@ static bool RB_GLSL_InitShaders(void)
 	} else {
 		RB_GLSL_GetUniformLocations(&interactionShader);
 	}
+
+  memset(&zfillShader, 0, sizeof(shaderProgram_t));
+
+  // load interation shaders
+  R_LoadGLSLShader("zfill.vert", &zfillShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader("zfill.frag", &zfillShader, GL_FRAGMENT_SHADER);
+
+  if (!R_LinkGLSLShader(&zfillShader, true) && !R_ValidateGLSLProgram(&zfillShader)) {
+    return false;
+  } else {
+    RB_GLSL_GetUniformLocations(&zfillShader);
+  }
+
   return true;
 }
 
