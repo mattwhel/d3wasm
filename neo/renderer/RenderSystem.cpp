@@ -877,6 +877,7 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	R_IssueRenderCommands();
 
 #ifdef __EMSCRIPTEN__
+	return;
 #else
 	qglReadBuffer( GL_BACK );
 #endif
