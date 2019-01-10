@@ -420,7 +420,7 @@ RB_EnterWeaponDepthHack
 ===============
 */
 static void RB_GLSL_EnterWeaponDepthHack(const drawSurf_t *surf) {
-  glDepthRangef(0, 0.5);
+  qglDepthRange(0, 0.5);
 
   float matrix[16];
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
@@ -435,7 +435,7 @@ RB_EnterModelDepthHack
 ===============
 */
 static void RB_GLSL_EnterModelDepthHack(const drawSurf_t *surf) {
-  glDepthRangef(0.0f, 1.0f);
+  qglDepthRange(0.0f, 1.0f);
 
   float matrix[16];
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
@@ -450,7 +450,7 @@ RB_LeaveDepthHack
 ===============
 */
 static void RB_GLSL_LeaveDepthHack(const drawSurf_t *surf) {
-  glDepthRangef(0, 1);
+  qglDepthRange(0, 1);
 
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
 }
