@@ -137,6 +137,46 @@ static void Session_Map_f(const idCmdArgs &args) {
   sessLocal.StartNewGame(map, true);
 }
 
+
+/*
+==================
+Session_NextMap_f
+==================
+*/
+static void Session_NextMap_f(const idCmdArgs &args) {
+  idStr map, string;
+  findFile_t ff;
+  idCmdArgs rl_args;
+
+  map = args.Argv(1);
+  if (!map.Length()) {
+    return;
+  }
+  map.StripFileExtension();
+
+  // make sure the level exists before trying to change, so that
+  // a typo at the server console won't end the game
+  // handle addon packs through reloadEngine
+  sprintf(string, "maps/%s.map", map.c_str());
+  ff = fileSystem->FindFile(string, true);
+  switch (ff) {
+    case FIND_NO:
+      common->Printf("Can't find map %s\n", string.c_str());
+      return;
+    case FIND_ADDON:
+      common->Printf("map %s is in an addon pak - reloading\n", string.c_str());
+      rl_args.AppendArg("map");
+      rl_args.AppendArg(map);
+      cmdSystem->SetupReloadEngine(rl_args);
+      return;
+    default:
+      break;
+  }
+
+  cvarSystem->SetCVarBool("developer", false);
+  sessLocal.MoveToNewMap(map);
+}
+
 /*
 ==================
 Session_DevMap_f
@@ -2895,10 +2935,12 @@ void idSessionLocal::RunGameTic() {
       // won't get the map testing items
       mapSpawnData.serverInfo.Delete("devmap");
       // go to the next map
-      MoveToNewMap(args.Argv(1));
+      //MoveToNewMap(args.Argv(1));
+      cmdSystem->BufferCommandText(CMD_EXEC_APPEND, va( "playmap %s\n", args.Argv(1) ));
     } else if (!idStr::Icmp(args.Argv(0), "devmap")) {
       mapSpawnData.serverInfo.Set("devmap", "1");
-      MoveToNewMap(args.Argv(1));
+      //MoveToNewMap(args.Argv(1));
+      cmdSystem->BufferCommandText(CMD_EXEC_APPEND, va( "playmap %s\n", args.Argv(1) ));
     } else if (!idStr::Icmp(args.Argv(0), "died")) {
       // restart on the same map
       UnloadMap();
@@ -2926,6 +2968,7 @@ void idSessionLocal::Init() {
 
 #ifndef  ID_DEDICATED
   cmdSystem->AddCommand("map", Session_Map_f, CMD_FL_SYSTEM, "loads a map", idCmdSystem::ArgCompletion_MapName);
+  cmdSystem->AddCommand("playmap", Session_NextMap_f, CMD_FL_SYSTEM, "loads a map, without cleaning player data", idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("devmap", Session_DevMap_f, CMD_FL_SYSTEM, "loads a map in developer mode",
                         idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("testmap", Session_TestMap_f, CMD_FL_SYSTEM, "tests a map", idCmdSystem::ArgCompletion_MapName);
