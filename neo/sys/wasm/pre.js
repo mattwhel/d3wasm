@@ -5,7 +5,7 @@
   script.onload = function(){
     // remote script has loaded
   };
-  script.src = 'demo_bootstrap.js';
+  script.src = 'demo00.js';
   d.getElementsByTagName('head')[0].appendChild(script);
 }(document));
 
