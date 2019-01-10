@@ -883,6 +883,8 @@ void idCommonLocal::Quit(void) {
       console.info("Syncing done.");
     });
   );
+
+  emscripten_cancel_main_loop();
 #endif
 
   Sys_Quit();
