@@ -1249,11 +1249,17 @@ DRAW_STANDARD
 
 void RB_DrawElementsWithCounters( const srfTriangles_t *tri );
 void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexes );
+void RB_STD_FillDepthBuffer( drawSurf_t **drawSurfs, int numDrawSurfs );
 void RB_BindVariableStageImage( const textureStage_t *texture, const float *shaderRegisters );
+void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf );
+void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf );
 void RB_StencilShadowPass( const drawSurf_t *drawSurfs );
 void RB_STD_DrawView( void );
 void RB_STD_FogAllLights( void );
 void RB_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float textureMatrix[16] );
+void RB_SubmittInteraction( drawInteraction_t *din, void (*DrawInteraction)(const drawInteraction_t *) );
+void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
+                           idImage **image, idVec4 matrix[2], float color[4] );
 
 /*
 ============================================================
@@ -1395,7 +1401,6 @@ typedef struct shaderProgram_s {
 
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
-void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t zfillShader;
 extern shaderProgram_t stencilShadowShader;

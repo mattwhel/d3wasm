@@ -2334,6 +2334,9 @@ RB_RenderDebugTools
 =================
 */
 void RB_RenderDebugTools( drawSurf_t **drawSurfs, int numDrawSurfs ) {
+#ifdef __EMSCRIPTEN__
+	return;
+#else
 	// don't do anything if this was a 2D rendering
 	if ( !backEnd.viewDef->viewEntitys ) {
 		return;
@@ -2375,6 +2378,7 @@ void RB_RenderDebugTools( drawSurf_t **drawSurfs, int numDrawSurfs ) {
 	RB_ShowDebugLines();
 	RB_ShowDebugText();
 	RB_ShowDebugPolygons();
+#endif
 }
 
 /*

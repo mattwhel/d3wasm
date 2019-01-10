@@ -163,6 +163,59 @@ void RB_LeaveDepthHack() {
 }
 
 /*
+====================
+RB_RenderDrawSurfListWithFunction
+
+The triangle functions can check backEnd.currentSpace != surf->space
+to see if they need to perform any new matrix setup.  The modelview
+matrix will already have been loaded, and backEnd.currentSpace will
+be updated after the triangle function completes.
+====================
+*/
+void RB_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
+											  void (*triFunc_)( const drawSurf_t *) ) {
+	int				i;
+	const drawSurf_t		*drawSurf;
+
+	backEnd.currentSpace = NULL;
+
+	for (i = 0  ; i < numDrawSurfs ; i++ ) {
+		drawSurf = drawSurfs[i];
+
+		// change the matrix if needed
+		if ( drawSurf->space != backEnd.currentSpace ) {
+			qglLoadMatrixf( drawSurf->space->modelViewMatrix );
+		}
+
+		if ( drawSurf->space->weaponDepthHack ) {
+			RB_EnterWeaponDepthHack();
+		}
+
+		if ( drawSurf->space->modelDepthHack != 0.0f ) {
+			RB_EnterModelDepthHack( drawSurf->space->modelDepthHack );
+		}
+
+		// change the scissor if needed
+		if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
+			backEnd.currentScissor = drawSurf->scissorRect;
+			qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+				backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+				backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+				backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
+		}
+
+		// render it
+		triFunc_( drawSurf );
+
+		if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
+			RB_LeaveDepthHack();
+		}
+
+		backEnd.currentSpace = drawSurf->space;
+	}
+}
+
+/*
 ======================
 RB_RenderDrawSurfChainWithFunction
 ======================
@@ -483,6 +536,92 @@ void RB_BeginDrawingView (void) {
 	backEnd.glState.faceCulling = -1;		// force face culling to set next time
 	GL_Cull( CT_FRONT_SIDED );
 
+}
+
+/*
+==================
+R_SetDrawInteractions
+==================
+*/
+void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
+                           idImage **image, idVec4 matrix[2], float color[4] ) {
+  *image = surfaceStage->texture.image;
+  if ( surfaceStage->texture.hasMatrix ) {
+    matrix[0][0] = surfaceRegs[surfaceStage->texture.matrix[0][0]];
+    matrix[0][1] = surfaceRegs[surfaceStage->texture.matrix[0][1]];
+    matrix[0][2] = 0;
+    matrix[0][3] = surfaceRegs[surfaceStage->texture.matrix[0][2]];
+
+    matrix[1][0] = surfaceRegs[surfaceStage->texture.matrix[1][0]];
+    matrix[1][1] = surfaceRegs[surfaceStage->texture.matrix[1][1]];
+    matrix[1][2] = 0;
+    matrix[1][3] = surfaceRegs[surfaceStage->texture.matrix[1][2]];
+
+    // we attempt to keep scrolls from generating incredibly large texture values, but
+    // center rotations and center scales can still generate offsets that need to be > 1
+    if ( matrix[0][3] < -40 || matrix[0][3] > 40 ) {
+      matrix[0][3] -= (int)matrix[0][3];
+    }
+    if ( matrix[1][3] < -40 || matrix[1][3] > 40 ) {
+      matrix[1][3] -= (int)matrix[1][3];
+    }
+  } else {
+    matrix[0][0] = 1;
+    matrix[0][1] = 0;
+    matrix[0][2] = 0;
+    matrix[0][3] = 0;
+
+    matrix[1][0] = 0;
+    matrix[1][1] = 1;
+    matrix[1][2] = 0;
+    matrix[1][3] = 0;
+  }
+
+  if ( color ) {
+    for ( int i = 0 ; i < 4 ; i++ ) {
+      color[i] = surfaceRegs[surfaceStage->color.registers[i]];
+      // clamp here, so card with greater range don't look different.
+      // we could perform overbrighting like we do for lights, but
+      // it doesn't currently look worth it.
+      if ( color[i] < 0 ) {
+        color[i] = 0;
+      } else if ( color[i] > 1.0 ) {
+        color[i] = 1.0;
+      }
+    }
+  }
+}
+
+/*
+=================
+RB_SubmittInteraction
+=================
+*/
+void RB_SubmittInteraction( drawInteraction_t *din, void (*DrawInteraction)(const drawInteraction_t *) ) {
+  if ( !din->bumpImage ) {
+    return;
+  }
+
+  if ( !din->diffuseImage || r_skipDiffuse.GetBool() ) {
+    din->diffuseImage = globalImages->blackImage;
+  }
+  if ( !din->specularImage || r_skipSpecular.GetBool() || din->ambientLight ) {
+    din->specularImage = globalImages->blackImage;
+  }
+  if ( !din->bumpImage || r_skipBump.GetBool() ) {
+    din->bumpImage = globalImages->flatNormalMap;
+  }
+
+  // if we wouldn't draw anything, don't call the Draw function
+  if (
+      ( ( din->diffuseColor[0] > 0 ||
+          din->diffuseColor[1] > 0 ||
+          din->diffuseColor[2] > 0 ) && din->diffuseImage != globalImages->blackImage )
+      || ( ( din->specularColor[0] > 0 ||
+             din->specularColor[1] > 0 ||
+             din->specularColor[2] > 0 ) && din->specularImage != globalImages->blackImage ) ) {
+    DrawInteraction( din );
+  }
 }
 
 /*
