@@ -6,7 +6,8 @@ attribute mediump vec4 attr_Color;
 attribute vec4 attr_TexCoord;
 attribute vec4 attr_Vertex;
 
-uniform mat4 u_modelViewProjectionMatrix;
+uniform mat4 u_modelViewMatrix;
+uniform mat4 u_projectionMatrix;
 uniform mat4 u_textureMatrix;
 uniform mediump vec4 u_colorAdd;
 uniform mediump vec4 u_colorModulate;
@@ -22,6 +23,5 @@ void main(void)
 	// # generate the vertex color, which can be 1.0, color, or 1.0 - color
 	var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;
 
-	//gl_Position = ftransform();
-	gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
+	gl_Position = (u_projectionMatrix * u_modelViewMatrix) * attr_Vertex;
 }

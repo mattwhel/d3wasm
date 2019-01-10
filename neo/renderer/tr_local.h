@@ -1351,8 +1351,8 @@ typedef struct shaderProgram_s {
 	GLint		alphaTest;
 	GLint		specularExponent;
 
-	GLint		modelViewProjectionMatrix;
-	GLint		modelMatrix;
+	GLint		modelViewMatrix;
+  GLint		projectionMatrix;
 	GLint		textureMatrix;
 
 	GLint		windowCoords;

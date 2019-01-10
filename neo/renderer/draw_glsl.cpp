@@ -317,9 +317,8 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->nonPowerOfTwo = qglGetUniformLocation(shader->program, "u_nonPowerOfTwo");
   shader->windowCoords = qglGetUniformLocation(shader->program, "u_windowCoords");
 
-  shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
-
-  shader->modelMatrix = qglGetUniformLocation(shader->program, "u_modelMatrix");
+  shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
+  shader->projectionMatrix = qglGetUniformLocation(shader->program, "u_projectionMatrix");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
 
   shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
@@ -429,14 +428,10 @@ static void RB_GLSL_EnterWeaponDepthHack(const drawSurf_t *surf) {
   glDepthRangef(0, 0.5);
 
   float matrix[16];
-
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
-
   matrix[14] *= 0.25;
 
-  float mat[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
 }
 
 /*
@@ -448,14 +443,10 @@ static void RB_GLSL_EnterModelDepthHack(const drawSurf_t *surf) {
   glDepthRangef(0.0f, 1.0f);
 
   float matrix[16];
-
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
-
   matrix[14] -= surf->space->modelDepthHack;
 
-  float mat[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
 }
 
 /*
@@ -466,9 +457,7 @@ RB_LeaveDepthHack
 static void RB_GLSL_LeaveDepthHack(const drawSurf_t *surf) {
   glDepthRangef(0, 1);
 
-  float mat[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
 }
 
 /*
@@ -491,16 +480,7 @@ static void RB_GLSL_RenderDrawSurfListWithFunction(drawSurf_t **drawSurfs, int n
   for (i = 0; i < numDrawSurfs; i++) {
     drawSurf = drawSurfs[i];
 
-    // change the matrix if needed
-    if (drawSurf->space != backEnd.currentSpace) {
-      float mat[16];
-      myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-
-      // we need the model matrix without it being combined with the view matrix
-      // so we can transform local vectors to global coordinates
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelMatrix), drawSurf->space->modelMatrix);
-    }
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
 
     if (drawSurf->space->weaponDepthHack) {
       RB_GLSL_EnterWeaponDepthHack(drawSurf);
@@ -537,9 +517,9 @@ RB_LoadShaderTextureMatrix
 */
 static void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const textureStage_t *texture)
 {
-  float	matrix[16];
-
   if (texture->hasMatrix) {
+    float	matrix[16];
+
     RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
   } else {
@@ -815,6 +795,9 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   qglEnable(GL_STENCIL_TEST);
   qglStencilFunc(GL_ALWAYS, 1, 255);
 
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr());
+
   RB_GLSL_RenderDrawSurfListWithFunction(drawSurfs, numDrawSurfs, RB_T_GLSL_FillDepthBuffer);
 
 #if 0
@@ -1047,18 +1030,6 @@ static void RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*
     return;
   }
 
-  // change the matrix and light projection vectors if needed
-  if (surf->space != backEnd.currentSpace) {
-    backEnd.currentSpace = surf->space;
-    float mat[16];
-    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-
-    // we need the model matrix without it being combined with the view matrix
-    // so we can transform local vectors to global coordinates
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelMatrix), surf->space->modelMatrix);
-  }
-
   // change the scissor if needed
   if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(surf->scissorRect)) {
     backEnd.currentScissor = surf->scissorRect;
@@ -1229,13 +1200,14 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_SelectTextureNoClient(5);
   globalImages->specularTableImage->Bind();
 
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr());
+
   for (; surf; surf = surf->nextOnLight) {
     // perform setup here that will not change over multiple interaction passes
 
     // set the modelview matrix for the viewer
-    float mat[16];
-    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
 
     // set the vertex pointers
     idDrawVert *ac = (idDrawVert *) vertexCache.Position(surf->geo->ambientCache);

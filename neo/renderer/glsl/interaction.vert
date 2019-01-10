@@ -44,7 +44,8 @@ uniform vec4 u_diffuseMatrixT;
 uniform vec4 u_specularMatrixS;
 uniform vec4 u_specularMatrixT;
 
-uniform mat4 u_modelViewProjectionMatrix;
+uniform mat4 u_modelViewMatrix;
+uniform mat4 u_projectionMatrix;
 
 void main(void)
 {
@@ -78,5 +79,5 @@ void main(void)
 
 	var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;
 
-	gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
+	gl_Position = (u_projectionMatrix * u_modelViewMatrix ) * attr_Vertex;
 }
