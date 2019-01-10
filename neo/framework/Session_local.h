@@ -297,7 +297,7 @@ public:
 	void				EndAVICapture();
 
 	void				AdvanceRenderDemo( bool singleFrameOnly );
-	void				RunGameTic();
+	bool				RunGameTic();
 
 	void				FinishCmdLoad();
 	void				LoadLoadingGui(const char *mapName);

@@ -2818,8 +2818,8 @@ void idSessionLocal::emsessionframe_last() {
   int gameTicsToRun = latchedTicNumber - lastGameTic;
   int i;
   for (i = 0; i < gameTicsToRun; i++) {
-    RunGameTic();                         // This function might yields (ie. inline loading screen update). Needs to be handled
-    if (!mapSpawned) {
+    bool b = RunGameTic();                         // This function might yields (ie. inline loading screen update). Needs to be handled
+    if (!mapSpawned || !b) {
       // exited game play
       break;
     }
@@ -2853,7 +2853,7 @@ void idSessionLocal::Frame() {
 idSessionLocal::RunGameTic
 ================
 */
-void idSessionLocal::RunGameTic() {
+bool idSessionLocal::RunGameTic() {
   logCmd_t logCmd;
   usercmd_t cmd;
 
@@ -2900,7 +2900,7 @@ void idSessionLocal::RunGameTic() {
     if (ret.consistencyHash != logCmd.consistencyHash) {
       common->Printf("Consistency failure on logIndex %i\n", logIndex);
       Stop();
-      return;
+      return true;
     }
   }
 
@@ -2937,10 +2937,12 @@ void idSessionLocal::RunGameTic() {
       // go to the next map
       //MoveToNewMap(args.Argv(1));
       cmdSystem->BufferCommandText(CMD_EXEC_APPEND, va( "playmap %s\n", args.Argv(1) ));
+      return false;
     } else if (!idStr::Icmp(args.Argv(0), "devmap")) {
       mapSpawnData.serverInfo.Set("devmap", "1");
       //MoveToNewMap(args.Argv(1));
       cmdSystem->BufferCommandText(CMD_EXEC_APPEND, va( "playmap %s\n", args.Argv(1) ));
+      return false;
     } else if (!idStr::Icmp(args.Argv(0), "died")) {
       // restart on the same map
       UnloadMap();
@@ -2949,6 +2951,7 @@ void idSessionLocal::RunGameTic() {
       cmdSystem->BufferCommandText(CMD_EXEC_INSERT, "stoprecording ; disconnect");
     }
   }
+  return true;
 }
 
 /*
