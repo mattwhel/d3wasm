@@ -505,6 +505,7 @@ void idSessionLocal::StartWipe(const char *_wipeMaterial, bool hold) {
 
   wipeMaterial = declManager->FindMaterial(_wipeMaterial, false);
 
+  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
   wipeStartTic = com_ticNumber;
   wipeStopTic = wipeStartTic + 1000.0f / USERCMD_MSEC * com_wipeSeconds.GetFloat();
   wipeHold = hold;
@@ -522,6 +523,7 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
     return;
   }
+  common->Async();                       // com_ticNumber is used locally, be sure to run the timer to make things move on
   while (com_ticNumber < wipeStopTic) {
 #if ID_CONSOLE_LOCK
     emptyDrawCount = 0;
@@ -529,7 +531,7 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
     emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
-    common->Async();                  // Needed because the loop uses com_ticNumber in the stop condition
+    common->Async();                    // com_ticNumber is used locally, be sure to run the timer to make things move on
 #endif
   }
 }
@@ -549,7 +551,7 @@ void idSessionLocal::ShowLoadingGui() {
   int stop = Sys_Milliseconds() + 1000;
   int force = 10;
   while (Sys_Milliseconds() < stop || force-- > 0) {
-    // Gab Note Jan 2019: Even if function uses com_ticNumber (to update com_frameTime), there is no need call the timer update because the call to session Frame() will update it
+    common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
     com_frameTime = com_ticNumber * USERCMD_MSEC;
     session->Frame();
     session->UpdateScreen(false);
@@ -1713,6 +1715,7 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       pct = 0.0f;
     }
     while (pct < 1.0f) {
+      common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
 			com_frameTime = com_ticNumber * USERCMD_MSEC;
       guiLoading->SetStateFloat("map_loading", pct);
       guiLoading->StateChanged(com_frameTime);
@@ -1721,7 +1724,6 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       pct += 0.05f;
 #ifdef __EMSCRIPTEN__
       emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
-      common->Async();                        // Needed because the loop uses com_ticNumber (updating com_frameTime at each loop iteration)
 #endif
     }
   }
@@ -2264,6 +2266,7 @@ Draw the fade material over everything that has been drawn
 ===============
 */
 void idSessionLocal::DrawWipeModel() {
+  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
   int latchedTic = com_ticNumber;
 
   if (wipeStartTic >= wipeStopTic) {
@@ -2784,6 +2787,7 @@ void idSessionLocal::emsessionframe_last() {
 idSessionLocal::Frame
 ===============
 */
+// EMTERPRETIFY
 void idSessionLocal::Frame() {
 
   if (!emsessionframe_pre()) {

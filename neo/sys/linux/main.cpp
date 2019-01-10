@@ -282,6 +282,7 @@ void idSysLocal::OpenURL( const char *url, bool quit ) {
 #ifdef __EMSCRIPTEN__
 #include "emscripten.h"
 
+// EMTERPRETIFY
 extern "C" void emloopcb() {
 	// This function might yields in some very specific cases (during a few GUI events, and if we are loading a level)
 	// Otherwise, the normal path is that it does not yield, and return to browser

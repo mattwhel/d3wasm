@@ -1097,6 +1097,7 @@ void idSessionLocal::HandleInGameCommands( const char *menuCommand ) {
 idSessionLocal::DispatchCommand
 ==============
 */
+// EMTERPRETIFY
 void idSessionLocal::DispatchCommand( idUserInterface *gui, const char *menuCommand, bool doIngame ) {
 
 	if ( !gui ) {
@@ -1170,6 +1171,7 @@ void idSessionLocal::MenuEvent( const sysEvent_t *event ) {
 idSessionLocal::GuiFrameEvents
 =================
 */
+// EMTERPRETIFY
 void idSessionLocal::GuiFrameEvents() {
 	const char	*cmd;
 	sysEvent_t  ev;
@@ -1196,7 +1198,7 @@ void idSessionLocal::GuiFrameEvents() {
 	ev.evType = SE_NONE;
 	cmd = gui->HandleEvent( &ev, com_frameTime );
 	if ( cmd && cmd[0] ) {
-		DispatchCommand( guiActive, cmd );
+		DispatchCommand( guiActive, cmd );              // This function might occasionally yields (= EMPTERPRETIFY)
 	}
 }
 
