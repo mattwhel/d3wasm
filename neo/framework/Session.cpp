@@ -1171,23 +1171,6 @@ void idSessionLocal::StartNewGame(const char *mapName, bool devmap) {
                                                                                                                           common->Printf( "Dedicated servers cannot start singleplayer games.\n" );
 	return;
 #else
-#if ID_ENFORCE_KEY
-                                                                                                                          // strict check. don't let a game start without a definitive answer
-	if ( !CDKeysAreValid( true ) ) {
-		bool prompt = true;
-		if ( MaybeWaitOnCDKey() ) {
-			// check again, maybe we just needed more time
-			if ( CDKeysAreValid( true ) ) {
-				// can continue directly
-				prompt = false;
-			}
-		}
-		if ( prompt ) {
-			cmdSystem->BufferCommandText( CMD_EXEC_NOW, "promptKey force" );
-			cmdSystem->ExecuteCommandBuffer();
-		}
-	}
-#endif
 
   if (idAsyncNetwork::server.IsActive()) {
     common->Printf("Server running, use si_map / serverMapRestart\n");

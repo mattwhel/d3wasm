@@ -1013,13 +1013,6 @@ void idSessionLocal::HandleMainMenuCommands( const char *menuCommand ) {
 		}
 
 		if ( !idStr::Icmp( cmd, "checkKeys" ) ) {
-#if ID_ENFORCE_KEY
-			// not a strict check so you silently auth in the background without bugging the user
-			if ( !session->CDKeysAreValid( false ) ) {
-				cmdSystem->BufferCommandText( CMD_EXEC_NOW, "promptKey force" );
-				cmdSystem->ExecuteCommandBuffer();
-			}
-#endif
 			continue;
 		}
 
