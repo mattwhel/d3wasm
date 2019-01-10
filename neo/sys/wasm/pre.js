@@ -27,15 +27,18 @@ if (Module['preRun'] instanceof Array) {
 }
 
 function setupD3memfs() {
-  console.info("Creating dhwem3 data folder");
+  console.info("Creating dhwem3 data folder (/usr/local/share/dhewm3/base)");
   FS.createPath('/', 'usr', true, true);
   FS.createPath('/usr', 'local', true, true);
   FS.createPath('/usr/local', 'share', true, true);
   FS.createPath('/usr/local/share', 'dhewm3', true, true);
   FS.createPath('/usr/local/share/dhewm3', 'base', true, true);
 
-  console.info("Mounting user home folder from IDBFS");
+  console.info("Creating user home folder (/home/web_user)");
   FS.createPath('/', 'home', true, true);
+  FS.createPath('/home', 'web_user', true, true);
+
+  console.info("Mounting user home to IDBFS");
   FS.mount(IDBFS, {}, '/home/web_user');
 
   FS.syncfs(true, function (err) {
@@ -44,12 +47,12 @@ function setupD3memfs() {
     }
     else {
       console.info("Mounting user home completed");
+      console.info("Creating user home config and local folders if necessary (~/.config, ~/.local/dhewm3/base)");
       FS.createPath('/home/web_user', '.config', true, true);
       FS.createPath('/home/web_user/.config', 'dhewm3', true, true);
       FS.createPath('/home/web_user', '.local', true, true);
       FS.createPath('/home/web_user/.local', 'dhewm3', true, true);
       FS.createPath('/home/web_user/.local/dhewm3', 'base', true, true);
-      FS.createPath('/home/web_user/.local/dhewm3/base', 'savegames', true, true);
       Module['removeRunDependency']("setupD3memfs");
     }
   });
