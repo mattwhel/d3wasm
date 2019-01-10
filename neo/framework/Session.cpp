@@ -1577,23 +1577,32 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
     fclose(f);
     f = NULL;
 
-    common->Printf("Fetching full game data...\n");
-    common->PrintLoadingMessage( "Fetching full game data (380MB)..." );
+    // Does the chunks are already loaded ?
+    f = fopen("/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
 
-    while(f == NULL) {
-      // Wait for the next chunk to be loaded
-      emscripten_sleep_with_yield(333);
+    if (f) {
+      // Yes
+      fclose(f);
+      f = NULL;
+    } else {
+      common->Printf("Fetching full game data...\n");
+      common->PrintLoadingMessage("Fetching full game data (380MB)...");
 
-      f = fopen( "/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+      while (f == NULL) {
+        // Wait for the next chunk to be loaded
+        emscripten_sleep_with_yield(333);
+
+        f = fopen("/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+      }
+      fclose(f);
+
+      common->Printf("Loading full game data...\n");
+      common->PrintLoadingMessage("Loading full game data...");
+
+      fileSystem->Restart();
+
+      declManager->Init();
     }
-    fclose( f );
-
-    common->Printf("Loading full game data...\n");
-    common->PrintLoadingMessage( "Loading full game data..." );
-
-    fileSystem->Restart();
-
-    declManager->Init();
   }
 
   // note which media we are going to need to load
@@ -2885,7 +2894,6 @@ void idSessionLocal::RunGameTic() {
       // clear the devmap key on serverinfo, so player spawns
       // won't get the map testing items
       mapSpawnData.serverInfo.Delete("devmap");
-
       // go to the next map
       MoveToNewMap(args.Argv(1));
     } else if (!idStr::Icmp(args.Argv(0), "devmap")) {

@@ -3314,8 +3314,16 @@ void idCommonLocal::InitGame(void) {
     fclose(f);
     f = NULL;
 
-    common->Printf("Fetching base game data...\n");
-    PrintLoadingMessage( "Fetching base game data (15MB)..." );
+    // Does the chunks are already loaded ?
+    f = fopen("/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
+
+    if (f) {
+      // Yes
+      fclose(f);
+      f = NULL;
+    } else {
+      common->Printf("Fetching base game data...\n");
+      PrintLoadingMessage("Fetching base game data (15MB)...");
 
       while (f == NULL) {
         // Wait for the next chunk to be loaded
@@ -3330,8 +3338,10 @@ void idCommonLocal::InitGame(void) {
 
       fileSystem->Restart();
 
-    declManager->Init();
+      declManager->Init();
+    }
   }
+
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04350"));
 
   // load the game dll
