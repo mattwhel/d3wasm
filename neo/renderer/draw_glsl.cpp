@@ -230,14 +230,9 @@ static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram, bool needsAttribute
   qglAttachShader(shaderProgram->program, shaderProgram->vertexShader);
   qglAttachShader(shaderProgram->program, shaderProgram->fragmentShader);
 
-  if (needsAttributes) {
-    //	qglBindAttribLocation(shaderProgram->program,  3, "attr_TexCoord");
-    //	qglBindAttribLocation(shaderProgram->program,  4, "attr_Tangent");
-    //	qglBindAttribLocation(shaderProgram->program,  5, "attr_Bitangent");
-    //	qglBindAttribLocation(shaderProgram->program,  1, "attr_Normal");
-    qglBindAttribLocation(shaderProgram->program, 0, "attr_Vertex");
-    //	qglBindAttribLocation(shaderProgram->program,  2, "attr_Color");
-  }
+  // Always prebind attribute 0, which is a mandatory requirement for WebGL
+  // Let the rest be decided by GL
+  qglBindAttribLocation(shaderProgram->program, 0, "attr_Vertex");
 
   qglLinkProgram(shaderProgram->program);
 
