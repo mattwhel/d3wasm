@@ -137,6 +137,46 @@ static void Session_Map_f(const idCmdArgs &args) {
   sessLocal.StartNewGame(map, true);
 }
 
+
+/*
+==================
+Session_NextMap_f
+==================
+*/
+static void Session_NextMap_f(const idCmdArgs &args) {
+  idStr map, string;
+  findFile_t ff;
+  idCmdArgs rl_args;
+
+  map = args.Argv(1);
+  if (!map.Length()) {
+    return;
+  }
+  map.StripFileExtension();
+
+  // make sure the level exists before trying to change, so that
+  // a typo at the server console won't end the game
+  // handle addon packs through reloadEngine
+  sprintf(string, "maps/%s.map", map.c_str());
+  ff = fileSystem->FindFile(string, true);
+  switch (ff) {
+    case FIND_NO:
+      common->Printf("Can't find map %s\n", string.c_str());
+      return;
+    case FIND_ADDON:
+      common->Printf("map %s is in an addon pak - reloading\n", string.c_str());
+      rl_args.AppendArg("map");
+      rl_args.AppendArg(map);
+      cmdSystem->SetupReloadEngine(rl_args);
+      return;
+    default:
+      break;
+  }
+
+  cvarSystem->SetCVarBool("developer", false);
+  sessLocal.MoveToNewMap(map);
+}
+
 /*
 ==================
 Session_DevMap_f
@@ -505,6 +545,7 @@ void idSessionLocal::StartWipe(const char *_wipeMaterial, bool hold) {
 
   wipeMaterial = declManager->FindMaterial(_wipeMaterial, false);
 
+  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
   wipeStartTic = com_ticNumber;
   wipeStopTic = wipeStartTic + 1000.0f / USERCMD_MSEC * com_wipeSeconds.GetFloat();
   wipeHold = hold;
@@ -522,6 +563,7 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
     return;
   }
+  common->Async();                       // com_ticNumber is used locally, be sure to run the timer to make things move on
   while (com_ticNumber < wipeStopTic) {
 #if ID_CONSOLE_LOCK
     emptyDrawCount = 0;
@@ -529,7 +571,7 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
     emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
-    common->Async();                  // Needed because the loop uses com_ticNumber in the stop condition
+    common->Async();                    // com_ticNumber is used locally, be sure to run the timer to make things move on
 #endif
   }
 }
@@ -549,7 +591,7 @@ void idSessionLocal::ShowLoadingGui() {
   int stop = Sys_Milliseconds() + 1000;
   int force = 10;
   while (Sys_Milliseconds() < stop || force-- > 0) {
-    // Gab Note Jan 2019: Even if function uses com_ticNumber (to update com_frameTime), there is no need call the timer update because the call to session Frame() will update it
+    common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
     com_frameTime = com_ticNumber * USERCMD_MSEC;
     session->Frame();
     session->UpdateScreen(false);
@@ -1171,23 +1213,6 @@ void idSessionLocal::StartNewGame(const char *mapName, bool devmap) {
                                                                                                                           common->Printf( "Dedicated servers cannot start singleplayer games.\n" );
 	return;
 #else
-#if ID_ENFORCE_KEY
-                                                                                                                          // strict check. don't let a game start without a definitive answer
-	if ( !CDKeysAreValid( true ) ) {
-		bool prompt = true;
-		if ( MaybeWaitOnCDKey() ) {
-			// check again, maybe we just needed more time
-			if ( CDKeysAreValid( true ) ) {
-				// can continue directly
-				prompt = false;
-			}
-		}
-		if ( prompt ) {
-			cmdSystem->BufferCommandText( CMD_EXEC_NOW, "promptKey force" );
-			cmdSystem->ExecuteCommandBuffer();
-		}
-	}
-#endif
 
   if (idAsyncNetwork::server.IsActive()) {
     common->Printf("Server running, use si_map / serverMapRestart\n");
@@ -1592,23 +1617,32 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
     fclose(f);
     f = NULL;
 
-    common->Printf("Fetching full game data...\n");
-    common->PrintLoadingMessage( "Fetching full game data (380MB)..." );
+    // Does the chunks are already loaded ?
+    f = fopen("/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
 
-    while(f == NULL) {
-      // Wait for the next chunk to be loaded
-      emscripten_sleep_with_yield(333);
+    if (f) {
+      // Yes
+      fclose(f);
+      f = NULL;
+    } else {
+      common->Printf("Fetching full game data...\n");
+      common->PrintLoadingMessage("Fetching full game data (380MB)...");
 
-      f = fopen( "/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+      while (f == NULL) {
+        // Wait for the next chunk to be loaded
+        emscripten_sleep_with_yield(333);
+
+        f = fopen("/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+      }
+      fclose(f);
+
+      common->Printf("Loading full game data...\n");
+      common->PrintLoadingMessage("Loading full game data...");
+
+      fileSystem->Restart();
+
+      declManager->Init();
     }
-    fclose( f );
-
-    common->Printf("Loading full game data...\n");
-    common->PrintLoadingMessage( "Loading full game data..." );
-
-    fileSystem->Restart();
-
-    declManager->Init();
   }
 
   // note which media we are going to need to load
@@ -1730,6 +1764,7 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       pct = 0.0f;
     }
     while (pct < 1.0f) {
+      common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
 			com_frameTime = com_ticNumber * USERCMD_MSEC;
       guiLoading->SetStateFloat("map_loading", pct);
       guiLoading->StateChanged(com_frameTime);
@@ -1738,7 +1773,6 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       pct += 0.05f;
 #ifdef __EMSCRIPTEN__
       emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
-      common->Async();                        // Needed because the loop uses com_ticNumber (updating com_frameTime at each loop iteration)
 #endif
     }
   }
@@ -2281,6 +2315,7 @@ Draw the fade material over everything that has been drawn
 ===============
 */
 void idSessionLocal::DrawWipeModel() {
+  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
   int latchedTic = com_ticNumber;
 
   if (wipeStartTic >= wipeStopTic) {
@@ -2801,6 +2836,7 @@ void idSessionLocal::emsessionframe_last() {
 idSessionLocal::Frame
 ===============
 */
+// EMTERPRETIFY
 void idSessionLocal::Frame() {
 
   if (!emsessionframe_pre()) {
@@ -2898,12 +2934,13 @@ void idSessionLocal::RunGameTic() {
       // clear the devmap key on serverinfo, so player spawns
       // won't get the map testing items
       mapSpawnData.serverInfo.Delete("devmap");
-
       // go to the next map
-      MoveToNewMap(args.Argv(1));
+      //MoveToNewMap(args.Argv(1));
+      cmdSystem->BufferCommandText(CMD_EXEC_APPEND, va( "playmap %s\n", args.Argv(1) ));
     } else if (!idStr::Icmp(args.Argv(0), "devmap")) {
       mapSpawnData.serverInfo.Set("devmap", "1");
-      MoveToNewMap(args.Argv(1));
+      //MoveToNewMap(args.Argv(1));
+      cmdSystem->BufferCommandText(CMD_EXEC_APPEND, va( "playmap %s\n", args.Argv(1) ));
     } else if (!idStr::Icmp(args.Argv(0), "died")) {
       // restart on the same map
       UnloadMap();
@@ -2931,6 +2968,7 @@ void idSessionLocal::Init() {
 
 #ifndef  ID_DEDICATED
   cmdSystem->AddCommand("map", Session_Map_f, CMD_FL_SYSTEM, "loads a map", idCmdSystem::ArgCompletion_MapName);
+  cmdSystem->AddCommand("playmap", Session_NextMap_f, CMD_FL_SYSTEM, "loads a map, without cleaning player data", idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("devmap", Session_DevMap_f, CMD_FL_SYSTEM, "loads a map in developer mode",
                         idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("testmap", Session_TestMap_f, CMD_FL_SYSTEM, "tests a map", idCmdSystem::ArgCompletion_MapName);

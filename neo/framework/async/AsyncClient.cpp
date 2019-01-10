@@ -1323,7 +1323,7 @@ void idAsyncClient::ProcessAuthKeyMessage( const netadr_t from, const idBitMsg &
 				retkey = session->MessageBox( MSG_CDKEY, auth_msg, common->GetLanguageDict()->GetString( "#str_04325" ), true );
 				if ( retkey ) {
 					if ( session->CheckKey( retkey, true, valid ) ) {
-						cmdSystem->BufferCommandText( CMD_EXEC_NOW, "reconnect" );
+						cmdSystem->BufferCommandText(CMD_EXEC_NOW, "reconnect");
 					} else {
 						// build a more precise message about the offline check failure
 						idAsyncNetwork::BuildInvalidKeyMsg( auth_msg, valid );
@@ -1664,34 +1664,10 @@ void idAsyncClient::SetupConnection( void ) {
 		// do not make the protocol depend on PB
 		msg.WriteShort( 0 );
 		clientPort.SendPacket( serverAddress, msg.GetData(), msg.GetSize() );
-#ifdef ID_ENFORCE_KEY_CLIENT
-		if ( idAsyncNetwork::LANServer.GetBool() ) {
-			common->Printf( "net_LANServer is set, connecting in LAN mode\n" );
-		} else {
-			// emit a cd key authorization request
-			// modified at protocol 1.37 for XP key addition
-			msg.BeginWriting();
-			msg.WriteShort( CONNECTIONLESS_MESSAGE_ID );
-			msg.WriteString( "clAuth" );
-			msg.WriteInt( ASYNC_PROTOCOL_VERSION );
-			msg.WriteNetadr( serverAddress );
-			// if we don't have a com_guid, this will request a direct reply from auth with it
-			msg.WriteByte( cvarSystem->GetCVarString( "com_guid" )[0] ? 1 : 0 );
-			// send the main key, and flag an extra byte to add XP key
-			msg.WriteString( session->GetCDKey( false ) );
-			const char *xpkey = session->GetCDKey( true );
-			msg.WriteByte( xpkey ? 1 : 0 );
-			if ( xpkey ) {
-				msg.WriteString( xpkey );
-			}
-			clientPort.SendPacket( idAsyncNetwork::GetMasterAddress(), msg.GetData(), msg.GetSize() );
-		}
-#else
 		if (! Sys_IsLANAddress( serverAddress ) ) {
 			common->Printf( "Build Does not have CD Key Enforcement enabled. The Server ( %s ) is not within the lan addresses. Attemting to connect.\n", Sys_NetAdrToString( serverAddress ) );
 		}
 		common->Printf( "Not Testing key.\n" );
-#endif
 	} else {
 		return;
 	}

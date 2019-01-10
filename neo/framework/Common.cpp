@@ -2548,6 +2548,7 @@ void idCommonLocal::InitSIMD(void) {
 idCommonLocal::Frame
 =================
 */
+// EMTERPRETIFY
 void idCommonLocal::Frame(void) {
 
   common->Async();
@@ -2566,7 +2567,7 @@ void idCommonLocal::Frame(void) {
   //    InitSIMD();
   //}
 
-  eventLoop->RunEventLoop();               // This function might yields (ie. Level load => inline loading screen update)
+  eventLoop->RunEventLoop();               // This function might occasionally yields (= EMTERPRETIFY)
 
   com_frameTime = com_ticNumber * USERCMD_MSEC;
 
@@ -2579,7 +2580,7 @@ void idCommonLocal::Frame(void) {
     }
   }
   else {
-    session->Frame();
+    session->Frame();                     // This function might occasionally yields (= EMTERPRETIFY)
     session->UpdateScreen( false );
   }
 
@@ -2609,7 +2610,7 @@ void idCommonLocal::GUIFrame(bool execCmd, bool network) {
   Sys_GenerateEvents();
   eventLoop->RunEventLoop(execCmd);    // This function might yields (ie. Level load => inline loading screen update)
 
-  // Gab Note Jan 2019: Even if function uses com_ticNumber (to update com_frameTime), there is no need call the timer update because the call to session Frame() will update it
+  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
   com_frameTime = com_ticNumber * USERCMD_MSEC;
   if (network) {
     idAsyncNetwork::RunFrame();
@@ -3100,12 +3101,7 @@ SDL_GetVersion(&sdlv);
     // game specific initialization
     InitGame();
 
-    // don't add startup commands if no CD key is present
-#if ID_ENFORCE_KEY
-    if ( !session->CDKeysAreValid( false ) || !AddStartupCommands() ) {
-#else
     if (!AddStartupCommands()) {
-#endif
       // if the user didn't give any commands, run default action
       session->StartMenu(true);
     }
@@ -3318,24 +3314,34 @@ void idCommonLocal::InitGame(void) {
     fclose(f);
     f = NULL;
 
-    common->Printf("Fetching base game data...\n");
-    PrintLoadingMessage( "Fetching base game data (15MB)..." );
+    // Does the chunks are already loaded ?
+    f = fopen("/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
 
-    while(f == NULL) {
-      // Wait for the next chunk to be loaded
-      emscripten_sleep_with_yield(333);
+    if (f) {
+      // Yes
+      fclose(f);
+      f = NULL;
+    } else {
+      common->Printf("Fetching base game data...\n");
+      PrintLoadingMessage("Fetching base game data (15MB)...");
 
-      f = fopen( "/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
+      while (f == NULL) {
+        // Wait for the next chunk to be loaded
+        emscripten_sleep_with_yield(333);
+
+        f = fopen("/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
+      }
+      fclose(f);
+
+      common->Printf("Loading base game data...\n");
+      PrintLoadingMessage("Loading base game data...");
+
+      fileSystem->Restart();
+
+      declManager->Init();
     }
-    fclose( f );
-
-    common->Printf("Loading base game data...\n");
-    PrintLoadingMessage( "Loading base game data..." );
-
-    fileSystem->Restart();
-
-    declManager->Init();
   }
+
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04350"));
 
   // load the game dll

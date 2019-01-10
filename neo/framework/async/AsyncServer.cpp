@@ -1520,33 +1520,10 @@ void idAsyncServer::ProcessChallengeMessage( const netadr_t from, const idBitMsg
 
 	serverPort.SendPacket( from, outMsg.GetData(), outMsg.GetSize() );
 
-#if ID_ENFORCE_KEY_CLIENT
-	if ( Sys_IsLANAddress( from ) ) {
-		// no CD Key check for LAN clients
-		challenges[i].authState = CDK_OK;
-	} else {
-		if ( idAsyncNetwork::LANServer.GetBool() ) {
-			common->Printf( "net_LANServer is enabled. Client %s is not a LAN address, will be rejected\n", Sys_NetAdrToString( from ) );
-			challenges[ i ].authState = CDK_ONLYLAN;
-		} else {
-			// emit a cd key confirmation request
-			outMsg.BeginWriting();
-			outMsg.WriteShort( CONNECTIONLESS_MESSAGE_ID );
-			outMsg.WriteString( "srvAuth" );
-			outMsg.WriteInt( ASYNC_PROTOCOL_VERSION );
-			outMsg.WriteNetadr( from );
-			outMsg.WriteInt( -1 ); // this identifies "challenge" auth vs "connect" auth
-			// protocol 1.37 addition
-			outMsg.WriteByte( fileSystem->RunningD3XP() );
-			serverPort.SendPacket( idAsyncNetwork::GetMasterAddress(), outMsg.GetData(), outMsg.GetSize() );
-		}
-	}
-#else
 	if (! Sys_IsLANAddress( from ) ) {
 		common->Printf( "Build Does not have CD Key Enforcement enabled. Client %s is not a LAN address, but will be accepted\n", Sys_NetAdrToString( from ) );
 	}
 	challenges[i].authState = CDK_OK;
-#endif
 }
 
 /*
