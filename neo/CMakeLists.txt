@@ -63,7 +63,6 @@ if (EMSCRIPTEN)
     set(NODLL ON)      # only one single binary with core+base game
     set(USEREGAL ON)   # Regal GL emulation library is used
     SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
-    option(OPTIMIZEDATALOADING "Optimize loading of data through network" ON)
 endif ()
 
 if (USEREGAL)
@@ -320,7 +319,6 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
     set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
-    set(ldflags "${ldflags} --preload-file ./data/demo_bootstrap.pk4@/usr/local/share/dhewm3/base/")
     set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
     set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
     set(ldflags "${ldflags} --shell-file $ENV{EMSCRIPTEN}/src/shell.html")
@@ -337,10 +335,6 @@ if (EMSCRIPTEN)
     set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=dhewm3.embin")
     set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"_main\",\"__ZN11idGameLocal16SpawnMapEntitiesEv\",\"__ZN11idGameLocal11MapPopulateEv\",\"__ZN11idGameLocal14InitFromNewMapEPKcP13idRenderWorldP12idSoundWorldbbi\",\"__ZN13idCommonLocal16InitRenderSystemEv\",\"__ZN13idCommonLocal19PrintLoadingMessageEPKc\",\"__ZN13idCommonLocal8InitGameEv\",\"__ZN13idCommonLocal4InitEiPPc\",\"__Z10LoadGame_fRK9idCmdArgs\",\"__ZN14idSessionLocal8LoadGameEPKc\",\"__ZN14idSessionLocal9MenuEventEPK10sysEvent_t\",\"__ZN14idSessionLocal12ProcessEventEPK10sysEvent_t\",\"__ZN14idSessionLocal25HandleSaveGameMenuCommandER9idCmdArgsRi\",\"__ZN11idEventLoop12ProcessEventE10sysEvent_t\",\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
     set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
-
-    if (OPTIMIZEDATALOADING)
-        add_compile_options("-DOPTIMIZEDATALOADING")
-    endif()
 endif ()
 
 # mingw and msvc

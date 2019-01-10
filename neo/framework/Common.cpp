@@ -3310,31 +3310,32 @@ void idCommonLocal::InitGame(void) {
   // startup the script debugger
   // DebuggerServerInit();
 
-#ifdef OPTIMIZEDATALOADING
-
-  common->Printf("Fetching base game data...\n");
-
-  PrintLoadingMessage( "Fetching base game data (15MB)..." );
+  // Check if we are loading data in "chunks"
   FILE* f = NULL;
+  f = fopen( "/usr/local/share/dhewm3/base/demo_bootstrap.pk4", "r");
+  if (f) {
+    // Yes
+    fclose(f);
+    f = NULL;
 
-  while(f == NULL) {
-    emscripten_sleep_with_yield(333);
+    common->Printf("Fetching base game data...\n");
+    PrintLoadingMessage( "Fetching base game data (15MB)..." );
 
-    f = fopen( "/usr/local/share/dhewm3/base/demo_chunk00.pk4", "r");
+    while(f == NULL) {
+      // Wait for the next chunk to be loaded
+      emscripten_sleep_with_yield(333);
+
+      f = fopen( "/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
+    }
+    fclose( f );
+
+    common->Printf("Loading base game data...\n");
+    PrintLoadingMessage( "Loading base game data..." );
+
+    fileSystem->Restart();
+
+    declManager->Init();
   }
-
-  fclose( f );
-
-  common->Printf("Fetching base game data...\n");
-
-  PrintLoadingMessage( "Loading base game data..." );
-
-  fileSystem->Restart();
-
-  declManager->Init();
-
-#endif
-
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04350"));
 
   // load the game dll

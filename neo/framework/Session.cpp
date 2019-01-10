@@ -1584,25 +1584,32 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
     currentMapName = fullMapName;
   }
 
-  common->Printf("Fetching full game data...\n");
-
-  common->PrintLoadingMessage("Fetching full game data (380MB)...");
-
+  // Check if we are loading data in "chunks"
   FILE* f = NULL;
+  f = fopen( "/usr/local/share/dhewm3/base/demo_bootstrap.pk4", "r");
+  if (f) {
+    // Yes
+    fclose(f);
+    f = NULL;
 
-  while(f == NULL) {
-    emscripten_sleep_with_yield(333);
+    common->Printf("Fetching full game data...\n");
+    common->PrintLoadingMessage( "Fetching full game data (380MB)..." );
 
-    f = fopen( "/usr/local/share/dhewm3/base/demo_chunk01.pk4", "r");
+    while(f == NULL) {
+      // Wait for the next chunk to be loaded
+      emscripten_sleep_with_yield(333);
+
+      f = fopen( "/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+    }
+    fclose( f );
+
+    common->Printf("Loading full game data...\n");
+    common->PrintLoadingMessage( "Loading full game data..." );
+
+    fileSystem->Restart();
+
+    declManager->Init();
   }
-
-  fclose( f );
-
-  common->Printf("Loading full game data...\n");
-
-  fileSystem->Restart();
-
-  declManager->Init();
 
   // note which media we are going to need to load
   if (!reloadingSameMap) {
