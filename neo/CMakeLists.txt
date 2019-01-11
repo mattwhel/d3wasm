@@ -321,7 +321,7 @@ if (EMSCRIPTEN)
     set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
     set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
     set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
-    set(ldflags "${ldflags} --shell-file $ENV{EMSCRIPTEN}/src/shell.html")
+    set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
     set(ldflags "${ldflags} -o dhewm3.html")
 
     set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
