@@ -41,13 +41,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "emscripten.h"
 #endif
 
-#if defined(__AROS__)
-                                                                                                                        #define CDKEY_FILEPATH CDKEY_FILE
-#define XPKEY_FILEPATH XPKEY_FILE
-#else
 #define CDKEY_FILEPATH "../" BASE_GAMEDIR "/" CDKEY_FILE
 #define XPKEY_FILEPATH "../" BASE_GAMEDIR "/" XPKEY_FILE
-#endif
 
 idCVar  idSessionLocal::com_showAngles("com_showAngles", "0", CVAR_SYSTEM | CVAR_BOOL, "");
 idCVar  idSessionLocal::com_minTics("com_minTics", "1", CVAR_SYSTEM, "");
@@ -93,8 +88,6 @@ void Session_RescanSI_f(const idCmdArgs &args) {
     game->SetServerInfo(sessLocal.mapSpawnData.serverInfo);
   }
 }
-
-#ifndef  ID_DEDICATED
 
 /*
 ==================
@@ -240,8 +233,6 @@ static void Session_TestMap_f(const idCmdArgs &args) {
   sprintf(string, "devmap %s", map.c_str());
   cmdSystem->BufferCommandText(CMD_EXEC_NOW, string);
 }
-
-#endif
 
 /*
 ==================
@@ -669,8 +660,6 @@ static void Session_DemoShot_f(const idCmdArgs &args) {
   }
 }
 
-#ifndef  ID_DEDICATED
-
 /*
 ================
 Session_RecordDemo_f
@@ -805,8 +794,6 @@ static void Session_TimeCmdDemo_f(const idCmdArgs &args) {
   sessLocal.TimeCmdDemo(args.Argv(1));
 }
 
-#endif
-
 /*
 ================
 Session_Disconnect_f
@@ -819,8 +806,6 @@ static void Session_Disconnect_f(const idCmdArgs &args) {
     soundSystem->SetMute(false);
   }
 }
-
-#ifndef  ID_DEDICATED
 
 /*
 ================
@@ -836,8 +821,6 @@ static void Session_ExitCmdDemo_f(const idCmdArgs &args) {
   common->Printf("Command demo exited at logIndex %i\n", sessLocal.logIndex);
   sessLocal.cmdDemoFile = NULL;
 }
-
-#endif
 
 /*
 ================
@@ -1209,10 +1192,6 @@ idSess"ionLocal::StartNewGame
 ===============
 */
 void idSessionLocal::StartNewGame(const char *mapName, bool devmap) {
-#ifdef  ID_DEDICATED
-                                                                                                                          common->Printf( "Dedicated servers cannot start singleplayer games.\n" );
-	return;
-#else
 
   if (idAsyncNetwork::server.IsActive()) {
     common->Printf("Server running, use si_map / serverMapRestart\n");
@@ -1242,7 +1221,6 @@ void idSessionLocal::StartNewGame(const char *mapName, bool devmap) {
   mapSpawnData.syncedCVars = *cvarSystem->MoveCVarsToDict(CVAR_NETWORKSYNC);
 
   MoveToNewMap(mapName);
-#endif
 }
 
 /*
@@ -1984,10 +1962,6 @@ idSessionLocal::SaveGame
 ===============
 */
 bool idSessionLocal::SaveGame(const char *saveName, bool autosave) {
-#ifdef  ID_DEDICATED
-                                                                                                                          common->Printf( "Dedicated servers cannot save games.\n" );
-	return false;
-#else
   int i;
   idStr gameFile, previewFile, descriptionFile, mapName;
 
@@ -2124,7 +2098,6 @@ bool idSessionLocal::SaveGame(const char *saveName, bool autosave) {
 
 
   return true;
-#endif
 }
 
 /*
@@ -2133,10 +2106,6 @@ idSessionLocal::LoadGame
 ===============
 */
 bool idSessionLocal::LoadGame(const char *saveName) {
-#ifdef  ID_DEDICATED
-                                                                                                                          common->Printf( "Dedicated servers cannot load games.\n" );
-	return false;
-#else
   int i;
   idStr in, loadFile, saveMap, gamename;
 
@@ -2236,7 +2205,6 @@ bool idSessionLocal::LoadGame(const char *saveName) {
   }
 
   return true;
-#endif
 }
 
 /*
@@ -2570,15 +2538,6 @@ idSessionLocal::UpdateScreen
 ===============
 */
 void idSessionLocal::UpdateScreen(bool outOfSequence) {
-
-#ifdef _WIN32
-
-                                                                                                                          if ( com_editors ) {
-		if ( !Sys_IsWindowVisible() ) {
-			return;
-		}
-	}
-#endif
 
   if (insideUpdateScreen) {
     return;
@@ -2969,7 +2928,6 @@ void idSessionLocal::Init() {
   cmdSystem->AddCommand("writePrecache", Sess_WritePrecache_f, CMD_FL_SYSTEM | CMD_FL_CHEAT,
                         "writes precache commands");
 
-#ifndef  ID_DEDICATED
   cmdSystem->AddCommand("map", Session_Map_f, CMD_FL_SYSTEM, "loads a map", idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("playmap", Session_NextMap_f, CMD_FL_SYSTEM, "loads a map, without cleaning player data", idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("devmap", Session_DevMap_f, CMD_FL_SYSTEM, "loads a map in developer mode",
@@ -2995,18 +2953,15 @@ void idSessionLocal::Init() {
                         idCmdSystem::ArgCompletion_DemoName);
   cmdSystem->AddCommand("compressDemo", Session_CompressDemo_f, CMD_FL_SYSTEM, "compresses a demo file",
                         idCmdSystem::ArgCompletion_DemoName);
-#endif
 
   cmdSystem->AddCommand("disconnect", Session_Disconnect_f, CMD_FL_SYSTEM, "disconnects from a game");
 
   cmdSystem->AddCommand("demoShot", Session_DemoShot_f, CMD_FL_SYSTEM, "writes a screenshot for a demo");
   cmdSystem->AddCommand("testGUI", Session_TestGUI_f, CMD_FL_SYSTEM, "tests a gui");
 
-#ifndef  ID_DEDICATED
   cmdSystem->AddCommand("saveGame", SaveGame_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "saves a game");
   cmdSystem->AddCommand("loadGame", LoadGame_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "loads a game",
                         idCmdSystem::ArgCompletion_SaveGame);
-#endif
 
   cmdSystem->AddCommand("takeViewNotes", TakeViewNotes_f, CMD_FL_SYSTEM,
                         "take notes about the current map from the current view");

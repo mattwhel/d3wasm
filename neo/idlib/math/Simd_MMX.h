@@ -43,13 +43,6 @@ class idSIMD_MMX : public idSIMD_Generic {
 public:
 #if defined(__GNUC__) && defined(__MMX__)
 	virtual const char * VPCALL GetName( void ) const;
-
-#elif defined(_MSC_VER) && defined(_M_IX86)
-	virtual const char * VPCALL GetName( void ) const;
-
-	virtual void VPCALL Memcpy( void *dst,			const void *src,		const int count );
-	virtual void VPCALL Memset( void *dst,			const int val,			const int count );
-
 #endif
 };
 

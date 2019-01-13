@@ -95,7 +95,7 @@ idCVar com_memoryMarker("com_memoryMarker", "-1", CVAR_INTEGER | CVAR_SYSTEM | C
 idCVar com_preciseTic("com_preciseTic", "1", CVAR_BOOL | CVAR_SYSTEM, "run one game tick every async thread update");
 idCVar com_asyncInput("com_asyncInput", "0", CVAR_BOOL | CVAR_SYSTEM, "sample input from the async thread");
 #define ASYNCSOUND_INFO "0: mix sound inline, 1: memory mapped async mix, 2: callback mixing, 3: write async mix"
-#if defined( __unix__ ) && !defined( MACOS_X )
+#if defined( __unix__ )
 idCVar com_asyncSound( "com_asyncSound", "3", CVAR_INTEGER|CVAR_SYSTEM|CVAR_ROM, ASYNCSOUND_INFO );
 #else
 idCVar com_asyncSound("com_asyncSound", "1", CVAR_INTEGER | CVAR_SYSTEM, ASYNCSOUND_INFO, 0, 1);
@@ -137,11 +137,6 @@ volatile int com_ticNumber;            // 60 hz tics
 int com_editors;            // currently opened editor(s)
 bool com_editorActive;        //  true if an editor has focus
 
-#ifdef _WIN32
-                                                                                                                        HWND			com_hwndMsg = NULL;
-bool			com_outputMsg = false;
-unsigned int	com_msgID = -1;
-#endif
 
 #ifdef __DOOM_DLL__
                                                                                                                         idGame *		game = NULL;
@@ -394,37 +389,6 @@ void idCommonLocal::EndRedirect(void) {
   rd_flush = NULL;
 }
 
-#ifdef _WIN32
-
-                                                                                                                        /*
-==================
-EnumWindowsProc
-==================
-*/
-BOOL CALLBACK EnumWindowsProc( HWND hwnd, LPARAM lParam ) {
-	char buff[1024];
-
-	::GetWindowText( hwnd, buff, sizeof( buff ) );
-	if ( idStr::Icmpn( buff, EDITOR_WINDOWTEXT, strlen( EDITOR_WINDOWTEXT ) ) == 0 ) {
-		com_hwndMsg = hwnd;
-		return FALSE;
-	}
-	return TRUE;
-}
-
-/*
-==================
-FindEditor
-==================
-*/
-bool FindEditor( void ) {
-	com_hwndMsg = NULL;
-	EnumWindows( EnumWindowsProc, 0 );
-	return !( com_hwndMsg == NULL );
-}
-
-#endif
-
 /*
 ==================
 idCommonLocal::SetRefreshOnPrint
@@ -491,13 +455,6 @@ void idCommonLocal::VPrintf(const char *fmt, va_list args) {
   // print to script debugger server
   // DebuggerServerPrint( msg );
 
-#if 0    // !@#
-#if defined(_DEBUG) && defined(WIN32)
-  if ( strlen( msg ) < 512 ) {
-    TRACE( msg );
-  }
-#endif
-#endif
 
   // don't trigger any updates if we are in the process of doing a fatal error
   if (com_errorEntered != ERP_FATAL) {
@@ -510,24 +467,6 @@ void idCommonLocal::VPrintf(const char *fmt, va_list args) {
     session->PacifierUpdate();
   }
 
-#ifdef _WIN32
-
-  if ( com_outputMsg ) {
-if ( com_msgID == -1 ) {
-com_msgID = ::RegisterWindowMessage( DMAP_MSGID );
-if ( !FindEditor() ) {
-com_outputMsg = false;
-} else {
-Sys_ShowWindow( false );
-}
-}
-if ( com_hwndMsg ) {
-ATOM atom = ::GlobalAddAtom( msg );
-::PostMessage( com_hwndMsg, com_msgID, 0, static_cast<LPARAM>(atom) );
-}
-}
-
-#endif
 }
 
 /*
@@ -708,11 +647,6 @@ void idCommonLocal::DumpWarnings(void) {
 
     fileSystem->CloseFile(warningFile);
 
-#if defined(_WIN32) && !defined(_DEBUG)
-    idStr	osPath;
-osPath = fileSystem->RelativePathToOSPath( "warnings.txt", "fs_savepath" );
-WinExec( va( "Notepad.exe %s", osPath.c_str() ), SW_SHOW );
-#endif
   }
 }
 
@@ -863,13 +797,6 @@ idCommonLocal::Quit
 ==================
 */
 void idCommonLocal::Quit(void) {
-
-#ifdef ID_ALLOW_TOOLS
-  if ( com_editors & EDITOR_RADIANT ) {
-    RadiantInit();
-    return;
-  }
-#endif
 
   // don't try to shutdown if we are in a recursive error
   if (!com_errorEntered) {
@@ -1082,17 +1009,6 @@ idCommonLocal::InitTool
 =================
 */
 void idCommonLocal::InitTool(const toolFlag_t tool, const idDict *dict) {
-#ifdef ID_ALLOW_TOOLS
-  if ( tool & EDITOR_SOUND ) {
-SoundEditorInit( dict );
-} else if ( tool & EDITOR_LIGHT ) {
-LightEditorInit( dict );
-} else if ( tool & EDITOR_PARTICLE ) {
-ParticleEditorInit( dict );
-} else if ( tool & EDITOR_AF ) {
-AFEditorInit( dict );
-}
-#endif
 }
 
 /*
@@ -1243,52 +1159,6 @@ int idCommonLocal::KeyState(int key) {
 
 //============================================================================
 
-#ifdef ID_ALLOW_TOOLS
-                                                                                                                        /*
-==================
-Com_Editor_f
-
-  we can start the editor dynamically, but we won't ever get back
-==================
-*/
-static void Com_Editor_f( const idCmdArgs &args ) {
-	RadiantInit();
-}
-
-/*
-=============
-Com_ScriptDebugger_f
-=============
-*/
-static void Com_ScriptDebugger_f( const idCmdArgs &args ) {
-	// Make sure it wasnt on the command line
-	if ( !( com_editors & EDITOR_DEBUGGER ) ) {
-		common->Printf( "Script debugger is currently disabled\n" );
-		// DebuggerClientLaunch();
-	}
-}
-
-/*
-=============
-Com_EditGUIs_f
-=============
-*/
-static void Com_EditGUIs_f( const idCmdArgs &args ) {
-	GUIEditorInit();
-}
-
-/*
-=============
-Com_MaterialEditor_f
-=============
-*/
-static void Com_MaterialEditor_f( const idCmdArgs &args ) {
-	// Turn off sounds
-	soundSystem->SetMute( true );
-	MaterialEditorInit();
-}
-#endif // ID_ALLOW_TOOLS
-
 /*
 ============
 idCmdSystemLocal::PrintMemInfo_f
@@ -1331,73 +1201,6 @@ static void PrintMemInfo_f(const idCmdArgs &args) {
 
   fileSystem->CloseFile(f);
 }
-
-#ifdef ID_ALLOW_TOOLS
-                                                                                                                        /*
-==================
-Com_EditLights_f
-==================
-*/
-static void Com_EditLights_f( const idCmdArgs &args ) {
-	LightEditorInit( NULL );
-	cvarSystem->SetCVarInteger( "g_editEntityMode", 1 );
-}
-
-/*
-==================
-Com_EditSounds_f
-==================
-*/
-static void Com_EditSounds_f( const idCmdArgs &args ) {
-	SoundEditorInit( NULL );
-	cvarSystem->SetCVarInteger( "g_editEntityMode", 2 );
-}
-
-/*
-==================
-Com_EditDecls_f
-==================
-*/
-static void Com_EditDecls_f( const idCmdArgs &args ) {
-	DeclBrowserInit( NULL );
-}
-
-/*
-==================
-Com_EditAFs_f
-==================
-*/
-static void Com_EditAFs_f( const idCmdArgs &args ) {
-	AFEditorInit( NULL );
-}
-
-/*
-==================
-Com_EditParticles_f
-==================
-*/
-static void Com_EditParticles_f( const idCmdArgs &args ) {
-	ParticleEditorInit( NULL );
-}
-
-/*
-==================
-Com_EditScripts_f
-==================
-*/
-static void Com_EditScripts_f( const idCmdArgs &args ) {
-	ScriptEditorInit( NULL );
-}
-
-/*
-==================
-Com_EditPDAs_f
-==================
-*/
-static void Com_EditPDAs_f( const idCmdArgs &args ) {
-	PDAEditorInit( NULL );
-}
-#endif // ID_ALLOW_TOOLS
 
 /*
 ==================
@@ -2431,7 +2234,6 @@ void idCommonLocal::InitCommands(void) {
   cmdSystem->AddCommand("execMachineSpec", Com_ExecMachineSpec_f, CMD_FL_SYSTEM,
                         "execs the appropriate config files and sets cvars based on com_machineSpec");
 
-#if    !defined( ID_DEDICATED )
   // compilers
   cmdSystem->AddCommand("dmap", Dmap_f, CMD_FL_TOOL, "compiles a map", idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("renderbump", RenderBump_f, CMD_FL_TOOL, "renders a bump map",
@@ -2445,24 +2247,6 @@ void idCommonLocal::InitCommands(void) {
   cmdSystem->AddCommand("runReach", RunReach_f, CMD_FL_TOOL, "calculates reachability for an AAS file",
                         idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("roq", RoQFileEncode_f, CMD_FL_TOOL, "encodes a roq file");
-#endif
-
-#ifdef ID_ALLOW_TOOLS
-  // editors
-cmdSystem->AddCommand( "editor", Com_Editor_f, CMD_FL_TOOL, "launches the level editor Radiant" );
-cmdSystem->AddCommand( "editLights", Com_EditLights_f, CMD_FL_TOOL, "launches the in-game Light Editor" );
-cmdSystem->AddCommand( "editSounds", Com_EditSounds_f, CMD_FL_TOOL, "launches the in-game Sound Editor" );
-cmdSystem->AddCommand( "editDecls", Com_EditDecls_f, CMD_FL_TOOL, "launches the in-game Declaration Editor" );
-cmdSystem->AddCommand( "editAFs", Com_EditAFs_f, CMD_FL_TOOL, "launches the in-game Articulated Figure Editor" );
-cmdSystem->AddCommand( "editParticles", Com_EditParticles_f, CMD_FL_TOOL, "launches the in-game Particle Editor" );
-cmdSystem->AddCommand( "editScripts", Com_EditScripts_f, CMD_FL_TOOL, "launches the in-game Script Editor" );
-cmdSystem->AddCommand( "editGUIs", Com_EditGUIs_f, CMD_FL_TOOL, "launches the GUI Editor" );
-cmdSystem->AddCommand( "editPDAs", Com_EditPDAs_f, CMD_FL_TOOL, "launches the in-game PDA Editor" );
-cmdSystem->AddCommand( "debugger", Com_ScriptDebugger_f, CMD_FL_TOOL, "launches the Script Debugger" );
-
-//BSM Nerve: Add support for the material editor
-cmdSystem->AddCommand( "materialEditor", Com_MaterialEditor_f, CMD_FL_TOOL, "launches the Material Editor" );
-#endif
 
   cmdSystem->AddCommand("printMemInfo", PrintMemInfo_f, CMD_FL_SYSTEM, "prints memory debugging data");
 
@@ -2493,10 +2277,6 @@ cmdSystem->AddCommand( "materialEditor", Com_MaterialEditor_f, CMD_FL_TOOL, "lau
   // build helpers
   cmdSystem->AddCommand("startBuild", Com_StartBuild_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "prepares to make a build");
   cmdSystem->AddCommand("finishBuild", Com_FinishBuild_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "finishes the build process");
-
-#ifdef ID_DEDICATED
-  cmdSystem->AddCommand( "help", Com_Help_f, CMD_FL_SYSTEM, "shows help" );
-#endif
 }
 
 /*
@@ -2751,29 +2531,12 @@ void idCommonLocal::LoadGameDLLbyName(const char *dll, idStr &s) {
     gameDLL = sys->DLL_Load(s);
   }
 
-#if defined(_WIN32)
-  // then the lib/ dir relative to the binary on windows
-if (!gameDLL && Sys_GetPath(PATH_EXE, s)) {
-s.StripFilename();
-s.AppendPath("lib");
-s.AppendPath(dll);
-gameDLL = sys->DLL_Load(s);
-}
-#elif defined(MACOS_X)
-  // then the binary dir in the bundle on osx
-if (!gameDLL && Sys_GetPath(PATH_EXE, s)) {
-s.StripFilename();
-s.AppendPath(dll);
-gameDLL = sys->DLL_Load(s);
-}
-#else
   // then the install folder on *nix
   if (!gameDLL) {
     s = BUILD_LIBDIR;
     s.AppendPath(dll);
     gameDLL = sys->DLL_Load(s);
   }
-#endif
 }
 
 /*
@@ -2922,9 +2685,6 @@ void idCommonLocal::SetMachineSpec(void) {
 #endif
 }
 
-#ifdef _WIN32
-#include "../sys/win32/win_local.h" // for Conbuf_AppendText()
-#endif // _WIN32
 
 static bool checkForHelp(int argc, char **argv) {
   const char *helpArgs[] = {"--help", "-h", "-help", "-?", "/?"};
@@ -2934,13 +2694,8 @@ static bool checkForHelp(int argc, char **argv) {
     const char *arg = argv[i];
     for (int h = 0; h < numHelpArgs; ++h) {
       if (idStr::Icmp(arg, helpArgs[h]) == 0) {
-#ifdef _WIN32
-        // write it to the Windows-only console window
-#define WriteString(s) Conbuf_AppendText(s)
-#else // not windows
         // write it to stdout
 #define WriteString(s) fputs(s, stdout);
-#endif // _WIN32
         WriteString(ENGINE_VERSION
                         " - http://dhewm3.org\n");
         WriteString("Commandline arguments:\n");
@@ -2970,7 +2725,7 @@ static bool checkForHelp(int argc, char **argv) {
         WriteString("  set path to your Doom3 game data (the directory base/ is in)\n");
         WriteString("+set fs_game <modname>\n");
         WriteString("  start the given addon/mod, e.g. +set fs_game d3xp\n");
-#ifndef ID_DEDICATED
+
         WriteString("+set r_fullscreen <0 or 1>\n");
         WriteString("  start game in windowed (0) or fullscreen (1) mode\n");
         WriteString("+set r_mode <modenumber>\n");
@@ -2980,7 +2735,7 @@ static bool checkForHelp(int argc, char **argv) {
         WriteString("+set r_customHeight <size in pixels>\n");
         WriteString("  if r_mode is set to -1, these cvars allow you to specify the\n");
         WriteString("  width/height of your custom resolution\n");
-#endif // !ID_DEDICATED
+
         WriteString("\nSee https://modwiki.dhewm3.org/CVars_%28Doom_3%29 for more cvars\n");
         WriteString("See https://modwiki.dhewm3.org/Commands_%28Doom_3%29 for more commands\n");
 
@@ -3002,25 +2757,8 @@ void idCommonLocal::Init(int argc, char **argv) {
 
   if (checkForHelp(argc, argv)) {
     // game has been started with --help (or similar), usage message has been shown => quit
-#ifdef _WIN32
-    // this enforces that the console window is shown until the user closes it
-// => checkForHelp() writes to the console window on Windows
-Sys_Error(".");
-#endif // _WIN32
     exit(1);
   }
-
-#ifdef ID_DEDICATED
-  // we want to use the SDL event queue for dedicated servers. That
-// requires video to be initialized, so we just use the dummy
-// driver for headless boxen
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
-#else
-char dummy[] = "SDL_VIDEODRIVER=dummy\0";
-SDL_putenv(dummy);
-#endif
-#endif
 
 #ifdef __EMSCRIPTEN__
   if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))
@@ -3044,8 +2782,7 @@ SDL_putenv(dummy);
     idLib::Init();
 
     // clear warning buffer
-    ClearWarnings(GAME_NAME
-    " initialization" );
+    ClearWarnings(GAME_NAME " initialization" );
 
     // parse command line options
     ParseCommandLine(argc, argv);
@@ -3110,10 +2847,6 @@ SDL_GetVersion(&sdlv);
 
     // print all warnings queued during initialization
     PrintWarnings();
-
-#ifdef    ID_DEDICATED
-    Printf( "\nType 'help' for dedicated server info.\n\n" );
-#endif
 
     // remove any prints from the notify lines
     console->ClearNotifyLines();
@@ -3184,8 +2917,7 @@ config_compressor = NULL;
 #endif
 
   // free any buffered warning messages
-  ClearWarnings(GAME_NAME
-  " shutdown" );
+  ClearWarnings(GAME_NAME " shutdown" );
   warningCaption.Clear();
   errorList.Clear();
 
@@ -3286,10 +3018,6 @@ void idCommonLocal::InitGame(void) {
   // init async network
   idAsyncNetwork::Init();
 
-#ifdef    ID_DEDICATED
-  idAsyncNetwork::server.InitPort();
-  cvarSystem->SetCVarBool( "s_noSound", true );
-#else
   if (idAsyncNetwork::serverDedicated.GetInteger() == 1) {
     idAsyncNetwork::server.InitPort();
     cvarSystem->SetCVarBool("s_noSound", true);
@@ -3298,7 +3026,6 @@ void idCommonLocal::InitGame(void) {
     PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04348"));
     InitRenderSystem();
   }
-#endif
 
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04349"));
 

@@ -729,7 +729,7 @@ char *Sys_ConsoleInput( void ) {
 	} else {
 		// disabled on OSX. works fine from a terminal, but launching from Finder is causing trouble
 		// I'm pretty sure it could be re-enabled if needed, and just handling the Finder failure case right (TTimo)
-#if !defined(MACOS_X)&&!defined(__EMSCRIPTEN__)
+#if !defined(__EMSCRIPTEN__)
 		// no terminal support - read only complete lines
 		int				len;
 		fd_set			fdset;

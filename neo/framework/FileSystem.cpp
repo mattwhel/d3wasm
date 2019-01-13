@@ -26,13 +26,9 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#ifdef WIN32
-	#include <io.h>	// for _read
-#else
 	#include <sys/types.h>
 	#include <sys/stat.h>
 	#include <unistd.h>
-#endif
 
 #include "sys/platform.h"
 
@@ -487,11 +483,7 @@ idCVar	idFileSystemLocal::fs_cdpath( "fs_cdpath", "", CVAR_SYSTEM | CVAR_INIT, "
 idCVar	idFileSystemLocal::fs_devpath( "fs_devpath", "", CVAR_SYSTEM | CVAR_INIT, "" );
 idCVar	idFileSystemLocal::fs_game( "fs_game", "", CVAR_SYSTEM | CVAR_INIT | CVAR_SERVERINFO, "mod path" );
 idCVar  idFileSystemLocal::fs_game_base( "fs_game_base", "", CVAR_SYSTEM | CVAR_INIT | CVAR_SERVERINFO, "alternate mod path, searched after the main fs_game path, before the basedir" );
-#if defined(__AROS__) || defined(WIN32)
-idCVar	idFileSystemLocal::fs_caseSensitiveOS( "fs_caseSensitiveOS", "0", CVAR_SYSTEM | CVAR_BOOL, "" );
-#else
 idCVar	idFileSystemLocal::fs_caseSensitiveOS( "fs_caseSensitiveOS", "1", CVAR_SYSTEM | CVAR_BOOL, "" );
-#endif
 idCVar	idFileSystemLocal::fs_searchAddons( "fs_searchAddons", "0", CVAR_SYSTEM | CVAR_BOOL, "search all addon pk4s ( disables addon functionality )" );
 
 idFileSystemLocal	fileSystemLocal;
@@ -595,13 +587,12 @@ FILE *idFileSystemLocal::OpenOSFile( const char *fileName, const char *mode, idS
 	idStr fpath, entry;
 	idStrList list;
 
-#ifndef WIN32
 	// some systems will let you fopen a directory
 	struct stat buf;
 	if ( stat( fileName, &buf ) != -1 && !S_ISREG(buf.st_mode) ) {
 		return NULL;
 	}
-#endif
+
 	fp = fopen( fileName, mode );
 	if ( !fp && fs_caseSensitiveOS.GetBool() ) {
 		fpath = fileName;
@@ -2674,11 +2665,7 @@ void idFileSystemLocal::Init( void ) {
 		fs_configpath.SetString(path);
 
 	if ( fs_devpath.GetString()[0] == '\0' ) {
-#ifdef WIN32
-		fs_devpath.SetString( fs_cdpath.GetString()[0] ? fs_cdpath.GetString() : fs_basepath.GetString() );
-#else
 		fs_devpath.SetString( fs_savepath.GetString() );
-#endif
 	}
 
 	// try to start up normally
@@ -3396,11 +3383,7 @@ size_t idFileSystemLocal::CurlWriteFunction( void *ptr, size_t size, size_t nmem
 	if ( !bgl->f ) {
 		return size * nmemb;
 	}
-	#ifdef _WIN32
-		return _write( _fileno(static_cast<idFile_Permanent*>(bgl->f)->GetFilePtr()), ptr, size * nmemb );
-	#else
-		return fwrite( ptr, size, nmemb, static_cast<idFile_Permanent*>(bgl->f)->GetFilePtr() );
-	#endif
+	return fwrite( ptr, size, nmemb, static_cast<idFile_Permanent*>(bgl->f)->GetFilePtr() );
 }
 
 /*
@@ -3455,11 +3438,8 @@ int BackgroundDownloadThread( void *pexit ) {
 
 		if ( bgl->opcode == DLTYPE_FILE ) {
 			// use the low level read function, because fread may allocate memory
-			#if defined(WIN32)
-				_read( _fileno(static_cast<idFile_Permanent*>(bgl->f)->GetFilePtr()), bgl->file.buffer, bgl->file.length );
-			#else
+
 				fread(  bgl->file.buffer, bgl->file.length, 1, static_cast<idFile_Permanent*>(bgl->f)->GetFilePtr() );
-			#endif
 			bgl->completed = true;
 		} else {
 #ifdef ID_ENABLE_CURL

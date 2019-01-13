@@ -33,7 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "idlib/Str.h"
 
-#if !defined( ID_REDIRECT_NEWDELETE ) && !defined( MACOS_X )
+#if !defined( ID_REDIRECT_NEWDELETE )
 	#define USE_STRING_DATA_ALLOCATOR
 #endif
 
@@ -817,11 +817,7 @@ idStr::DefaultPath
 ==================
 */
 idStr &idStr::DefaultPath( const char *basepath ) {
-#if defined(__AROS__)
-	if ( ( ( *this )[ 0 ] == '/' ) || ( ( *this )[ 0 ] == '\\' ) || ( ( *this )[ 0 ] == ':' ) ) {
-#else
 	if ( ( ( *this )[ 0 ] == '/' ) || ( ( *this )[ 0 ] == '\\' ) ) {
-#endif
 		// absolute path location
 		return *this;
 	}
@@ -844,19 +840,11 @@ void idStr::AppendPath( const char *text ) {
 		EnsureAlloced( len + strlen( text ) + 2 );
 
 		if ( pos ) {
-#if defined(__AROS__)
-			if (( data[ pos-1 ] != '/' ) || ( data[ pos-1 ] != ':' )) {
-#else
 			if ( data[ pos-1 ] != '/' ) {
-#endif
 				data[ pos++ ] = '/';
 			}
 		}
-#if defined(__AROS__)
-		if (( text[i] == '/' ) || ( text[i] == ':' )) {
-#else
 		if ( text[i] == '/' ) {
-#endif
 			i++;
 		}
 
@@ -881,11 +869,8 @@ idStr &idStr::StripFilename( void ) {
 	int pos;
 
 	pos = Length() - 1;
-#if defined(__AROS__)
-	while( ( pos > 0 ) && ( ( *this )[ pos ] != '/' ) && ( ( *this )[ pos ] != '\\' ) && ( ( *this )[ pos ] != ':' ) ) {
-#else
+
 	while( ( pos > 0 ) && ( ( *this )[ pos ] != '/' ) && ( ( *this )[ pos ] != '\\' ) ) {
-#endif
 		pos--;
 	}
 
@@ -906,11 +891,7 @@ idStr &idStr::StripPath( void ) {
 	int pos;
 
 	pos = Length();
-#if defined(__AROS__)
-	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' )  && ( ( *this )[ pos - 1 ] != ':' ) ) {
-#else
 	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) ) {
-#endif
 		pos--;
 	}
 
@@ -930,11 +911,7 @@ void idStr::ExtractFilePath( idStr &dest ) const {
 	// back up until a \ or the start
 	//
 	pos = Length();
-#if defined(__AROS__)
-	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) && ( ( *this )[ pos - 1 ] != ':' ) ) {
-#else
 	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) ) {
-#endif
 		pos--;
 	}
 
@@ -953,11 +930,7 @@ void idStr::ExtractFileName( idStr &dest ) const {
 	// back up until a \ or the start
 	//
 	pos = Length() - 1;
-#if defined(__AROS__)
-	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) && ( ( *this )[ pos - 1 ] != ':' ) ) {
-#else
 	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) ) {
-#endif
 		pos--;
 	}
 
@@ -977,11 +950,7 @@ void idStr::ExtractFileBase( idStr &dest ) const {
 	// back up until a \ or the start
 	//
 	pos = Length() - 1;
-#if defined(__AROS__)
-	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) && ( ( *this )[ pos - 1 ] != ':' ) ) {
-#else
 	while( ( pos > 0 ) && ( ( *this )[ pos - 1 ] != '/' ) && ( ( *this )[ pos - 1 ] != '\\' ) ) {
-#endif
 		pos--;
 	}
 
@@ -1266,11 +1235,6 @@ idStr::IcmpPath
 int idStr::IcmpPath( const char *s1, const char *s2 ) {
 	int c1, c2, d;
 
-#if 0
-//#if !defined( _WIN32 )
-	idLib::common->Printf( "WARNING: IcmpPath used on a case-sensitive filesystem?\n" );
-#endif
-
 	do {
 		c1 = *s1++;
 		c2 = *s2++;
@@ -1334,11 +1298,6 @@ idStr::IcmpnPath
 */
 int idStr::IcmpnPath( const char *s1, const char *s2, int n ) {
 	int c1, c2, d;
-
-#if 0
-//#if !defined( _WIN32 )
-	idLib::common->Printf( "WARNING: IcmpPath used on a case-sensitive filesystem?\n" );
-#endif
 
 	assert( n >= 0 );
 
@@ -1538,15 +1497,9 @@ or returns -1 on failure or if the buffer would be overflowed.
 int idStr::vsnPrintf( char *dest, int size, const char *fmt, va_list argptr ) {
 	int ret;
 
-#ifdef _WIN32
-#undef _vsnprintf
-	ret = _vsnprintf( dest, size-1, fmt, argptr );
-#define _vsnprintf	use_idStr_vsnPrintf
-#else
 #undef vsnprintf
 	ret = vsnprintf( dest, size, fmt, argptr );
 #define vsnprintf	use_idStr_vsnPrintf
-#endif
 	dest[size-1] = '\0';
 	if ( ret < 0 || ret >= size ) {
 		return -1;

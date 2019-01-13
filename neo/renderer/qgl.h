@@ -32,16 +32,6 @@ If you have questions concerning this license or the applicable additional terms
 #ifndef __QGL_H__
 #define __QGL_H__
 
-#if defined( ID_DEDICATED ) && defined( _WIN32 )
-// to allow stubbing gl on windows, define WINGDIAPI to nothing - it would otherwise be
-// extended to __declspec(dllimport) on MSVC (our stub is no dll.)
-	#ifdef WINGDIAPI
-		#pragma push_macro("WINGDIAPI")
-		#undef WINGDIAPI
-		#define WINGDIAPI
-	#endif
-#endif
-
 #ifdef __EMSCRIPTEN__
 #ifndef GLAPI
 #define GLAPI extern
@@ -67,13 +57,6 @@ If you have questions concerning this license or the applicable additional terms
 
 #else
 #include <SDL_opengl.h>
-#endif
-
-#if defined( ID_DEDICATED ) && defined( _WIN32 )
-// restore WINGDIAPI
-	#ifdef WINGDIAPI
-		#pragma pop_macro("WINGDIAPI")
-	#endif
 #endif
 
 typedef void (*GLExtension_t)(void);

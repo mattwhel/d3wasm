@@ -96,16 +96,8 @@ elseif (cpu MATCHES "i.86")
     set(cpu "x86")
 endif ()
 
-if (MSVC AND CMAKE_CL_64)
-    set(cpu "amd64")
-endif ()
-
 # target os
-if (APPLE)
-    set(os "macosx")
-else ()
     string(TOLOWER "${CMAKE_SYSTEM_NAME}" os)
-endif ()
 
 if (EMSCRIPTEN)
     set(os  "emscripten")
@@ -163,18 +155,11 @@ if (NOT EMSCRIPTEN)
 endif ()
 
 if (SDL2)
-    # skip SDL2main
-    if (APPLE OR WIN32 OR EMSCRIPTEN)
-        set(SDL2_BUILDING_LIBRARY TRUE)
-    endif ()
+    set(SDL2_BUILDING_LIBRARY TRUE)
     find_package(SDL2 REQUIRED)
     include_directories(${SDL2_INCLUDE_DIR})
     set(SDLx_LIBRARY ${SDL2_LIBRARY})
 else ()
-    # skip SDLmain
-    if (APPLE OR WIN32)
-        set(SDL_BUILDING_LIBRARY TRUE)
-    endif ()
     find_package(SDL REQUIRED)
     include_directories(${SDL_INCLUDE_DIR})
     set(SDLx_LIBRARY ${SDL_LIBRARY})
@@ -201,7 +186,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
 
     if (NOT CMAKE_CROSSCOMPILING AND ONATIVE)
         add_compile_options(-march=native)
-    elseif (NOT APPLE AND cpu STREQUAL "x86")
+    elseif (cpu STREQUAL "x86")
         add_compile_options(-march=pentium3)
     endif ()
 
@@ -253,60 +238,12 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
     if (cxx_has_Woverload_virtual)
         add_compile_options(-Woverloaded-virtual)
     endif ()
-
-    if (APPLE)
-        add_definitions(-DMACOS_X=1)
-
-        if (cpu STREQUAL "x86_64")
-            add_compile_options(-arch x86_64 -mmacosx-version-min=10.6)
-            set(ldflags "${ldflags} -arch x86_64 -mmacosx-version-min=10.6")
-        elseif (cpu STREQUAL "x86")
-            CHECK_CXX_COMPILER_FLAG("-arch i386" cxx_has_arch_i386)
-            if (cxx_has_arch_i386)
-                add_compile_options(-arch i386)
-                set(ldflags "${ldflags} -arch i386")
-            endif ()
-
-            add_compile_options(-mmacosx-version-min=10.4)
-            set(ldflags "${ldflags} -mmacosx-version-min=10.4")
-        elseif (cpu STREQUAL "ppc")
-            CHECK_CXX_COMPILER_FLAG("-arch ppc" cxx_has_arch_ppc)
-            if (cxx_has_arch_ppc)
-                add_compile_options(-arch ppc)
-                set(ldflags "${ldflags} -arch ppc")
-            endif ()
-
-            add_compile_options(-mmacosx-version-min=10.4)
-            set(ldflags "${ldflags} -mmacosx-version-min=10.4")
-        else ()
-            message(FATAL_ERROR "Unsupported CPU architecture for OSX")
-        endif ()
-
-        set(sys_libs ${sys_libs} "-framework Carbon -framework Cocoa -framework IOKit")
-    elseif (WIN32)
-        set(ldflags "${ldflags} -static-libgcc -static-libstdc++")
-    elseif (os STREQUAL "linux")
+    if (os STREQUAL "linux")
         set(sys_libs ${sys_libs} dl)
     endif ()
     if (USEREGAL)
         set(sys_libs ${sys_libs} ${REGAL_LIBRARY})
     endif()
-elseif (MSVC)
-    add_compile_options(/W4)
-    add_compile_options(/wd4100) # unreferenced formal parameter
-    add_compile_options(/wd4127) # conditional expression is constant
-    add_compile_options(/wd4244) # possible loss of data
-    add_compile_options(/wd4245) # signed/unsigned mismatch
-    add_compile_options(/wd4267) # possible loss of data
-    add_compile_options(/wd4714) # 'function' marked as __forceinline not inlined
-    add_compile_options(/wd4996) # 'function': was declared deprecated
-    add_compile_options(/wd4068) # unknown pragma
-    add_compile_options(/wd4458) # declaration of 'variable' hides class member
-    add_definitions(-D_ALLOW_KEYWORD_MACROS) # because of the "#define private public" and "#define protected public" in TypeInfo.cpp
-    set(CMAKE_C_FLAGS_DEBUG "-D_DEBUG /Od /Zi /MDd")
-    set(CMAKE_C_FLAGS_RELEASE "/Ox /Oy /MD")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/Ox /Oy /Zi /MD")
-    set(CMAKE_C_FLAGS_MINSIZEREL "/Ox /Oy /Os /MD")
 else ()
     message(FATAL_ERROR "Unsupported compiler")
 endif ()
@@ -335,19 +272,6 @@ if (EMSCRIPTEN)
     set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=dhewm3.embin")
     set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"_main\",\"__ZL17Session_NextMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal17HandleMsgCommandsEPKc\",\"__ZN14idSessionLocal10MessageBoxE12msgBoxType_tPKcS2_bS2_S2_b\",\"__ZN14idSessionLocal8SaveGameEPKcb\",\"__ZN25idRenderModelManagerLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal7StopBoxEv\",\"__ZN14idSessionLocal25HandleRestartMenuCommandsEPKc\",\"__ZN13idCommonLocal8GUIFrameEbb\",\"__ZN11idGameLocal16SpawnMapEntitiesEv\",\"__ZN11idGameLocal11MapPopulateEv\",\"__ZN11idGameLocal14InitFromNewMapEPKcP13idRenderWorldP12idSoundWorldbbi\",\"__ZN13idCommonLocal16InitRenderSystemEv\",\"__ZN13idCommonLocal19PrintLoadingMessageEPKc\",\"__ZN13idCommonLocal8InitGameEv\",\"__ZN13idCommonLocal4InitEiPPc\",\"__Z10LoadGame_fRK9idCmdArgs\",\"__ZN14idSessionLocal8LoadGameEPKc\",\"__ZN14idSessionLocal9MenuEventEPK10sysEvent_t\",\"__ZN14idSessionLocal12ProcessEventEPK10sysEvent_t\",\"__ZN14idSessionLocal25HandleSaveGameMenuCommandER9idCmdArgsRi\",\"__ZN11idEventLoop12ProcessEventE10sysEvent_t\",\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
     set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
-endif ()
-
-# mingw and msvc
-if (WIN32)
-    add_definitions(-DWINVER=0x0501)
-    add_definitions(-D_WIN32_WINNT=0x0501)
-
-    set(sys_libs ${sys_libs}
-            winmm
-            iphlpapi
-            wsock32
-            ole32
-            )
 endif ()
 
 # fallback for cmake versions without GNUInstallDirs
@@ -382,7 +306,7 @@ configure_file(
 
 message(STATUS "Building ${CMAKE_BUILD_TYPE} for ${os}-${cpu}")
 
-if (NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN)
+if (NOT EMSCRIPTEN)
     message(STATUS "The install target will use the following directories:")
     message(STATUS "  Binary directory:  ${bindir}")
     message(STATUS "  Library directory: ${libdir}")
@@ -618,9 +542,7 @@ set(src_idlib
         idlib/math/Rotation.cpp
         idlib/math/Simd.cpp
         idlib/math/Simd_Generic.cpp
-        idlib/math/Simd_AltiVec.cpp
         idlib/math/Simd_MMX.cpp
-        idlib/math/Simd_3DNow.cpp
         idlib/math/Simd_SSE.cpp
         idlib/math/Simd_SSE2.cpp
         idlib/math/Simd_SSE3.cpp
@@ -803,61 +725,7 @@ set(src_core
 
 set(src_stub_openal sys/stub/openal_stub.cpp)
 set(src_stub_gl sys/stub/stub_gl.cpp)
-if (APPLE)
-    set(OSX_RESOURCE_FILES
-            "${CMAKE_SOURCE_DIR}/sys/osx/Doom3.icns"
-            "${CMAKE_SOURCE_DIR}/sys/osx/Doom 3.rsrc"
-            )
 
-    set_source_files_properties(${OSX_RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-
-    set(src_sys_base
-            sys/cpu.cpp
-            sys/threads.cpp
-            sys/events.cpp
-            sys/sys_local.cpp
-            sys/posix/posix_net.cpp
-            sys/posix/posix_main.cpp
-            )
-
-    set(src_sys_core
-            sys/glimp.cpp
-            sys/osx/DOOMController.mm
-            sys/osx/macosx_misc.mm
-            sys/osx/SDLMain.m
-            ${OSX_RESOURCE_FILES}
-            )
-elseif (WIN32)
-    set(WIN32_RESOURCE_FILES
-            "${CMAKE_SOURCE_DIR}/sys/win32/rc/dhewm3.rc"
-            )
-
-    set(src_sys_base
-            sys/cpu.cpp
-            sys/threads.cpp
-            sys/events.cpp
-            sys/sys_local.cpp
-            sys/win32/win_input.cpp
-            sys/win32/win_main.cpp
-            sys/win32/win_net.cpp
-            sys/win32/win_shared.cpp
-            sys/win32/win_syscon.cpp
-            sys/win32/SDL_win32_main.c
-            )
-
-	# adding the few relevant headers in sys/ manually..
-	set(src_sys_base ${src_sys_base}
-		sys/platform.h
-		sys/sys_local.h
-		sys/sys_public.h
-		sys/win32/win_local.h
-	)
-
-    set(src_sys_core
-            sys/glimp.cpp
-            ${WIN32_RESOURCE_FILES}
-            )
-else ()
     set(src_sys_base
             sys/cpu.cpp
             sys/threads.cpp
@@ -871,7 +739,6 @@ else ()
     set(src_sys_core
             sys/glimp.cpp
             )
-endif ()
 
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
@@ -895,7 +762,7 @@ if (CORE)
 
         set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
     else ()
-        add_executable(${DHEWM3BINARY} WIN32 MACOSX_BUNDLE
+        add_executable(${DHEWM3BINARY}
                 ${src_core}
                 ${src_sys_base}
                 ${src_sys_core}
@@ -904,7 +771,6 @@ if (CORE)
 	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core})
 
         set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
-        set_target_properties(${DHEWM3BINARY} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${PROJECT_SOURCE_DIR}/sys/osx/Info.plist)
     endif ()
 
     set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
@@ -920,41 +786,8 @@ if (CORE)
             ${SDLx_LIBRARY}
             ${sys_libs})
 
-    if (NOT APPLE AND NOT WIN32 AND NOT EMSCRIPTEN)
+    if (NOT EMSCRIPTEN)
         install(TARGETS ${DHEWM3BINARY}
-                RUNTIME DESTINATION "${bindir}"
-                LIBRARY DESTINATION "${libdir}"
-                ARCHIVE DESTINATION "${libdir}"
-                )
-    endif ()
-endif ()
-
-if (DEDICATED)
-    add_executable(${DHEWM3BINARY}ded WIN32 MACOSX_BUNDLE
-            ${src_core}
-            ${src_stub_openal}
-            ${src_stub_gl}
-            ${src_sys_base}
-            )
-
-	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_stub_openal} ${src_stub_gl})
-
-    set_target_properties(${DHEWM3BINARY}ded PROPERTIES COMPILE_DEFINITIONS "ID_DEDICATED;__DOOM_DLL__")
-    set_target_properties(${DHEWM3BINARY}ded PROPERTIES LINK_FLAGS "${ldflags}")
-    target_link_libraries(${DHEWM3BINARY}ded
-            idlib
-            ${VORBISFILE_LIBRARIES}
-            ${VORBIS_LIBRARIES}
-            ${OGG_LIBRARIES}
-            ${CURL_LIBRARY}
-            ${JPEG_LIBRARY}
-            ${ZLIB_LIBRARY}
-            ${SDLx_LIBRARY}
-            ${sys_libs}
-            )
-
-    if (NOT APPLE AND NOT WIN32)
-        install(TARGETS ${DHEWM3BINARY}ded
                 RUNTIME DESTINATION "${bindir}"
                 LIBRARY DESTINATION "${libdir}"
                 ARCHIVE DESTINATION "${libdir}"
@@ -974,13 +807,12 @@ if (BASE)
     set_target_properties(base PROPERTIES INSTALL_NAME_DIR "@executable_path")
     target_link_libraries(base idlib)
 
-    if (NOT APPLE AND NOT WIN32)
-        install(TARGETS base
+       install(TARGETS base
                 RUNTIME DESTINATION "${bindir}"
                 LIBRARY DESTINATION "${libdir}"
                 ARCHIVE DESTINATION "${libdir}"
                 )
-    endif ()
+
 endif ()
 
 if (D3XP)
@@ -993,11 +825,9 @@ if (D3XP)
     set_target_properties(d3xp PROPERTIES INSTALL_NAME_DIR "@executable_path")
     target_link_libraries(d3xp idlib)
 
-    if (NOT APPLE AND NOT WIN32)
         install(TARGETS d3xp
                 RUNTIME DESTINATION "${bindir}"
                 LIBRARY DESTINATION "${libdir}"
                 ARCHIVE DESTINATION "${libdir}"
                 )
-    endif ()
 endif ()

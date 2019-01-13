@@ -912,14 +912,6 @@ void idConsoleLocal::Print( const char *txt ) {
 	int		c, l;
 	int		color;
 
-#ifdef ID_ALLOW_TOOLS
-	RadiantPrint( txt );
-
-	if( com_editors & EDITOR_MATERIAL ) {
-		MaterialEditorPrintConsole(txt);
-	}
-#endif
-
 	color = idStr::ColorIndex( C_COLOR_CYAN );
 
 	while ( (c = *(const unsigned char*)txt) != 0 ) {

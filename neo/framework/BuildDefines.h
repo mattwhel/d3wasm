@@ -66,15 +66,6 @@ If you have questions concerning this license or the applicable additional terms
 	#define ID_CLIENTINFO_TAGS 0
 #endif
 
-// for win32 this is defined in preprocessor settings so that MFC can be
-// compiled out.
-//#define ID_DEDICATED
-
-// don't define ID_ALLOW_TOOLS when we don't want tool code in the executable.
-#if defined( _WIN32 ) && defined(_MFC_VER) && !defined( ID_DEDICATED )
-	#define	ID_ALLOW_TOOLS
-#endif
-
 // async network
 
 /*

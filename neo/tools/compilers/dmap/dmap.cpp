@@ -284,9 +284,7 @@ void Dmap( const idCmdArgs &args ) {
 			noAAS = true;
 			common->Printf( "noAAS = true\n" );
 		} else if ( !idStr::Icmp( s, "editorOutput" ) ) {
-#ifdef _WIN32
-			com_outputMsg = true;
-#endif
+
 		} else {
 			break;
 		}
@@ -377,12 +375,7 @@ void Dmap( const idCmdArgs &args ) {
 	// clear the map plane list
 	dmapGlobals.mapPlanes.Clear();
 
-#ifdef _WIN32
-	if ( com_outputMsg && com_hwndMsg != NULL ) {
-		unsigned int msg = ::RegisterWindowMessage( DMAP_DONE );
-		::PostMessage( com_hwndMsg, msg, 0, 0 );
-	}
-#endif
+
 }
 
 /*

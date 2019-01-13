@@ -46,10 +46,6 @@ If you have questions concerning this license or the applicable additional terms
 	#if !defined(__i386__) && !defined(__x86_64__)
 		#define NO_CPUID
 	#endif
-#elif defined(_MSC_VER)
-	#if !defined(_M_IX86)
-		#define NO_CPUID
-	#endif
 #else
 #error unsupported compiler
 #endif
@@ -81,19 +77,6 @@ static inline void CPUid(int index, int *a, int *b, int *c, int *d) {
 			"=c" (*c), "=d" (*d)
 		: "0" (index));
 }
-#elif defined(_MSC_VER)
-#include <intrin.h>
-static inline void CPUid(int index, int *a, int *b, int *c, int *d) {
-	int info[4] = { };
-
-	// VS2005 and up
-	__cpuid(info, index);
-
-	*a = info[0];
-	*b = info[1];
-	*c = info[2];
-	*d = info[3];
-}
 #else
 #error unsupported compiler
 #endif
@@ -113,32 +96,13 @@ static inline bool HasDAZ() {
 	return (d & d_FXSAVE) == d_FXSAVE;
 }
 
-static inline bool HasSSE3() {
-	int a, b, c, d;
-
-	CPUid(0, &a, &b, &c, &d);
-	if (a < 1)
-		return false;
-
-	CPUid(1, &a, &b, &c, &d);
-
-	return (c & c_SSE3) == c_SSE3;
-}
-
 #define MXCSR_DAZ	(1 << 6)
 #define MXCSR_FTZ	(1 << 15)
 
-#ifdef _MSC_VER
-#define STREFLOP_FSTCW(cw) do { short tmp; __asm { fstcw tmp }; (cw) = tmp; } while (0)
-#define STREFLOP_FLDCW(cw) do { short tmp = (cw); __asm { fclex }; __asm { fldcw tmp }; } while (0)
-#define STREFLOP_STMXCSR(cw) do { int tmp; __asm { stmxcsr tmp }; (cw) = tmp; } while (0)
-#define STREFLOP_LDMXCSR(cw) do { int tmp = (cw); __asm { ldmxcsr tmp }; } while (0)
-#else
 #define STREFLOP_FSTCW(cw) do { asm volatile ("fstcw %0" : "=m" (cw) : ); } while (0)
 #define STREFLOP_FLDCW(cw) do { asm volatile ("fclex \n fldcw %0" : : "m" (cw)); } while (0)
 #define STREFLOP_STMXCSR(cw) do { asm volatile ("stmxcsr %0" : "=m" (cw) : ); } while (0)
 #define STREFLOP_LDMXCSR(cw) do { asm volatile ("ldmxcsr %0" : : "m" (cw) ); } while (0)
-#endif
 
 static void EnableMXCSRFlag(int flag, bool enable, const char *name) {
 	int sse_mode;
@@ -201,23 +165,14 @@ int Sys_GetProcessorId( void ) {
 	if (SDL_HasMMX())
 		flags |= CPUID_MMX;
 
-	if (SDL_Has3DNow())
-		flags |= CPUID_3DNOW;
-
 	if (SDL_HasSSE())
 		flags |= CPUID_SSE;
 
 	if (SDL_HasSSE2())
 		flags |= CPUID_SSE2;
 
-#ifndef NO_CPUID
-	// there is no SDL_HasSSE3() in SDL 1.2
-	if (HasSSE3())
+	if (SDL_HasSSE3())
 		flags |= CPUID_SSE3;
-#endif
-
-	if (SDL_HasAltiVec())
-		flags |= CPUID_ALTIVEC;
 
 	return flags;
 }
@@ -228,7 +183,5 @@ Sys_FPU_SetPrecision
 ===============
 */
 void Sys_FPU_SetPrecision() {
-#if defined(_MSC_VER) && defined(_M_IX86)
-	_controlfp(_PC_64, _MCW_PC);
-#endif
+
 }

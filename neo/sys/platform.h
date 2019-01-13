@@ -40,99 +40,6 @@ If you have questions concerning this license or the applicable additional terms
 ===============================================================================
 */
 
-// Win32
-#if defined(__AROS__)
-
-#define _alloca						alloca
-#define _alloca16( x )				((void *)((((uintptr_t)alloca( (x)+15 )) + 15) & ~15))
-
-#ifdef GAME_DLL
-#define ID_GAME_API					__attribute__((visibility ("default")))
-#else
-#define ID_GAME_API
-#endif
-
-#define ALIGN16( x )				x __attribute__ ((aligned (16)))
-#define PACKED						__attribute__((packed))
-
-#define PATHSEPERATOR_STR			"/"
-#define PATHSEPERATOR_CHAR			'/'
-
-#define __cdecl
-#define ASSERT						assert
-
-#define ID_INLINE					inline
-#define ID_STATIC_TEMPLATE
-
-#define assertmem( x, y )
-
-#endif
-
-// Win32
-#if defined(WIN32) || defined(_WIN32)
-
-#define _alloca16( x )				((void *)((((uintptr_t)_alloca( (x)+15 )) + 15) & ~15))
-
-#define PATHSEPERATOR_STR			"\\"
-#define PATHSEPERATOR_CHAR			'\\'
-
-#ifdef _MSC_VER
-#ifdef GAME_DLL
-#define ID_GAME_API					__declspec(dllexport)
-#else
-#define ID_GAME_API
-#endif
-#define ALIGN16( x )				__declspec(align(16)) x
-#define PACKED
-#define ID_INLINE					__forceinline
-#define ID_STATIC_TEMPLATE			static
-#define assertmem( x, y )			assert( _CrtIsValidPointer( x, y, true ) )
-#else
-#ifdef GAME_DLL
-#define ID_GAME_API					__attribute__((visibility ("default")))
-#else
-#define ID_GAME_API
-#endif
-#define ALIGN16( x )				x __attribute__ ((aligned (16)))
-#define PACKED						__attribute__((packed))
-#define ID_INLINE					inline
-#define ID_STATIC_TEMPLATE
-#define assertmem( x, y )
-#endif
-
-#endif
-
-
-// Mac OSX
-#if defined(MACOS_X) || defined(__APPLE__)
-
-#ifdef GAME_DLL
-#define ID_GAME_API					__attribute__((visibility ("default")))
-#else
-#define ID_GAME_API
-#endif
-
-#define ALIGN16( x )				x __attribute__ ((aligned (16)))
-
-#define PACKED						__attribute__((packed))
-
-#define _alloca						alloca
-#define _alloca16( x )				((void *)((((uintptr_t)alloca( (x)+15 )) + 15) & ~15))
-
-#define PATHSEPERATOR_STR			"/"
-#define PATHSEPERATOR_CHAR			'/'
-
-#define __cdecl
-#define ASSERT						assert
-
-#define ID_INLINE					inline
-#define ID_STATIC_TEMPLATE
-
-#define assertmem( x, y )
-
-#endif
-
-
 // Unix
 #ifdef __unix__
 
@@ -168,11 +75,9 @@ If you have questions concerning this license or the applicable additional terms
 #define id_attribute(x)
 #endif
 
-#if !defined(_MSC_VER)
-	// MSVC does not provide this C99 header
 	#include <inttypes.h>
-#endif
-#if defined(__MINGW32__)
+
+	#if defined(__MINGW32__)
 	#include <malloc.h>
 #endif
 #include <stdio.h>
@@ -186,12 +91,6 @@ If you have questions concerning this license or the applicable additional terms
 #include <typeinfo>
 #include <errno.h>
 #include <math.h>
-
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#undef FindText								// stupid namespace poluting Microsoft monkeys
-#endif
 
 #define ID_TIME_T time_t
 

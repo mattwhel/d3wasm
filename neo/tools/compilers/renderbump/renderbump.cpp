@@ -32,12 +32,6 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "tools/compilers/compiler_public.h"
 
-#ifdef WIN32
-#include <windows.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
-#include "sys/win32/win_local.h"
-#endif
 
 /*
 

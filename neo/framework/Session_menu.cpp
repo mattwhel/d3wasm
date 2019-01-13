@@ -870,12 +870,8 @@ void idSessionLocal::HandleMainMenuCommands( const char *menuCommand ) {
 				int old = cvarSystem->GetCVarInteger( "s_numberOfSpeakers" );
 				cmdSystem->BufferCommandText( CMD_EXEC_NOW, "s_restart\n" );
 				if ( old != cvarSystem->GetCVarInteger( "s_numberOfSpeakers" ) ) {
-#ifdef _WIN32
-					MessageBox( MSG_OK, common->GetLanguageDict()->GetString( "#str_04142" ), common->GetLanguageDict()->GetString( "#str_04141" ), true );
-#else
 					// a message that doesn't mention the windows control panel
 					MessageBox( MSG_OK, common->GetLanguageDict()->GetString( "#str_07230" ), common->GetLanguageDict()->GetString( "#str_04141" ), true );
-#endif
 				}
 			}
 			if ( !vcmd.Icmp( "eax" ) ) {

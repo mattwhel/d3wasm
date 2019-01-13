@@ -31,10 +31,6 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "sys/platform.h"
 
-#ifdef MACOS_X
-// for FLT_MIN
-#include <float.h>
-#endif
 
 /*
 ===============================================================================
@@ -387,19 +383,8 @@ ID_INLINE double idMath::Cos64( float a ) {
 }
 
 ID_INLINE void idMath::SinCos( float a, float &s, float &c ) {
-#if defined(_MSC_VER) && defined(_M_IX86)
-	_asm {
-		fld		a
-		fsincos
-		mov		ecx, c
-		mov		edx, s
-		fstp	dword ptr [ecx]
-		fstp	dword ptr [edx]
-	}
-#else
 	s = sinf( a );
 	c = cosf( a );
-#endif
 }
 
 ID_INLINE void idMath::SinCos16( float a, float &s, float &c ) {
@@ -440,19 +425,8 @@ ID_INLINE void idMath::SinCos16( float a, float &s, float &c ) {
 }
 
 ID_INLINE void idMath::SinCos64( float a, double &s, double &c ) {
-#if defined(_MSC_VER) && defined(_M_IX86)
-	_asm {
-		fld		a
-		fsincos
-		mov		ecx, c
-		mov		edx, s
-		fstp	qword ptr [ecx]
-		fstp	qword ptr [edx]
-	}
-#else
 	s = sin( a );
 	c = cos( a );
-#endif
 }
 
 ID_INLINE float idMath::Tan( float a ) {
@@ -798,31 +772,7 @@ ID_INLINE int idMath::Ftoi( float f ) {
 }
 
 ID_INLINE int idMath::FtoiFast( float f ) {
-#if defined(_MSC_VER) && defined(_M_IX86)
-	int i;
-	__asm fld		f
-	__asm fistp		i		// use default rouding mode (round nearest)
-	return i;
-#elif 0						// round chop (C/C++ standard)
-	int i, s, e, m, shift;
-	i = *reinterpret_cast<int *>(&f);
-	s = i >> IEEE_FLT_SIGN_BIT;
-	e = ( ( i >> IEEE_FLT_MANTISSA_BITS ) & ( ( 1 << IEEE_FLT_EXPONENT_BITS ) - 1 ) ) - IEEE_FLT_EXPONENT_BIAS;
-	m = ( i & ( ( 1 << IEEE_FLT_MANTISSA_BITS ) - 1 ) ) | ( 1 << IEEE_FLT_MANTISSA_BITS );
-	shift = e - IEEE_FLT_MANTISSA_BITS;
-	return ( ( ( ( m >> -shift ) | ( m << shift ) ) & ~( e >> 31 ) ) ^ s ) - s;
-//#elif defined( __i386__ )
-#elif 0
-	int i = 0;
-	__asm__ __volatile__ (
-						  "fld %1\n" \
-						  "fistp %0\n" \
-						  : "=m" (i) \
-						  : "m" (f) );
-	return i;
-#else
 	return (int) f;
-#endif
 }
 
 ID_INLINE unsigned int idMath::Ftol( float f ) {
@@ -830,33 +780,7 @@ ID_INLINE unsigned int idMath::Ftol( float f ) {
 }
 
 ID_INLINE unsigned int idMath::FtolFast( float f ) {
-#if defined(_MSC_VER) && defined(_M_IX86)
-	// FIXME: this overflows on 31bits still .. same as FtoiFast
-	unsigned int i;
-	__asm fld		f
-	__asm fistp		i		// use default rouding mode (round nearest)
-	return i;
-#elif 0						// round chop (C/C++ standard)
-	int i, s, e, m, shift;
-	i = *reinterpret_cast<int *>(&f);
-	s = i >> IEEE_FLT_SIGN_BIT;
-	e = ( ( i >> IEEE_FLT_MANTISSA_BITS ) & ( ( 1 << IEEE_FLT_EXPONENT_BITS ) - 1 ) ) - IEEE_FLT_EXPONENT_BIAS;
-	m = ( i & ( ( 1 << IEEE_FLT_MANTISSA_BITS ) - 1 ) ) | ( 1 << IEEE_FLT_MANTISSA_BITS );
-	shift = e - IEEE_FLT_MANTISSA_BITS;
-	return ( ( ( ( m >> -shift ) | ( m << shift ) ) & ~( e >> 31 ) ) ^ s ) - s;
-//#elif defined( __i386__ )
-#elif 0
-	// for some reason, on gcc I need to make sure i == 0 before performing a fistp
-	int i = 0;
-	__asm__ __volatile__ (
-						  "fld %1\n" \
-						  "fistp %0\n" \
-						  : "=m" (i) \
-						  : "m" (f) );
-	return i;
-#else
 	return (unsigned int) f;
-#endif
 }
 
 ID_INLINE signed char idMath::ClampChar( int i ) {

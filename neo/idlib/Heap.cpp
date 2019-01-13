@@ -369,11 +369,7 @@ dword idHeap::Msize( void *p ) {
 	}
 
 #if USE_LIBC_MALLOC
-	#ifdef _WIN32
-		return _msize( p );
-	#else
 		return 0;
-	#endif
 #else
 	switch( ((byte *)(p))[-1] ) {
 		case SMALL_ALLOC: {

@@ -26,24 +26,14 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#if MACOS_X
-#include <stdlib.h>
-#include <unistd.h>			// this is for sleep()
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <mach/mach_time.h>
-#endif
-
 #include "sys/platform.h"
 #include "idlib/geometry/DrawVert.h"
 #include "idlib/geometry/JointTransform.h"
 #include "idlib/math/Simd_Generic.h"
 #include "idlib/math/Simd_MMX.h"
-#include "idlib/math/Simd_3DNow.h"
 #include "idlib/math/Simd_SSE.h"
 #include "idlib/math/Simd_SSE2.h"
 #include "idlib/math/Simd_SSE3.h"
-#include "idlib/math/Simd_AltiVec.h"
 #include "idlib/math/Plane.h"
 #include "idlib/bv/Bounds.h"
 #include "idlib/Lib.h"
@@ -86,16 +76,12 @@ void idSIMD::InitProcessor( const char *module, bool forceGeneric ) {
 	} else {
 
 		if ( !processor ) {
-			if ( ( cpuid & CPUID_ALTIVEC ) ) {
-				processor = new idSIMD_AltiVec;
-			} else if ( ( cpuid & CPUID_MMX ) && ( cpuid & CPUID_SSE ) && ( cpuid & CPUID_SSE2 ) && ( cpuid & CPUID_SSE3 ) ) {
+			if ( ( cpuid & CPUID_MMX ) && ( cpuid & CPUID_SSE ) && ( cpuid & CPUID_SSE2 ) && ( cpuid & CPUID_SSE3 ) ) {
 				processor = new idSIMD_SSE3;
 			} else if ( ( cpuid & CPUID_MMX ) && ( cpuid & CPUID_SSE ) && ( cpuid & CPUID_SSE2 ) ) {
 				processor = new idSIMD_SSE2;
 			} else if ( ( cpuid & CPUID_MMX ) && ( cpuid & CPUID_SSE ) ) {
 				processor = new idSIMD_SSE;
-			} else if ( ( cpuid & CPUID_MMX ) && ( cpuid & CPUID_3DNOW ) ) {
-				processor = new idSIMD_3DNow;
 			} else if ( ( cpuid & CPUID_MMX ) ) {
 				processor = new idSIMD_MMX;
 			} else {
@@ -149,46 +135,6 @@ idSIMDProcessor *p_simd;
 idSIMDProcessor *p_generic;
 int baseClocks = 0;
 
-#if defined(_MSC_VER) && defined(_M_IX86)
-
-#define TIME_TYPE int
-
-#pragma warning(disable : 4731)     // frame pointer register 'ebx' modified by inline assembly code
-
-int saved_ebx = 0;
-
-#define StartRecordTime( start )			\
-	__asm mov saved_ebx, ebx				\
-	__asm xor eax, eax						\
-	__asm cpuid								\
-	__asm rdtsc								\
-	__asm mov start, eax					\
-	__asm xor eax, eax						\
-	__asm cpuid
-
-#define StopRecordTime( end )				\
-	__asm xor eax, eax						\
-	__asm cpuid								\
-	__asm rdtsc								\
-	__asm mov end, eax						\
-	__asm mov ebx, saved_ebx				\
-	__asm xor eax, eax						\
-	__asm cpuid
-
-#elif MACOS_X
-
-double ticksPerNanosecond;
-
-#define TIME_TYPE uint64_t
-
-#define StartRecordTime( start )			\
-	start = mach_absolute_time();
-
-#define StopRecordTime( end )				\
-	end = mach_absolute_time();
-
-#else
-
 #define TIME_TYPE int
 
 #define StartRecordTime( start )			\
@@ -196,8 +142,6 @@ double ticksPerNanosecond;
 
 #define StopRecordTime( end )				\
 	end = 1;
-
-#endif
 
 #define GetBest( start, end, best )			\
 	if ( !best || end - start < best ) {	\
@@ -3896,10 +3840,6 @@ idSIMD::Test_f
 */
 void idSIMD::Test_f( const idCmdArgs &args ) {
 
-#ifdef _WIN32
-	SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
-#endif /* _WIN32 */
-
 	p_simd = processor;
 	p_generic = generic;
 
@@ -3915,12 +3855,6 @@ void idSIMD::Test_f( const idCmdArgs &args ) {
 				return;
 			}
 			p_simd = new idSIMD_MMX;
-		} else if ( idStr::Icmp( argString, "3DNow" ) == 0 ) {
-			if ( !( cpuid & CPUID_MMX ) || !( cpuid & CPUID_3DNOW ) ) {
-				common->Printf( "CPU does not support MMX & 3DNow\n" );
-				return;
-			}
-			p_simd = new idSIMD_3DNow;
 		} else if ( idStr::Icmp( argString, "SSE" ) == 0 ) {
 			if ( !( cpuid & CPUID_MMX ) || !( cpuid & CPUID_SSE ) ) {
 				common->Printf( "CPU does not support MMX & SSE\n" );
@@ -3939,14 +3873,8 @@ void idSIMD::Test_f( const idCmdArgs &args ) {
 				return;
 			}
 			p_simd = new idSIMD_SSE3();
-		} else if ( idStr::Icmp( argString, "AltiVec" ) == 0 ) {
-			if ( !( cpuid & CPUID_ALTIVEC ) ) {
-				common->Printf( "CPU does not support AltiVec\n" );
-				return;
-			}
-			p_simd = new idSIMD_AltiVec();
 		} else {
-			common->Printf( "invalid argument, use: MMX, 3DNow, SSE, SSE2, SSE3, AltiVec\n" );
+			common->Printf( "invalid argument, use: MMX, SSE, SSE2, SSE3\n" );
 			return;
 		}
 	}
@@ -4013,7 +3941,4 @@ void idSIMD::Test_f( const idCmdArgs &args ) {
 	p_simd = NULL;
 	p_generic = NULL;
 
-#ifdef _WIN32
-	SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_NORMAL );
-#endif /* _WIN32 */
 }

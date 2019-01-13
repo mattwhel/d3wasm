@@ -30,11 +30,6 @@
 #define OF(x) x
 #endif
 
-#if (!defined(_WIN32)) && (!defined(WIN32)) && (!defined(__APPLE__))
-
-  // Linux needs this to support file operation on files larger then 4+GB
-  // But might need better if/def to select just the platforms that needs them.
-
         #ifndef __USE_FILE_OFFSET64
                 #define __USE_FILE_OFFSET64
         #endif
@@ -47,8 +42,6 @@
         #ifndef _FILE_OFFSET_BIT
                 #define _FILE_OFFSET_BIT 64
         #endif
-
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,16 +69,6 @@
 #endif
 #endif
 
-/*
-#ifndef ZPOS64_T
-  #ifdef _WIN32
-                #define ZPOS64_T fpos_t
-  #else
-    #include <stdint.h>
-    #define ZPOS64_T uint64_t
-  #endif
-#endif
-*/
 
 #ifdef HAVE_MINIZIP64_CONF_H
 #include "mz64conf.h"
@@ -131,11 +114,7 @@ extern "C" {
 
 
 #ifndef ZCALLBACK
- #if (defined(WIN32) || defined(_WIN32) || defined (WINDOWS) || defined (_WINDOWS)) && defined(CALLBACK) && defined (USEWINDOWS_CALLBACK)
-   #define ZCALLBACK CALLBACK
- #else
    #define ZCALLBACK
- #endif
 #endif
 
 

@@ -31,12 +31,6 @@ If you have questions concerning this license or the applicable additional terms
 //#pragma optimize( "", off )
 
 
-// #ifdef WIN32 // DG: this caused trouble, especially with SDL2
-#if 0
-#include <windows.h>
-#include <GL/gl.h>
-#endif
-
 #include "tools/compilers/dmap/dmap.h"
 
 /*

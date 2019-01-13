@@ -172,10 +172,4 @@ if(SDL2_LIBRARY)
 	if(NOT SDL2_BUILDING_LIBRARY AND SDL2MAIN_LIBRARY)
 		list(APPEND SDL2_LIBRARIES ${SDL2MAIN_LIBRARY})
 	endif()
-
-	# For OS X, SDL2 uses Cocoa as a backend so it must link to Cocoa.
-	if(APPLE)
-		list(APPEND SDL2_LIBRARIES "-framework Cocoa")
-	endif()
-
 endif()
