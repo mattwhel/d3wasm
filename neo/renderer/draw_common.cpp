@@ -1305,7 +1305,7 @@ static void RB_T_BasicFog(const drawSurf_t *surf) {
     local[3] = 0.5;
     qglTexGenfv(GL_T, GL_OBJECT_PLANE, local.ToFloatPtr());
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
     GL_SelectTexture(1);
 
@@ -1380,7 +1380,6 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
   qglEnable(GL_TEXTURE_GEN_S);
   qglEnable(GL_TEXTURE_GEN_T);
-  qglTexCoord2f(0.5f, 0.5f);    // make sure Q is set
 
   fogPlanes[0][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[2];
   fogPlanes[0][1] = a * backEnd.viewDef->worldSpace.modelViewMatrix[6];
@@ -1392,9 +1391,8 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   fogPlanes[1][2] = a * backEnd.viewDef->worldSpace.modelViewMatrix[8];
   fogPlanes[1][3] = a * backEnd.viewDef->worldSpace.modelViewMatrix[12];
 
-
   // texture 1 is the entering plane fade correction
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
   GL_SelectTexture(1);
   globalImages->fogEnterImage->Bind();
@@ -1416,8 +1414,6 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   fogPlanes[3][1] = 0;
   fogPlanes[3][2] = 0;
   fogPlanes[3][3] = FOG_ENTER + s;
-
-  qglTexCoord2f(FOG_ENTER + s, FOG_ENTER);
 #endif
 
   // draw it
