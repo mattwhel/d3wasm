@@ -786,11 +786,11 @@ void idSessionLocal::HandleMainMenuCommands( const char *menuCommand ) {
 				}
 			}
 
-			if ( dedicated ) {
-				cvarSystem->SetCVarInteger( "net_serverDedicated", 1 );
-			} else {
-				cvarSystem->SetCVarInteger( "net_serverDedicated", 0 );
-			}
+			//if ( dedicated ) {
+			//	cvarSystem->SetCVarInteger( "net_serverDedicated", 1 );
+			//} else {
+			//	cvarSystem->SetCVarInteger( "net_serverDedicated", 0 );
+			//}
 
 
 
@@ -1215,10 +1215,10 @@ bool idSessionLocal::BoxDialogSanityCheck( void ) {
 		common->DPrintf( "message box sanity check: recursed\n" );
 		return false;
 	}
-	if ( cvarSystem->GetCVarInteger( "net_serverDedicated" ) ) {
-		common->DPrintf( "message box sanity check: not compatible with dedicated server\n" );
-		return false;
-	}
+	//if ( cvarSystem->GetCVarInteger( "net_serverDedicated" ) ) {
+	//	common->DPrintf( "message box sanity check: not compatible with dedicated server\n" );
+	//	return false;
+	//}
 	return true;
 }
 

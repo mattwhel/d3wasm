@@ -40,9 +40,9 @@ idNetworkSystem::ServerSendReliableMessage
 ==================
 */
 void idNetworkSystem::ServerSendReliableMessage( int clientNum, const idBitMsg &msg ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		idAsyncNetwork::server.SendReliableGameMessage( clientNum, msg );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	idAsyncNetwork::server.SendReliableGameMessage( clientNum, msg );
+	//}
 }
 
 /*
@@ -51,9 +51,9 @@ idNetworkSystem::ServerSendReliableMessageExcluding
 ==================
 */
 void idNetworkSystem::ServerSendReliableMessageExcluding( int clientNum, const idBitMsg &msg ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		idAsyncNetwork::server.SendReliableGameMessageExcluding( clientNum, msg );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	idAsyncNetwork::server.SendReliableGameMessageExcluding( clientNum, msg );
+	//
 }
 
 /*
@@ -62,9 +62,9 @@ idNetworkSystem::ServerGetClientPing
 ==================
 */
 int idNetworkSystem::ServerGetClientPing( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientPing( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientPing( clientNum );
+	//}
 	return 0;
 }
 
@@ -74,9 +74,9 @@ idNetworkSystem::ServerGetClientPrediction
 ==================
 */
 int idNetworkSystem::ServerGetClientPrediction( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientPrediction( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientPrediction( clientNum );
+	//}
 	return 0;
 }
 
@@ -86,9 +86,9 @@ idNetworkSystem::ServerGetClientTimeSinceLastPacket
 ==================
 */
 int idNetworkSystem::ServerGetClientTimeSinceLastPacket( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientTimeSinceLastPacket( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientTimeSinceLastPacket( clientNum );
+	//}
 	return 0;
 }
 
@@ -98,9 +98,9 @@ idNetworkSystem::ServerGetClientTimeSinceLastInput
 ==================
 */
 int idNetworkSystem::ServerGetClientTimeSinceLastInput( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientTimeSinceLastInput( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientTimeSinceLastInput( clientNum );
+	//}
 	return 0;
 }
 
@@ -110,9 +110,9 @@ idNetworkSystem::ServerGetClientOutgoingRate
 ==================
 */
 int idNetworkSystem::ServerGetClientOutgoingRate( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientOutgoingRate( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientOutgoingRate( clientNum );
+	//}
 	return 0;
 }
 
@@ -122,9 +122,9 @@ idNetworkSystem::ServerGetClientIncomingRate
 ==================
 */
 int idNetworkSystem::ServerGetClientIncomingRate( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientIncomingRate( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientIncomingRate( clientNum );
+	//}
 	return 0;
 }
 
@@ -134,9 +134,9 @@ idNetworkSystem::ServerGetClientIncomingPacketLoss
 ==================
 */
 float idNetworkSystem::ServerGetClientIncomingPacketLoss( int clientNum ) {
-	if ( idAsyncNetwork::server.IsActive() ) {
-		return idAsyncNetwork::server.GetClientIncomingPacketLoss( clientNum );
-	}
+	//if ( idAsyncNetwork::server.IsActive() ) {
+	//	return idAsyncNetwork::server.GetClientIncomingPacketLoss( clientNum );
+	//}
 	return 0.0f;
 }
 
@@ -148,9 +148,9 @@ idNetworkSystem::ClientSendReliableMessage
 void idNetworkSystem::ClientSendReliableMessage( const idBitMsg &msg ) {
 	if ( idAsyncNetwork::client.IsActive() ) {
 		idAsyncNetwork::client.SendReliableGameMessage( msg );
-	} else if ( idAsyncNetwork::server.IsActive() ) {
-		idAsyncNetwork::server.LocalClientSendReliableMessage( msg );
-	}
+	}// else if ( idAsyncNetwork::server.IsActive() ) {
+		//idAsyncNetwork::server.LocalClientSendReliableMessage( msg );
+	//}
 }
 
 /*

@@ -2073,9 +2073,9 @@ void idImageManager::EndLevelLoad() {
 	int			start = Sys_Milliseconds();
 
 	insideLevelLoad = false;
-	if ( idAsyncNetwork::serverDedicated.GetInteger() ) {
-		return;
-	}
+	//if ( idAsyncNetwork::serverDedicated.GetInteger() ) {
+	//	return;
+	//}
 
 	common->Printf( "----- idImageManager::EndLevelLoad -----\n" );
 

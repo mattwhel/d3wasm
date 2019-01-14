@@ -1461,7 +1461,7 @@ void Com_ReloadEngine_f(const idCmdArgs &args) {
   }
   commonLocal.ShutdownGame(true);
   commonLocal.InitGame();
-  if (!menu && !idAsyncNetwork::serverDedicated.GetBool()) {
+  if (!menu /*&& !idAsyncNetwork::serverDedicated.GetBool()*/) {
     Sys_ShowConsole(0, false);
   }
   common->Printf("============= ReloadEngine end ===============\n");
@@ -2356,10 +2356,10 @@ void idCommonLocal::Frame(void) {
   idAsyncNetwork::RunFrame();
 
   if (idAsyncNetwork::IsActive()) {
-    if (idAsyncNetwork::serverDedicated.GetInteger() != 1) {
+    //if (idAsyncNetwork::serverDedicated.GetInteger() != 1) {
       session->GuiFrameEvents();          // This function might yields (ie. Level load => inline loading screen update)
       session->UpdateScreen( false );
-    }
+    //}
   }
   else {
     session->Frame();                     // This function might occasionally yields (= EMTERPRETIFY)
@@ -2887,7 +2887,7 @@ void idCommonLocal::Shutdown(void) {
   }
 #endif
 
-  idAsyncNetwork::server.Kill();
+  //idAsyncNetwork::server.Kill();
   idAsyncNetwork::client.Shutdown();
 
   // save persistent console history
@@ -3018,14 +3018,14 @@ void idCommonLocal::InitGame(void) {
   // init async network
   idAsyncNetwork::Init();
 
-  if (idAsyncNetwork::serverDedicated.GetInteger() == 1) {
-    idAsyncNetwork::server.InitPort();
-    cvarSystem->SetCVarBool("s_noSound", true);
-  } else {
+  //if (idAsyncNetwork::serverDedicated.GetInteger() == 1) {
+    //idAsyncNetwork::server.InitPort();
+  //  cvarSystem->SetCVarBool("s_noSound", true);
+  //} else {
     // init OpenGL, which will open a window and connect sound and input hardware
     PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04348"));
     InitRenderSystem();
-  }
+  //}
 
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04349"));
 

@@ -193,7 +193,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   set(ldflags "${ldflags} -s FULL_ES2=1")
-  set(ldflags "${ldflags} --llvm-lto 2")
+  #set(ldflags "${ldflags} --llvm-lto 2")
   set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=clamp")
   set(ldflags "${ldflags} -s TOTAL_MEMORY=536870912") # 384 MB (minimum specs) + 128MB (for filesystem: saves, configs, etc.)
   set(ldflags "${ldflags} -s EMTERPRETIFY=1")
@@ -328,7 +328,6 @@ set(src_framework
     framework/Session.cpp
     framework/async/AsyncClient.cpp
     framework/async/AsyncNetwork.cpp
-    framework/async/AsyncServer.cpp
     framework/async/MsgChannel.cpp
     framework/async/NetworkSystem.cpp
     framework/async/ServerScan.cpp

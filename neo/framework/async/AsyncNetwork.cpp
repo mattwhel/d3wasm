@@ -35,12 +35,12 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "framework/async/AsyncNetwork.h"
 
-idAsyncServer		idAsyncNetwork::server;
+//idAsyncServer		idAsyncNetwork::server;
 idAsyncClient		idAsyncNetwork::client;
 
 idCVar				idAsyncNetwork::verbose( "net_verbose", "0", CVAR_SYSTEM | CVAR_INTEGER | CVAR_NOCHEAT, "1 = verbose output, 2 = even more verbose output", 0, 2, idCmdSystem::ArgCompletion_Integer<0,2> );
 idCVar				idAsyncNetwork::allowCheats( "net_allowCheats", "0", CVAR_SYSTEM | CVAR_BOOL | CVAR_NETWORKSYNC, "Allow cheats in network game" );
-idCVar				idAsyncNetwork::serverDedicated( "net_serverDedicated", "0", CVAR_SERVERINFO | CVAR_SYSTEM | CVAR_INTEGER | CVAR_NOCHEAT, "1 = text console dedicated server, 2 = graphical dedicated server", 0, 2, idCmdSystem::ArgCompletion_Integer<0,2> );
+//idCVar				idAsyncNetwork::serverDedicated( "net_serverDedicated", "0", CVAR_SERVERINFO | CVAR_SYSTEM | CVAR_INTEGER | CVAR_NOCHEAT, "1 = text console dedicated server, 2 = graphical dedicated server", 0, 2, idCmdSystem::ArgCompletion_Integer<0,2> );
 idCVar				idAsyncNetwork::serverSnapshotDelay( "net_serverSnapshotDelay", "50", CVAR_SYSTEM | CVAR_INTEGER | CVAR_NOCHEAT, "delay between snapshots in milliseconds" );
 idCVar				idAsyncNetwork::serverMaxClientRate( "net_serverMaxClientRate", "16000", CVAR_SYSTEM | CVAR_INTEGER | CVAR_ARCHIVE | CVAR_NOCHEAT, "maximum rate to a client in bytes/sec" );
 idCVar				idAsyncNetwork::clientMaxRate( "net_clientMaxRate", "16000", CVAR_SYSTEM | CVAR_INTEGER | CVAR_ARCHIVE | CVAR_NOCHEAT, "maximum rate requested by client from server in bytes/sec" );
@@ -92,18 +92,18 @@ void idAsyncNetwork::Init( void ) {
 	masters[3].var = &master3;
 	masters[4].var = &master4;
 
-	cmdSystem->AddCommand( "spawnServer", SpawnServer_f, CMD_FL_SYSTEM, "spawns a server", idCmdSystem::ArgCompletion_MapName );
-	cmdSystem->AddCommand( "nextMap", NextMap_f, CMD_FL_SYSTEM, "loads the next map on the server" );
+	//cmdSystem->AddCommand( "spawnServer", SpawnServer_f, CMD_FL_SYSTEM, "spawns a server", idCmdSystem::ArgCompletion_MapName );
+	//cmdSystem->AddCommand( "nextMap", NextMap_f, CMD_FL_SYSTEM, "loads the next map on the server" );
 	cmdSystem->AddCommand( "connect", Connect_f, CMD_FL_SYSTEM, "connects to a server" );
 	cmdSystem->AddCommand( "reconnect", Reconnect_f, CMD_FL_SYSTEM, "reconnect to the last server we tried to connect to" );
 	cmdSystem->AddCommand( "serverInfo", GetServerInfo_f, CMD_FL_SYSTEM, "shows server info" );
 	cmdSystem->AddCommand( "LANScan", GetLANServers_f, CMD_FL_SYSTEM, "scans LAN for servers" );
 	cmdSystem->AddCommand( "listServers", ListServers_f, CMD_FL_SYSTEM, "lists scanned servers" );
 	cmdSystem->AddCommand( "rcon", RemoteConsole_f, CMD_FL_SYSTEM, "sends remote console command to server" );
-	cmdSystem->AddCommand( "heartbeat", Heartbeat_f, CMD_FL_SYSTEM, "send a heartbeat to the the master servers" );
-	cmdSystem->AddCommand( "kick", Kick_f, CMD_FL_SYSTEM, "kick a client by connection number" );
+	//cmdSystem->AddCommand( "heartbeat", Heartbeat_f, CMD_FL_SYSTEM, "send a heartbeat to the the master servers" );
+	//cmdSystem->AddCommand( "kick", Kick_f, CMD_FL_SYSTEM, "kick a client by connection number" );
 	cmdSystem->AddCommand( "checkNewVersion", CheckNewVersion_f, CMD_FL_SYSTEM, "check if a new version of the game is available" );
-	cmdSystem->AddCommand( "updateUI", UpdateUI_f, CMD_FL_SYSTEM, "internal - cause a sync down of game-modified userinfo" );
+	//cmdSystem->AddCommand( "updateUI", UpdateUI_f, CMD_FL_SYSTEM, "internal - cause a sync down of game-modified userinfo" );
 }
 
 /*
@@ -156,8 +156,8 @@ void idAsyncNetwork::Shutdown( void ) {
 	client.DisconnectFromServer();
 	client.ClearServers();
 	client.ClosePort();
-	server.Kill();
-	server.ClosePort();
+	//server.Kill();
+	//server.ClosePort();
 }
 
 /*
@@ -174,7 +174,7 @@ void idAsyncNetwork::RunFrame( void ) {
 		usercmdGen->InhibitUsercmd( INHIBIT_ASYNC, false );
 	}
 	client.RunFrame();
-	server.RunFrame();
+	//server.RunFrame();
 }
 
 /*
@@ -289,7 +289,7 @@ bool idAsyncNetwork::UsercmdInputChanged( const usercmd_t &previousUserCmd, cons
 idAsyncNetwork::SpawnServer_f
 ==================
 */
-void idAsyncNetwork::SpawnServer_f( const idCmdArgs &args ) {
+/*void idAsyncNetwork::SpawnServer_f( const idCmdArgs &args ) {
 
 	if(args.Argc() > 1) {
 		cvarSystem->SetCVarString("si_map", args.Argv(1));
@@ -318,21 +318,21 @@ void idAsyncNetwork::SpawnServer_f( const idCmdArgs &args ) {
 			break;
 	}
 	// use serverMapRestart if we already have a running server
-	if ( server.IsActive() ) {
-		cmdSystem->BufferCommandText( CMD_EXEC_NOW, "serverMapRestart" );
-	} else {
-		server.Spawn();
-	}
-}
+	//if ( server.IsActive() ) {
+	//	cmdSystem->BufferCommandText( CMD_EXEC_NOW, "serverMapRestart" );
+	//} else {
+	//	server.Spawn();
+	//}
+}*/
 
 /*
 ==================
 idAsyncNetwork::NextMap_f
 ==================
 */
-void idAsyncNetwork::NextMap_f( const idCmdArgs &args ) {
-	server.ExecuteMapChange();
-}
+//void idAsyncNetwork::NextMap_f( const idCmdArgs &args ) {
+	//server.ExecuteMapChange();
+//}
 
 /*
 ==================
@@ -340,10 +340,10 @@ idAsyncNetwork::Connect_f
 ==================
 */
 void idAsyncNetwork::Connect_f( const idCmdArgs &args ) {
-	if ( server.IsActive() ) {
-		common->Printf( "already running a server\n" );
-		return;
-	}
+	//if ( server.IsActive() ) {
+	//	common->Printf( "already running a server\n" );
+	//	return;
+	//}
 	if ( args.Argc() != 2 ) {
 		common->Printf( "USAGE: connect <serverName>\n" );
 		return;
@@ -402,29 +402,29 @@ void idAsyncNetwork::RemoteConsole_f( const idCmdArgs &args ) {
 idAsyncNetwork::Heartbeat_f
 ==================
 */
-void idAsyncNetwork::Heartbeat_f( const idCmdArgs &args ) {
-	if ( !server.IsActive() ) {
-		common->Printf( "server is not running\n" );
-		return;
-	}
-	server.MasterHeartbeat( true );
-}
+//void idAsyncNetwork::Heartbeat_f( const idCmdArgs &args ) {
+	//if ( !server.IsActive() ) {
+		//common->Printf( "server is not running\n" );
+	//	return;
+	//}
+	//server.MasterHeartbeat( true );
+//}
 
 /*
 ==================
 idAsyncNetwork::Kick_f
 ==================
 */
-void idAsyncNetwork::Kick_f( const idCmdArgs &args ) {
-	idStr clientId;
-	int iclient;
+//void idAsyncNetwork::Kick_f( const idCmdArgs &args ) {
+	//idStr clientId;
+	//int iclient;
 
-	if ( !server.IsActive() ) {
-		common->Printf( "server is not running\n" );
-		return;
-	}
+	//if ( !server.IsActive() ) {
+		//common->Printf( "server is not running\n" );
+		//return;
+	//}
 
-	clientId = args.Argv( 1 );
+	/*clientId = args.Argv( 1 );
 	if ( !clientId.IsNumeric() ) {
 		common->Printf( "usage: kick <client number>\n" );
 		return;
@@ -436,8 +436,8 @@ void idAsyncNetwork::Kick_f( const idCmdArgs &args ) {
 		return;
 	}
 
-	server.DropClient( iclient, "#str_07134" );
-}
+	server.DropClient( iclient, "#str_07134" );*/
+//}
 
 /*
 ==================
@@ -475,18 +475,18 @@ void idAsyncNetwork::ExecuteSessionCommand( const char *sessCmd ) {
 idAsyncNetwork::UpdateUI_f
 =================
 */
-void idAsyncNetwork::UpdateUI_f( const idCmdArgs &args ) {
-	if ( args.Argc() != 2 ) {
-		common->Warning( "idAsyncNetwork::UpdateUI_f: wrong arguments\n" );
-		return;
-	}
-	if ( !server.IsActive() ) {
-		common->Warning( "idAsyncNetwork::UpdateUI_f: server is not active\n" );
-		return;
-	}
-	int clientNum = atoi( args.Args( 1 ) );
-	server.UpdateUI( clientNum );
-}
+//void idAsyncNetwork::UpdateUI_f( const idCmdArgs &args ) {
+	//if ( args.Argc() != 2 ) {
+		//common->Warning( "idAsyncNetwork::UpdateUI_f: wrong arguments\n" );
+		//return;
+	//}
+	//if ( !server.IsActive() ) {
+		//common->Warning( "idAsyncNetwork::UpdateUI_f: server is not active\n" );
+		//return;
+	//}
+	//int clientNum = atoi( args.Args( 1 ) );
+	//server.UpdateUI( clientNum );
+//}
 
 /*
 ===============

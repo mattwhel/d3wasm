@@ -259,7 +259,7 @@ float SCR_DrawAsyncStats( float y ) {
 	int i, outgoingRate, incomingRate;
 	float outgoingCompression, incomingCompression;
 
-	if ( idAsyncNetwork::server.IsActive() ) {
+	/*if ( idAsyncNetwork::server.IsActive() ) {
 
 		SCR_DrawTextRightAlign( y, "server delay = %d msec", idAsyncNetwork::server.GetDelay() );
 		SCR_DrawTextRightAlign( y, "total outgoing rate = %d KB/s", idAsyncNetwork::server.GetOutgoingRate() >> 10 );
@@ -282,7 +282,7 @@ float SCR_DrawAsyncStats( float y ) {
 		idAsyncNetwork::server.GetAsyncStatsAvgMsg( msg );
 		SCR_DrawTextRightAlign( y, msg.c_str() );
 
-	} else if ( idAsyncNetwork::client.IsActive() ) {
+	} else */if ( idAsyncNetwork::client.IsActive() ) {
 
 		outgoingRate = idAsyncNetwork::client.GetOutgoingRate();
 		incomingRate = idAsyncNetwork::client.GetIncomingRate();

@@ -84,9 +84,9 @@ Session_RescanSI_f
 */
 void Session_RescanSI_f(const idCmdArgs &args) {
   sessLocal.mapSpawnData.serverInfo = *cvarSystem->MoveCVarsToDict(CVAR_SERVERINFO);
-  if (game && idAsyncNetwork::server.IsActive()) {
-    game->SetServerInfo(sessLocal.mapSpawnData.serverInfo);
-  }
+  //if (game && idAsyncNetwork::server.IsActive()) {
+  //  game->SetServerInfo(sessLocal.mapSpawnData.serverInfo);
+  //}
 }
 
 /*
@@ -444,7 +444,7 @@ void idSessionLocal::Stop() {
   idAsyncNetwork::client.DisconnectFromServer();
 
   // kill async server
-  idAsyncNetwork::server.Kill();
+  //idAsyncNetwork::server.Kill();
 
   if (sw) {
     sw->StopAllSounds();
@@ -1193,10 +1193,10 @@ idSess"ionLocal::StartNewGame
 */
 void idSessionLocal::StartNewGame(const char *mapName, bool devmap) {
 
-  if (idAsyncNetwork::server.IsActive()) {
-    common->Printf("Server running, use si_map / serverMapRestart\n");
-    return;
-  }
+  //if (idAsyncNetwork::server.IsActive()) {
+  //  common->Printf("Server running, use si_map / serverMapRestart\n");
+  //  return;
+  //}
   if (idAsyncNetwork::client.IsActive()) {
     common->Printf("Client running, disconnect from server first\n");
     return;
@@ -1696,12 +1696,12 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       savegameFile = NULL;
 
       game->SetServerInfo(mapSpawnData.serverInfo);
-      game->InitFromNewMap(fullMapName + ".map", rw, sw, idAsyncNetwork::server.IsActive(),
+      game->InitFromNewMap(fullMapName + ".map", rw, sw, /*idAsyncNetwork::server.IsActive()*/false,
                            idAsyncNetwork::client.IsActive(), Sys_Milliseconds());
     }
   } else {
     game->SetServerInfo(mapSpawnData.serverInfo);
-    game->InitFromNewMap(fullMapName + ".map", rw, sw, idAsyncNetwork::server.IsActive(),
+    game->InitFromNewMap(fullMapName + ".map", rw, sw, /*idAsyncNetwork::server.IsActive()*/ false,
                          idAsyncNetwork::client.IsActive(), Sys_Milliseconds());
   }
 
@@ -2429,7 +2429,7 @@ void idSessionLocal::PacifierUpdate() {
   UpdateScreen();
 
   idAsyncNetwork::client.PacifierUpdate();
-  idAsyncNetwork::server.PacifierUpdate();
+  //idAsyncNetwork::server.PacifierUpdate();
 }
 
 /*
@@ -3016,7 +3016,7 @@ idSessionLocal::GetLocalClientNum
 int idSessionLocal::GetLocalClientNum() {
   if (idAsyncNetwork::client.IsActive()) {
     return idAsyncNetwork::client.GetLocalClientNum();
-  } else if (idAsyncNetwork::server.IsActive()) {
+  } /*else if (idAsyncNetwork::server.IsActive()) {
     if (idAsyncNetwork::serverDedicated.GetInteger() == 0) {
       return 0;
     } else if (idAsyncNetwork::server.IsClientInGame(idAsyncNetwork::serverDrawClient.GetInteger())) {
@@ -3024,7 +3024,7 @@ int idSessionLocal::GetLocalClientNum() {
     } else {
       return -1;
     }
-  } else {
+  }*/ else {
     return 0;
   }
 }

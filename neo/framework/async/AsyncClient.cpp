@@ -328,12 +328,13 @@ void idAsyncClient::GetServerInfo( const char *address ) {
 		}
 	} else if ( active ) {
 		adr = serverAddress;
-	} else if ( idAsyncNetwork::server.IsActive() ) {
+	}// else if ( idAsyncNetwork::server.IsActive() ) {
 		// used to be a Sys_StringToNetAdr( "localhost", &adr, true ); and send a packet over loopback
 		// but this breaks with net_ip ( typically, for multi-homed servers )
-		idAsyncNetwork::server.PrintLocalServerInfo();
-		return;
-	} else {
+		//idAsyncNetwork::server.PrintLocalServerInfo();
+		//return;
+	//}
+	else {
 		common->Printf( "no server found\n" );
 		return;
 	}

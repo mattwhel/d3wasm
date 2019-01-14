@@ -575,7 +575,7 @@ static void Cmd_Say( bool team, const idCmdArgs &args ) {
 
 	// here we need to special case a listen server to use the real client name instead of "server"
 	// "server" will only appear on a dedicated server
-	if ( gameLocal.isClient || cvarSystem->GetCVarInteger( "net_serverDedicated" ) == 0 ) {
+	if ( gameLocal.isClient /*|| cvarSystem->GetCVarInteger( "net_serverDedicated" ) == 0*/ ) {
 		player = gameLocal.localClientNum >= 0 ? static_cast<idPlayer *>( gameLocal.entities[ gameLocal.localClientNum ] ) : NULL;
 		if ( player ) {
 			name = player->GetUserInfo()->GetString( "ui_name", "player" );
