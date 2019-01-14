@@ -927,14 +927,12 @@ int RB_STD_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
       return 0;
     }
 
-#if 0
     // only dump if in a 3d view
-		if ( backEnd.viewDef->viewEntitys && tr.backEndRenderer == BE_ARB2 ) {
+		if ( backEnd.viewDef->viewEntitys ) {
       globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
 				backEnd.viewDef->viewport.y1,  backEnd.viewDef->viewport.x2 -  backEnd.viewDef->viewport.x1 + 1,
 				backEnd.viewDef->viewport.y2 -  backEnd.viewDef->viewport.y1 + 1, true );
     }
-#endif
     backEnd.currentRenderCopied = true;
   }
 
