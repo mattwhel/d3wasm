@@ -469,7 +469,6 @@ void RB_STD_FillDepthBuffer( drawSurf_t **drawSurfs, int numDrawSurfs ) {
 		globalImages->alphaNotchImage->Bind();
 		qglDisableClientState( GL_TEXTURE_COORD_ARRAY );
 		qglEnable( GL_TEXTURE_GEN_S );
-		qglTexCoord2f( 1, 0.5 );
 	}
 
 	// the first texture will be used for alpha tested surfaces
@@ -1228,7 +1227,6 @@ static void RB_BlendLight(const drawSurf_t *drawSurfs, const drawSurf_t *drawSur
   GL_SelectTexture(1);
   qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
   qglEnable(GL_TEXTURE_GEN_S);
-  qglTexCoord2f(0, 0.5);
   backEnd.vLight->falloffImage->Bind();
 
   // texture 0 will get the projected texture
