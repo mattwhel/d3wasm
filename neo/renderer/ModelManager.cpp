@@ -39,7 +39,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "emscripten.h"
 #endif
 
-
 class idRenderModelManagerLocal : public idRenderModelManager {
 public:
 							idRenderModelManagerLocal();

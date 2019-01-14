@@ -1753,8 +1753,6 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       pct = 0.0f;
     }
     while (pct < 1.0f) {
-      //common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
-			//com_frameTime = com_ticNumber * USERCMD_MSEC;
       guiLoading->SetStateFloat("map_loading", pct);
       guiLoading->StateChanged(com_frameTime);
       Sys_GenerateEvents();

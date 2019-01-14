@@ -58,7 +58,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "emscripten.h"
 #endif
 
-
 #define	MAX_PRINT_MSG_SIZE	4096
 #define MAX_WARNING_LIST	256
 

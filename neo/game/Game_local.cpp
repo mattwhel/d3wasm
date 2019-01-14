@@ -602,7 +602,7 @@ void idGameLocal::SaveGame( idFile *f ) {
 
 	savegame.Close();
 
-#if defined __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
 	EM_ASM(
 			console.info('Syncing user home to IDBFS....');
 			FS.syncfs(false, function(err) {
