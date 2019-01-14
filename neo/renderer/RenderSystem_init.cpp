@@ -253,7 +253,7 @@ R_CheckExtension
 =================
 */
 bool R_CheckExtension( const char *name ) {
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
     if (!glIsSupportedREGAL(name)) {
 #else
 	if ( !strstr( glConfig.extensions_string, name ) ) {
@@ -276,7 +276,7 @@ static void R_CheckPortableExtensions( void ) {
 	glConfig.glVersion = atof( glConfig.version_string );
 
 	// GL_ARB_multitexture  / OpenGL 1.3
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	glConfig.multitextureAvailable = true;
 	common->Printf( "...using %s\n", "OpenGL 1.3 Multitexture" );
 	qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTexture" );
@@ -362,7 +362,7 @@ static void R_CheckPortableExtensions( void ) {
 	}
 
 	// ARB_vertex_buffer_object / OpenGL 1.5
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
     glConfig.ARBVertexBufferObjectAvailable = true;
     common->Printf( "...using %s\n", "OpenGL 1.5 Vertex Buffer Objects (partial support)" );
     qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBuffer");
@@ -381,7 +381,7 @@ static void R_CheckPortableExtensions( void ) {
 #endif
 
 	// GL_ARB_shading_language_100 / OpenGL 2.0
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	glConfig.GLSLAvailable = true;
 	common->Printf( "...using %s\n", "OpenGL 2.0 Shaders" );
 #else
@@ -1136,11 +1136,11 @@ void R_ReadTiledPixels( int width, int height, byte *buffer, renderView_t *ref =
 				h = height - yo;
 			}
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 			qglReadBuffer( GL_FRONT );
 #endif
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 			qglReadPixels( 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, temp );
 #else
 			qglReadPixels( 0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, temp );

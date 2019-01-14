@@ -36,19 +36,26 @@ set(DHEWM3BINARY "dhewm3")
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 
-option(CORE "Build the core" ON)
-option(BASE "Build the base game code" ON)
-option(NODLL "Build core and base game code, embedded inside one binary" OFF)
+option(CORE     "Build the core" ON)
+option(BASE     "Build the base game code" ON)
+option(NODLL    "Build core and base game code, embedded inside one binary" ON)
+option(NOMT     "Do not use multithreading" ON)
 option(USEREGAL "Use Regal GL emulation layer library" OFF)
-option(NOMT "Do not use multithreading" OFF)
+option(NOEFX    "Do not use OpenAL EFX" OFF)
 
 # Enforce some options for emscripten
 if (EMSCRIPTEN)
+  set(NOEFX ON)
   set(NOMT  ON)
   set(NODLL ON)      # only one single binary with core+base game
   set(USEREGAL ON)   # Regal GL emulation library is used
   SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
-endif ()
+else()
+  set(NOEFX OFF)
+  set(NOMT  ON)
+  set(NODLL ON)      # only one single binary with core+base game
+  set(USEREGAL OFF)   # Regal GL emulation library is used
+endif()
 
 if (USEREGAL)
   if (EMSCRIPTEN)
@@ -58,6 +65,14 @@ if (USEREGAL)
   endif ()
   add_compile_options("-DUSEREGAL")
 endif ()
+
+if (NOEFX)
+  add_compile_options("-DNOEFX")
+endif()
+
+if (NOMT)
+  add_compile_options("-DNOMT")
+endif()
 
 if (NODLL)
   set(BASE OFF)   # base game will be linked with core directly

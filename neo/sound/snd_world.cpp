@@ -49,7 +49,7 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 	listenerArea = 0;
 	listenerAreaName = "Undefined";
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 	if (idSoundSystemLocal::useEFXReverb) {
 		if (!soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
@@ -143,7 +143,7 @@ void idSoundWorldLocal::Shutdown() {
 
 	AVIClose();
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 	if (idSoundSystemLocal::useEFXReverb) {
 		if (soundSystemLocal.alIsAuxiliaryEffectSlot(listenerSlot)) {
@@ -176,7 +176,7 @@ idSoundWorldLocal::ClearAllSoundEmitters
 void idSoundWorldLocal::ClearAllSoundEmitters() {
 	int i;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_EnterCriticalSection();
 #endif
@@ -189,7 +189,7 @@ void idSoundWorldLocal::ClearAllSoundEmitters() {
 	}
 	localSound = NULL;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_LeaveCriticalSection();
 #endif
@@ -226,12 +226,12 @@ idSoundEmitterLocal *idSoundWorldLocal::AllocLocalSoundEmitter() {
 		def = new idSoundEmitterLocal;
 
 		// we need to protect this from the async thread
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_EnterCriticalSection();
 #endif
 		index = emitters.Append( def );
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_LeaveCriticalSection();
 #endif
@@ -324,12 +324,12 @@ void idSoundWorldLocal::ProcessDemoCommand( idDemoFile *readDemo ) {
 		// we need to protect this from the async thread
 		// other instances of calling idSoundWorldLocal::ReadFromSaveGame do this while the sound code is muted
 		// setting muted and going right in may not be good enough here, as we async thread may already be in an async tick (in which case we could still race to it)
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_EnterCriticalSection();
 #endif
 		ReadFromSaveGame( readDemo );
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_LeaveCriticalSection();
 #endif
@@ -518,7 +518,7 @@ void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *final
 	alListenerfv( AL_POSITION, listenerPosition );
 	alListenerfv( AL_ORIENTATION, listenerOrientation );
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 	if (idSoundSystemLocal::useEFXReverb && soundSystemLocal.efxloaded) {
 		ALuint effect = 0;
@@ -1019,7 +1019,7 @@ void idSoundWorldLocal::ForegroundUpdate( int current44kHzTime ) {
 		return;
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_EnterCriticalSection();
 #endif
@@ -1097,7 +1097,7 @@ void idSoundWorldLocal::ForegroundUpdate( int current44kHzTime ) {
 		}
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_LeaveCriticalSection();
 #endif
@@ -1819,7 +1819,7 @@ void idSoundWorldLocal::AddChannelContribution( idSoundEmitterLocal *sound, idSo
 #endif
 			alSourcef( chan->openalSource, AL_PITCH, ( slowmoActive && !chan->disallowSlow ) ? ( slowmoSpeed ) : ( 1.0f ) );
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 			if (idSoundSystemLocal::useEFXReverb) {
 				if (enviroSuitActive) {

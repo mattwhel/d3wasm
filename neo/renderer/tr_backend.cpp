@@ -65,13 +65,13 @@ void RB_SetDefaultGLState( void ) {
 	qglEnable( GL_SCISSOR_TEST );
 	qglEnable( GL_CULL_FACE );
 	qglDisable( GL_LIGHTING );
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 	qglDisable( GL_LINE_STIPPLE );
 #endif
 	qglDisable( GL_STENCIL_TEST );
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
 #endif
@@ -345,7 +345,7 @@ void GL_State( int stateBits ) {
 	//
 	// fill/line mode
 	//
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 	if ( diff & GLS_POLYMODE_LINE ) {
 		if ( stateBits & GLS_POLYMODE_LINE ) {
@@ -442,7 +442,7 @@ static void	RB_SetBuffer( const void *data ) {
 
 	backEnd.frameCount = cmd->frameCount;
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 	qglDrawBuffer( cmd->buffer );
 #endif

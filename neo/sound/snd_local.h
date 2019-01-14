@@ -713,7 +713,7 @@ public:
 	ALsizei					openalSourceCount;
 	openalSource_t			openalSources[256];
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 	LPALGENEFFECTS			alGenEffects;
 	LPALDELETEEFFECTS		alDeleteEffects;

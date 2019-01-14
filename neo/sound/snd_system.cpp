@@ -65,7 +65,7 @@ idCVar idSoundSystemLocal::s_reverbFeedback( "s_reverbFeedback", "0.333", CVAR_S
 idCVar idSoundSystemLocal::s_enviroSuitVolumeScale( "s_enviroSuitVolumeScale", "0.9", CVAR_SOUND | CVAR_FLOAT, "" );
 idCVar idSoundSystemLocal::s_skipHelltimeFX( "s_skipHelltimeFX", "0", CVAR_SOUND | CVAR_BOOL, "" );
 
-#if !defined(__EMSCRIPTEN__)
+#if !defined(NOEFX)
 idCVar idSoundSystemLocal::s_useEAXReverb( "s_useEAXReverb", "1", CVAR_SOUND | CVAR_BOOL | CVAR_ARCHIVE, "use EFX reverb" );
 idCVar idSoundSystemLocal::s_decompressionLimit( "s_decompressionLimit", "6", CVAR_SOUND | CVAR_INTEGER | CVAR_ARCHIVE, "specifies maximum uncompressed sample length in seconds" );
 #else
@@ -360,7 +360,7 @@ void idSoundSystemLocal::Init() {
 	common->Printf( "OpenAL renderer: %s\n", alGetString(AL_RENDERER));
 	common->Printf( "OpenAL version: %s\n", alGetString(AL_VERSION));
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 	common->Printf( "OpenAL: EFX extension not found\n" );
 	EFXAvailable = 0;
 	idSoundSystemLocal::s_useEAXReverb.SetBool( false );
@@ -745,7 +745,7 @@ cinData_t idSoundSystemLocal::ImageForTime( const int milliseconds, const bool w
 		return ret;
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_EnterCriticalSection();
 #endif
@@ -887,7 +887,7 @@ cinData_t idSoundSystemLocal::ImageForTime( const int milliseconds, const bool w
 	ret.imageWidth = 256;
 	ret.image = (unsigned char *)graph;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_LeaveCriticalSection();
 #endif

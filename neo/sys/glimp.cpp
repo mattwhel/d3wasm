@@ -186,7 +186,7 @@ bool GLimp_Init(glimpParms_t parms) {
 			continue;
 		}
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	    // Initialize ES 2.0 context profile on emscripten, and do not set any other context flags (it does not work otherwise)
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -195,10 +195,10 @@ bool GLimp_Init(glimpParms_t parms) {
 
 		context = SDL_GL_CreateContext(window);
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
         RegalMakeCurrent((void*)1);
 #endif
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 		if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
 			common->Warning("SDL_GL_SWAP_CONTROL not supported");
@@ -287,7 +287,7 @@ GLimp_SwapBuffers
 ===================
 */
 void GLimp_SwapBuffers() {
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	// GAB Note Jan 2018: Not needed on WebGL
 	return;
 #endif
@@ -343,7 +343,7 @@ GLimp_ExtensionPointer
 GLExtension_t GLimp_ExtensionPointer(const char *name) {
 	assert(SDL_WasInit(SDL_INIT_VIDEO));
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	return (GLExtension_t)glGetProcAddressREGAL(name);
 #else
 	return (GLExtension_t)SDL_GL_GetProcAddress(name);

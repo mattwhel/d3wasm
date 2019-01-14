@@ -32,7 +32,7 @@ If you have questions concerning this license or the applicable additional terms
 #ifndef __QGL_H__
 #define __QGL_H__
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #ifndef GLAPI
 #define GLAPI extern
 #endif

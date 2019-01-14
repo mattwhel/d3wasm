@@ -202,7 +202,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	int		rgbOr, rgbAnd, aOr, aAnd;
 	int		rgbDiffer, rgbaDiffer;
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	// GAB NOTE Dec 2018:
 	// OpenGL ES/WebGL require to have internal_format == format. As Regal does not do format conversion (this is not enabled for now),
 	// and format selected by D3 is always RGBA in the end, we will always return GL_RGBA8 internal format
@@ -389,7 +389,7 @@ void idImage::SetImageFilterAndRepeat() const {
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
 		break;
 	case TR_CLAMP_TO_BORDER:
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 #else
@@ -1604,7 +1604,7 @@ void idImage::Bind() {
 		}
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 	if ( com_purgeAll.GetBool() ) {
 		GLclampf priority = 1.0f;
@@ -1692,7 +1692,7 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 	GetDownsize( imageWidth, imageHeight );
 	GetDownsize( potWidth, potHeight );
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 	qglReadBuffer( GL_BACK );
 #endif
@@ -1704,7 +1704,7 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 		uploadWidth = potWidth;
 		uploadHeight = potHeight;
 		if ( potWidth == imageWidth && potHeight == imageHeight ) {
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
             qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, x, y, imageWidth, imageHeight, 0 );
 #else
             qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, x, y, imageWidth, imageHeight, 0 );
@@ -1721,7 +1721,7 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 				junk[i+1] = 255;
 			}
 #endif
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
 #else
             qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
@@ -1820,7 +1820,7 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 
 			// upload the base level
 			for ( i = 0 ; i < 6 ; i++ ) {
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA8, cols, rows, 0,
 #else
 				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGB8, cols, rows, 0,
@@ -1853,7 +1853,7 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 		if ( cols != uploadWidth || rows != uploadHeight ) {
 			uploadWidth = cols;
 			uploadHeight = rows;
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #else
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );

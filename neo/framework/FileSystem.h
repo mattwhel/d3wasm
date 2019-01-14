@@ -283,7 +283,7 @@ public:
 							// ignore case and seperator char distinctions
 	virtual bool			FilenameCompare( const char *s1, const char *s2 ) const = 0;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	virtual void 			RunThread() = 0;
 #endif
 };

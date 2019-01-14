@@ -50,7 +50,7 @@ Sys_Sleep
 ==============
 */
 void Sys_Sleep(int msec) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	SDL_Delay(msec);
@@ -72,7 +72,7 @@ Sys_InitThreads
 ==================
 */
 void Sys_InitThreads() {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	// critical sections
@@ -112,7 +112,7 @@ Sys_ShutdownThreads
 ==================
 */
 void Sys_ShutdownThreads() {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	// threads
@@ -151,7 +151,7 @@ Sys_EnterCriticalSection
 ==================
 */
 void Sys_EnterCriticalSection(int index) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	assert(index >= 0 && index < MAX_CRITICAL_SECTIONS);
@@ -167,7 +167,7 @@ Sys_LeaveCriticalSection
 ==================
 */
 void Sys_LeaveCriticalSection(int index) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	assert(index >= 0 && index < MAX_CRITICAL_SECTIONS);
@@ -196,7 +196,7 @@ Sys_WaitForEvent
 ==================
 */
 void Sys_WaitForEvent(int index) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	assert(index >= 0 && index < MAX_TRIGGER_EVENTS);
@@ -224,7 +224,7 @@ Sys_TriggerEvent
 ==================
 */
 void Sys_TriggerEvent(int index) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	assert(index >= 0 && index < MAX_TRIGGER_EVENTS);
@@ -249,7 +249,7 @@ Sys_CreateThread
 ==================
 */
 void Sys_CreateThread(xthread_t function, void *parms, xthreadInfo& info, const char *name) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	Sys_EnterCriticalSection();
@@ -285,7 +285,7 @@ Sys_DestroyThread
 ==================
 */
 void Sys_DestroyThread(xthreadInfo& info) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return;
 #else
 	assert(info.threadHandle);
@@ -324,7 +324,7 @@ find the name of the calling thread
 ==================
 */
 const char *Sys_GetThreadName(int *index) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	return "main";
 #else
 	const char *name;

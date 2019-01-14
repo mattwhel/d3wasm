@@ -43,7 +43,7 @@ idSoundEffect::idSoundEffect() :
 }
 
 idSoundEffect::~idSoundEffect() {
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 	if (soundSystemLocal.alIsEffect(effect))
 	    soundSystemLocal.alDeleteEffects(1, &effect);
@@ -51,7 +51,7 @@ idSoundEffect::~idSoundEffect() {
 }
 
 bool idSoundEffect::alloc() {
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 	return false;
 #else
 	alGetError();
@@ -163,7 +163,7 @@ idEFXFile::ReadEffect
 	} while (false)
 
 bool idEFXFile::ReadEffect( idLexer &src, idSoundEffect *effect ) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 	return false;
 #else
 	idToken name, token;

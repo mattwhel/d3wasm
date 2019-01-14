@@ -321,7 +321,7 @@ private:
   idCompressor *				config_compressor;
 #endif
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
   SDL_TimerID async_timer;
 #endif
@@ -352,7 +352,7 @@ idCommonLocal::idCommonLocal(void) {
   config_compressor = NULL;
 #endif
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
   async_timer = 0;
 #endif
@@ -1320,13 +1320,18 @@ Com_ExecMachineSpecs_f
 =================
 */
 void Com_ExecMachineSpec_f(const idCmdArgs &args) {
-#ifdef __EMSCRIPTEN__
+
+#ifdef NOMT
+  cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ROM );	// No multithreading
+  cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
+#endif
+
+#ifdef USEREGAL
   // GAB NOTE Dec 2018: Specific configuration for emscripten
 if ( com_machineSpec.GetInteger() == 4 ) {
 cvarSystem->SetCVarInteger( "image_anisotropy", 8, CVAR_ARCHIVE );
 cvarSystem->SetCVarInteger( "image_preload", 1, CVAR_ARCHIVE );
-cvarSystem->SetCVarString( "image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE );
-cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
+cvarSystem->SetCVarString(  "image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE );
 cvarSystem->SetCVarInteger( "r_mode", 4, CVAR_ARCHIVE );
 // These CVAR are read only
 cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ROM ); // Not supported by Regal
@@ -1343,7 +1348,7 @@ cvarSystem->SetCVarInteger( "image_useCompression", 0, CVAR_ROM );		// Dysfuncti
 cvarSystem->SetCVarInteger( "image_ignoreHighQuality", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_useNormalCompression", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ROM );    // Not supported by Regal
-cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ROM );	// No multithreading
+
 }
 else
 #else
@@ -2392,7 +2397,10 @@ void idCommonLocal::GUIFrame(bool execCmd, bool network) {
   Sys_GenerateEvents();
   eventLoop->RunEventLoop(execCmd);    // This function might yields (ie. Level load => inline loading screen update)
 
+#ifdef NOMT
   common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
+#endif
+
   com_frameTime = com_ticNumber * USERCMD_MSEC;
   if (network) {
     idAsyncNetwork::RunFrame();
@@ -2437,7 +2445,7 @@ int lastTicMsec;
 void idCommonLocal::SingleAsyncTic(void) {
   // main thread code can prevent this from happening while modifying
   // critical data structures
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
   Sys_EnterCriticalSection();
 #endif
@@ -2466,7 +2474,7 @@ void idCommonLocal::SingleAsyncTic(void) {
 
   stat->timeConsumed = Sys_Milliseconds() - stat->milliseconds;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
   Sys_LeaveCriticalSection();
 #endif
@@ -2665,7 +2673,7 @@ void idCommonLocal::SetMachineSpec(void) {
 
   Printf("Detected\n\t%i MB of System memory\n\n", sysRam);
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
   Printf( "This system have specific quality requirements (Emscripten/WebGL)!\n" );
   com_machineSpec.SetInteger( 4 );
 #else
@@ -2863,7 +2871,7 @@ SDL_GetVersion(&sdlv);
     Sys_Error("Error during initialization");
   }
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
   async_timer = SDL_AddTimer(USERCMD_MSEC, AsyncTimer, NULL);
 
@@ -2879,7 +2887,7 @@ idCommonLocal::Shutdown
 =================
 */
 void idCommonLocal::Shutdown(void) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
   if (async_timer) {
     SDL_RemoveTimer(async_timer);
@@ -3035,6 +3043,7 @@ void idCommonLocal::InitGame(void) {
   // startup the script debugger
   // DebuggerServerInit();
 
+#ifdef __EMSCRIPTEN__
   // Check if we are loading data in "chunks"
   FILE* f = NULL;
   f = fopen( "/usr/local/share/dhewm3/base/demo_bootstrap.pk4", "r");
@@ -3070,6 +3079,7 @@ void idCommonLocal::InitGame(void) {
       declManager->Init();
     }
   }
+#endif
 
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04350"));
 

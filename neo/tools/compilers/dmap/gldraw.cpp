@@ -74,7 +74,7 @@ void Draw_ClearWindow( void ) {
 	glLoadIdentity();
 #endif
 	glColor3f (0,0,0);
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 #else
 //	glPolygonMode (GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);

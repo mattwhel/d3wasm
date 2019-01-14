@@ -322,7 +322,7 @@ private:
 	idStr				extension;
 };
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 int BackgroundDownloadThread( void *pexit );
 #endif
 
@@ -462,7 +462,7 @@ private:
 							// curl_progress_callback in curl.h
 	static int				CurlProgressFunction( void *clientp, double dltotal, double dlnow, double ultotal, double ulnow );
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 public:
 	virtual void 			RunThread() {
 		BackgroundDownloadThread(&backgroundThread_exit);
@@ -2725,7 +2725,7 @@ void idFileSystemLocal::Shutdown( bool reloading ) {
 	searchpath_t *sp, *next, *loop;
 
 	backgroundThread_exit = true;
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	// Emscripten: if we do usual code, this will restart the background thread code
 #else
 	Sys_TriggerEvent();
@@ -3408,7 +3408,7 @@ Reads part of a file from a background thread.
 int BackgroundDownloadThread( void *pexit ) {
 	bool *exit = (bool *)pexit;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	if (!(*exit)) {
 #else
 	while (!(*exit)) {
@@ -3416,7 +3416,7 @@ int BackgroundDownloadThread( void *pexit ) {
 #endif
 		backgroundDownload_t	*bgl = fileSystemLocal.backgroundDownloads;
 		if ( !bgl ) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 		    return 0;
 #else
 			Sys_LeaveCriticalSection();
@@ -3426,7 +3426,7 @@ int BackgroundDownloadThread( void *pexit ) {
 		}
 		// remove this from the list
 		fileSystemLocal.backgroundDownloads = bgl->next;
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_LeaveCriticalSection();
 #endif
@@ -3452,7 +3452,7 @@ idFileSystemLocal::StartBackgroundReadThread
 =================
 */
 void idFileSystemLocal::StartBackgroundDownloadThread() {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 	if (backgroundThread_exit) {
 		backgroundThread_exit = false;
 	}
@@ -3477,13 +3477,13 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 	if ( bgl->opcode == DLTYPE_FILE ) {
 		if ( dynamic_cast<idFile_Permanent *>(bgl->f) ) {
 			// add the bgl to the background download list
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 			Sys_EnterCriticalSection();
 #endif
 			bgl->next = backgroundDownloads;
 			backgroundDownloads = bgl;
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 			Sys_TriggerEvent();
 			Sys_LeaveCriticalSection();
@@ -3495,13 +3495,13 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 			bgl->completed = true;
 		}
 	} else {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_EnterCriticalSection();
 #endif
 		bgl->next = backgroundDownloads;
 		backgroundDownloads = bgl;
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_TriggerEvent();
 		Sys_LeaveCriticalSection();

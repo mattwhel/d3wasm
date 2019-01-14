@@ -750,7 +750,7 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 		}
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_EnterCriticalSection();
 #endif
@@ -787,7 +787,7 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 
 	if ( i == SOUND_MAX_CHANNELS ) {
 		// we couldn't find a channel for it
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 		Sys_LeaveCriticalSection();
 #endif
@@ -866,7 +866,7 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 
 	length *= 1000 / (float)PRIMARYFREQ;
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_LeaveCriticalSection();
 #endif
@@ -938,7 +938,7 @@ void idSoundEmitterLocal::StopSound( const s_channelType channel ) {
 		soundWorld->writeDemo->WriteInt( channel );
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_EnterCriticalSection();
 #endif
@@ -968,7 +968,7 @@ void idSoundEmitterLocal::StopSound( const s_channelType channel ) {
 		chan->soundShader = NULL;
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
 	Sys_LeaveCriticalSection();
 #endif

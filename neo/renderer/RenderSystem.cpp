@@ -664,7 +664,7 @@ void idRenderSystemLocal::EndFrame( int *frontEndMsec, int *backEndMsec ) {
 		}
 	}
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	// GAB Note Dec 2018: Clear the Alpha channel, so that final render will not blend with the HTML5 background
 	qglClearColor(1,1,1,1);
 	qglColorMask(false, false, false, true);
@@ -878,7 +878,7 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 
 #ifdef __EMSCRIPTEN__
 	return;
-#else
+#elseif !defined(USE_REGAL)
 	qglReadBuffer( GL_BACK );
 #endif
 
@@ -886,7 +886,7 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	int	c = ( rc->width + 3 ) * rc->height;
 	byte *data = (byte *)R_StaticAlloc( c * 3 );
 
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGBA, GL_UNSIGNED_BYTE, data );
 #else
 	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGB, GL_UNSIGNED_BYTE, data );

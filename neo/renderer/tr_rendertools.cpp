@@ -2334,7 +2334,7 @@ RB_RenderDebugTools
 =================
 */
 void RB_RenderDebugTools( drawSurf_t **drawSurfs, int numDrawSurfs ) {
-#ifdef __EMSCRIPTEN__
+#ifdef USEREGAL
 	return;
 #else
 	// don't do anything if this was a 2D rendering

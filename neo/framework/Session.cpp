@@ -536,7 +536,10 @@ void idSessionLocal::StartWipe(const char *_wipeMaterial, bool hold) {
 
   wipeMaterial = declManager->FindMaterial(_wipeMaterial, false);
 
+#ifdef NOMT
   common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
+#endif
+
   wipeStartTic = com_ticNumber;
   wipeStopTic = wipeStartTic + 1000.0f / USERCMD_MSEC * com_wipeSeconds.GetFloat();
   wipeHold = hold;
@@ -554,7 +557,9 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
     return;
   }
+#ifdef NOMT
   common->Async();                       // com_ticNumber is used locally, be sure to run the timer to make things move on
+#endif
   while (com_ticNumber < wipeStopTic) {
 #if ID_CONSOLE_LOCK
     emptyDrawCount = 0;
@@ -562,6 +567,8 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
     emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
+#endif
+#ifdef NOMT
     common->Async();                    // com_ticNumber is used locally, be sure to run the timer to make things move on
 #endif
   }
@@ -582,7 +589,9 @@ void idSessionLocal::ShowLoadingGui() {
   int stop = Sys_Milliseconds() + 1000;
   int force = 10;
   while (Sys_Milliseconds() < stop || force-- > 0) {
+#ifdef NOMT
     common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
+#endif
     com_frameTime = com_ticNumber * USERCMD_MSEC;
     session->Frame();
     session->UpdateScreen(false);
@@ -1587,6 +1596,7 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
     currentMapName = fullMapName;
   }
 
+#ifdef __EMSCRIPTEN__
   // Check if we are loading data in "chunks"
   FILE* f = NULL;
   f = fopen( "/usr/local/share/dhewm3/base/demo_bootstrap.pk4", "r");
@@ -1622,6 +1632,7 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       declManager->Init();
     }
   }
+  #endif
 
   // note which media we are going to need to load
   if (!reloadingSameMap) {
@@ -1903,7 +1914,7 @@ void Session_Hitch_f(const idCmdArgs &args) {
   if (sw) {
     soundSystem->SetMute(true);
     sw->Pause();
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
     Sys_EnterCriticalSection();
 #endif
@@ -1914,7 +1925,7 @@ void Session_Hitch_f(const idCmdArgs &args) {
     Sys_Sleep(100);
   }
   if (sw) {
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
 #else
     Sys_LeaveCriticalSection();
 #endif
@@ -2283,7 +2294,9 @@ Draw the fade material over everything that has been drawn
 ===============
 */
 void idSessionLocal::DrawWipeModel() {
+#ifdef NOMT
   common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
+#endif
   int latchedTic = com_ticNumber;
 
   if (wipeStartTic >= wipeStopTic) {
@@ -2566,10 +2579,9 @@ void idSessionLocal::UpdateScreen(bool outOfSequence) {
   insideUpdateScreen = false;
 }
 
-#ifdef __EMSCRIPTEN__
 bool idSessionLocal::emsessionframe_pre() {
 
-#ifdef __EMSCRIPTEN__
+#ifdef NOMT
   soundSystem->AsyncUpdate(Sys_Milliseconds());
 #else
   if (com_asyncSound.GetInteger() == 0) {
@@ -2654,10 +2666,13 @@ bool idSessionLocal::emsessionframe_pre() {
     if (latchedTicNumber >= minTic) {
       break;
     }
+  #ifdef NOMT
     else {
       // In case we have not reached the required ticNumber for next Frame, run the timer again
       common->Async();
     }
+  #endif
+
   }
 
   return true;
@@ -2788,7 +2803,6 @@ void idSessionLocal::emsessionframe_last() {
     }
   }
 }
-#endif
 
 /*
 ===============
