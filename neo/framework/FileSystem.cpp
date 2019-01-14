@@ -32,9 +32,6 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "sys/platform.h"
 
-#ifdef ID_ENABLE_CURL
-	#include <curl/curl.h>
-#endif
 
 #include "idlib/hashing/MD4.h"
 #include "framework/Licensee.h"
@@ -3442,93 +3439,8 @@ int BackgroundDownloadThread( void *pexit ) {
 				fread(  bgl->file.buffer, bgl->file.length, 1, static_cast<idFile_Permanent*>(bgl->f)->GetFilePtr() );
 			bgl->completed = true;
 		} else {
-#ifdef ID_ENABLE_CURL
-			// DLTYPE_URL
-			// use a local buffer for curl error since the size define is local
-			char error_buf[ CURL_ERROR_SIZE ];
-			bgl->url.dlerror[ 0 ] = '\0';
-			CURL *session = curl_easy_init();
-			CURLcode ret;
-			if ( !session ) {
-				bgl->url.dlstatus = CURLE_FAILED_INIT;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_ERRORBUFFER, error_buf );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_URL, bgl->url.url.c_str() );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_FAILONERROR, 1 );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_WRITEFUNCTION, idFileSystemLocal::CurlWriteFunction );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_WRITEDATA, bgl );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_NOPROGRESS, 0 );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_PROGRESSFUNCTION, idFileSystemLocal::CurlProgressFunction );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			ret = curl_easy_setopt( session, CURLOPT_PROGRESSDATA, bgl );
-			if ( ret ) {
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			bgl->url.dlnow = 0;
-			bgl->url.dltotal = 0;
-			bgl->url.status = DL_INPROGRESS;
-			ret = curl_easy_perform( session );
-			if ( ret ) {
-				Sys_Printf( "curl_easy_perform failed: %s\n", error_buf );
-				idStr::Copynz( bgl->url.dlerror, error_buf, MAX_STRING_CHARS );
-				bgl->url.dlstatus = ret;
-				bgl->url.status = DL_FAILED;
-				bgl->completed = true;
-				continue;
-			}
-			bgl->url.status = DL_DONE;
-			bgl->completed = true;
-#else
 			bgl->url.status = DL_FAILED;
 			bgl->completed = true;
-#endif
 		}
 	}
 	return 0;

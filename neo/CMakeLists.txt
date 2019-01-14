@@ -19,27 +19,17 @@ project(dhewm3)
 
 # fallback for cmake versions without add_compile_options
 if (NOT COMMAND add_compile_options)
-    function(add_compile_options)
-        foreach (arg ${ARGN})
-            set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${arg}" PARENT_SCOPE)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${arg}" PARENT_SCOPE)
-        endforeach ()
-    endfunction()
+  function(add_compile_options)
+    foreach (arg ${ARGN})
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${arg}" PARENT_SCOPE)
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${arg}" PARENT_SCOPE)
+    endforeach ()
+  endfunction()
 endif ()
-
-option(LINUX_RELEASE_BINS "Set RPATH to \$ORIGIN/libs/ for Linux binary releases" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/sys/cmake")
 
-if (LINUX_RELEASE_BINS)
-    message(STATUS "Setting RPATH to \$ORIGIN/libs/ so you can put dependencies in there")
-    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/libs")
-    set(ldflags "${ldflags} -Wl,-z,origin") # not sure this is even needed, but shouldn't hurt
-else ()
-    set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
-endif ()
+set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
 
 set(DHEWM3BINARY "dhewm3")
 
@@ -48,79 +38,54 @@ include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 
 option(CORE "Build the core" ON)
 option(BASE "Build the base game code" ON)
-option(D3XP "Build the d3xp game code" ON)
 option(NODLL "Build core and base game code, embedded inside one binary" OFF)
-option(DEDICATED "Build the dedicated server" OFF)
-option(ONATIVE "Optimize for the host CPU" OFF)
-option(SDL2 "Use SDL2 instead of SDL1.2" ON)
 option(USEREGAL "Use Regal GL emulation layer library" OFF)
+option(NOMT "Do not use multithreading" OFF)
 
 # Enforce some options for emscripten
 if (EMSCRIPTEN)
-    set(DEDICATED OFF) # build the client game
-    set(ONATIVE OFF)   # we are building for WebAssembly VM
-    set(SDL2 ON)       # only SDL2 is supported
-    set(NODLL ON)      # only one single binary with core+base game
-    set(USEREGAL ON)   # Regal GL emulation library is used
-    SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
+  set(NOMT  ON)
+  set(NODLL ON)      # only one single binary with core+base game
+  set(USEREGAL ON)   # Regal GL emulation library is used
+  SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
 endif ()
 
 if (USEREGAL)
-    if (EMSCRIPTEN)
-        set(REGAL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
-    else()
-        # todo
-    endif()
-    add_compile_options("-DUSEREGAL")
-endif()
+  if (EMSCRIPTEN)
+    set(REGAL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
+  else ()
+    # todo
+  endif ()
+  add_compile_options("-DUSEREGAL")
+endif ()
 
 if (NODLL)
-    set(BASE OFF)   # base game will be linked with core directly
-    set(D3XP OFF)   # D3XP game is not supported in this mode for now
-    add_compile_options("-DNODLL")
+  set(BASE OFF)   # base game will be linked with core directly
+  add_compile_options("-DNODLL")
 endif ()
 
 if (NOT CMAKE_SYSTEM_PROCESSOR)
-    message(FATAL_ERROR "No target CPU architecture set")
+  message(FATAL_ERROR "No target CPU architecture set")
 endif ()
 
 if (NOT CMAKE_SYSTEM_NAME)
-    message(FATAL_ERROR "No target OS set")
+  message(FATAL_ERROR "No target OS set")
 endif ()
 
 # target cpu
 set(cpu ${CMAKE_SYSTEM_PROCESSOR})
-if (cpu STREQUAL "powerpc")
-    set(cpu "ppc")
-elseif (cpu MATCHES "i.86")
-    set(cpu "x86")
-endif ()
 
 # target os
-    string(TOLOWER "${CMAKE_SYSTEM_NAME}" os)
+string(TOLOWER "${CMAKE_SYSTEM_NAME}" os)
 
 if (EMSCRIPTEN)
-    set(os  "emscripten")
-    set(cpu "wasm")
-endif()
+  set(os "emscripten")
+  set(cpu "wasm")
+endif ()
 
 # build type
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
-endif ()
-
-# precompiled libraries from the dhewm3-libs repo
-if (DHEWM3LIBS)
-    if (CMAKE_CROSSCOMPILING)
-        set(CMAKE_FIND_ROOT_PATH ${DHEWM3LIBS})
-    else ()
-        set(ENV{CMAKE_PREFIX_PATH} ${DHEWM3LIBS})
-    endif ()
-
-    # these are too stupid, give them a hint
-    set(ENV{OPENALDIR} ${DHEWM3LIBS})
-    set(ENV{SDLDIR} ${DHEWM3LIBS})
-    set(ENV{SDL2DIR} ${DHEWM3LIBS})
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif ()
 
 # libs
@@ -144,108 +109,72 @@ include_directories(${VORBISFILE_INCLUDE_DIR})
 
 find_package(OpenAL REQUIRED)
 if (EMSCRIPTEN)
-    include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
+  include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
 else ()
-    include_directories(${OPENAL_INCLUDE_DIR})
+  include_directories(${OPENAL_INCLUDE_DIR})
 endif ()
 
 if (NOT EMSCRIPTEN)
-    find_package(X11 REQUIRED)
-    include_directories(${X11_INCLUDE_DIR})
+  find_package(X11 REQUIRED)
+  include_directories(${X11_INCLUDE_DIR})
 endif ()
 
-if (SDL2)
-    set(SDL2_BUILDING_LIBRARY TRUE)
-    find_package(SDL2 REQUIRED)
-    include_directories(${SDL2_INCLUDE_DIR})
-    set(SDLx_LIBRARY ${SDL2_LIBRARY})
-else ()
-    find_package(SDL REQUIRED)
-    include_directories(${SDL_INCLUDE_DIR})
-    set(SDLx_LIBRARY ${SDL_LIBRARY})
-endif ()
-
-if (NOT EMSCRIPTEN)
-find_package(CURL QUIET)
-endif()
-if (CURL_FOUND)
-    set(ID_ENABLE_CURL ON)
-    include_directories(${CURL_INCLUDE_DIR})
-else ()
-    if (NOT EMSCRIPTEN)
-        message(STATUS "libcurl not found, server downloads won't be available")
-    endif()
-    set(ID_ENABLE_CURL OFF)
-    set(CURL_LIBRARY "")
-endif ()
+set(SDL2_BUILDING_LIBRARY TRUE)
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR})
+set(SDLx_LIBRARY ${SDL2_LIBRARY})
 
 # compiler specific flags
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTEN)
-    add_compile_options(-pipe)
-    add_compile_options(-Wall)
+  add_compile_options(-pipe)
+  add_compile_options(-Wall)
 
-    if (NOT CMAKE_CROSSCOMPILING AND ONATIVE)
-        add_compile_options(-march=native)
-    elseif (cpu STREQUAL "x86")
-        add_compile_options(-march=pentium3)
-    endif ()
+  set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
+  set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
+  set(CMAKE_C_FLAGS_PROFILE "-g --D_DEBUG -O1 -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  #set(CMAKE_C_FLAGS_RELEASE "-O3 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
 
-    if (NOT EMSCRIPTEN)
-        set(CMAKE_C_FLAGS_DEBUG "-g -ggdb -D_DEBUG -O0")
-        set(CMAKE_C_FLAGS_DEBUGALL "-g -ggdb -D_DEBUG")
-        set(CMAKE_C_FLAGS_PROFILE "-g -ggdb -D_DEBUG -O1 -fno-omit-frame-pointer")
-        set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -ggdb -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
-        set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-    else ()
-        # On emscripten, need to redefine compile options to not have "-ggdb" (not supported)
-        set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
-        set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
-        set(CMAKE_C_FLAGS_PROFILE "-g --D_DEBUG -O1 -fno-omit-frame-pointer")
-        set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-        #set(CMAKE_C_FLAGS_RELEASE "-O3 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-        set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
-        set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-    endif ()
+  set(CMAKE_CXX_FLAGS_DEBUGALL ${CMAKE_C_FLAGS_DEBUGALL})
+  set(CMAKE_CXX_FLAGS_PROFILE ${CMAKE_C_FLAGS_PROFILE})
 
-    set(CMAKE_CXX_FLAGS_DEBUGALL ${CMAKE_C_FLAGS_DEBUGALL})
-    set(CMAKE_CXX_FLAGS_PROFILE ${CMAKE_C_FLAGS_PROFILE})
+  add_compile_options(-fno-strict-aliasing)
 
-    add_compile_options(-fno-strict-aliasing)
+  CHECK_CXX_COMPILER_FLAG("-fvisibility=hidden" cxx_has_fvisibility)
+  if (NOT cxx_has_fvisibility)
+    message(FATAL_ERROR "Compiler does not support -fvisibility")
+  endif ()
+  add_compile_options(-fvisibility=hidden)
 
-        CHECK_CXX_COMPILER_FLAG("-fvisibility=hidden" cxx_has_fvisibility)
-        if (NOT cxx_has_fvisibility)
-            message(FATAL_ERROR "Compiler does not support -fvisibility")
-        endif ()
-        add_compile_options(-fvisibility=hidden)
+  # TODO fix these warnings
+  add_compile_options(-Wno-sign-compare)
+  add_compile_options(-Wno-switch)
+  add_compile_options(-Wno-format-security)
+  if (EMSCRIPTEN)
+    add_compile_options(-Wno-unused-variable)
+    add_compile_options(-Wno-enum-compare)
+    add_compile_options(-Wno-self-assign-field)
+    add_compile_options(-Wno-unused-function)
+    add_compile_options(-Wno-unused-const-variable)
+    add_compile_options(-Wno-unused-private-field)
+  else ()
+    add_compile_options(-Wno-misleading-indentation)
+  endif ()
 
-    # TODO fix these warnings
-    add_compile_options(-Wno-sign-compare)
-    add_compile_options(-Wno-switch)
-    add_compile_options(-Wno-format-security)
-    if (EMSCRIPTEN)
-        add_compile_options(-Wno-unused-variable)
-        add_compile_options(-Wno-enum-compare)
-        add_compile_options(-Wno-self-assign-field)
-        add_compile_options(-Wno-unused-function)
-        add_compile_options(-Wno-unused-const-variable)
-        add_compile_options(-Wno-unused-private-field)
-    else()
-        add_compile_options(-Wno-misleading-indentation)
-    endif()
-
-    CHECK_CXX_COMPILER_FLAG("-Woverloaded-virtual" cxx_has_Woverload_virtual)
-    if (cxx_has_Woverload_virtual)
-        add_compile_options(-Woverloaded-virtual)
-    endif ()
-    if (os STREQUAL "linux")
-        set(sys_libs ${sys_libs} dl)
-    endif ()
-    if (USEREGAL)
-        set(sys_libs ${sys_libs} ${REGAL_LIBRARY})
-    endif()
+  CHECK_CXX_COMPILER_FLAG("-Woverloaded-virtual" cxx_has_Woverload_virtual)
+  if (cxx_has_Woverload_virtual)
+    add_compile_options(-Woverloaded-virtual)
+  endif ()
+  if (os STREQUAL "linux")
+    set(sys_libs ${sys_libs} dl)
+  endif ()
+  if (USEREGAL)
+    set(sys_libs ${sys_libs} ${REGAL_LIBRARY})
+  endif ()
 else ()
-    message(FATAL_ERROR "Unsupported compiler")
+  message(FATAL_ERROR "Unsupported compiler")
 endif ()
 
 set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
@@ -255,44 +184,44 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-    set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
-    set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
-    set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
-    set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
-    set(ldflags "${ldflags} -o dhewm3.html")
+  set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
+  set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
+  set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
+  set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
+  set(ldflags "${ldflags} -o dhewm3.html")
 
-    set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
-    set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
-    set(ldflags "${ldflags} -s FULL_ES2=1")
-    #set(ldflags "${ldflags} --llvm-lto 3")
-    set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=clamp")
-    set(ldflags "${ldflags} -s TOTAL_MEMORY=536870912") # 384 MB (minimum specs) + 128MB (for filesystem: saves, configs, etc.)
-    set(ldflags "${ldflags} -s EMTERPRETIFY=1")
-    set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
-    set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=dhewm3.embin")
-    set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"_main\",\"__ZL17Session_NextMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal17HandleMsgCommandsEPKc\",\"__ZN14idSessionLocal10MessageBoxE12msgBoxType_tPKcS2_bS2_S2_b\",\"__ZN14idSessionLocal8SaveGameEPKcb\",\"__ZN25idRenderModelManagerLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal7StopBoxEv\",\"__ZN14idSessionLocal25HandleRestartMenuCommandsEPKc\",\"__ZN13idCommonLocal8GUIFrameEbb\",\"__ZN11idGameLocal16SpawnMapEntitiesEv\",\"__ZN11idGameLocal11MapPopulateEv\",\"__ZN11idGameLocal14InitFromNewMapEPKcP13idRenderWorldP12idSoundWorldbbi\",\"__ZN13idCommonLocal16InitRenderSystemEv\",\"__ZN13idCommonLocal19PrintLoadingMessageEPKc\",\"__ZN13idCommonLocal8InitGameEv\",\"__ZN13idCommonLocal4InitEiPPc\",\"__Z10LoadGame_fRK9idCmdArgs\",\"__ZN14idSessionLocal8LoadGameEPKc\",\"__ZN14idSessionLocal9MenuEventEPK10sysEvent_t\",\"__ZN14idSessionLocal12ProcessEventEPK10sysEvent_t\",\"__ZN14idSessionLocal25HandleSaveGameMenuCommandER9idCmdArgsRi\",\"__ZN11idEventLoop12ProcessEventE10sysEvent_t\",\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
-    set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
+  set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
+  set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
+  set(ldflags "${ldflags} -s FULL_ES2=1")
+  set(ldflags "${ldflags} --llvm-lto 2")
+  set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=clamp")
+  set(ldflags "${ldflags} -s TOTAL_MEMORY=536870912") # 384 MB (minimum specs) + 128MB (for filesystem: saves, configs, etc.)
+  set(ldflags "${ldflags} -s EMTERPRETIFY=1")
+  set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
+  set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=dhewm3.embin")
+  set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"_main\",\"__ZL17Session_NextMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal17HandleMsgCommandsEPKc\",\"__ZN14idSessionLocal10MessageBoxE12msgBoxType_tPKcS2_bS2_S2_b\",\"__ZN14idSessionLocal8SaveGameEPKcb\",\"__ZN25idRenderModelManagerLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal7StopBoxEv\",\"__ZN14idSessionLocal25HandleRestartMenuCommandsEPKc\",\"__ZN13idCommonLocal8GUIFrameEbb\",\"__ZN11idGameLocal16SpawnMapEntitiesEv\",\"__ZN11idGameLocal11MapPopulateEv\",\"__ZN11idGameLocal14InitFromNewMapEPKcP13idRenderWorldP12idSoundWorldbbi\",\"__ZN13idCommonLocal16InitRenderSystemEv\",\"__ZN13idCommonLocal19PrintLoadingMessageEPKc\",\"__ZN13idCommonLocal8InitGameEv\",\"__ZN13idCommonLocal4InitEiPPc\",\"__Z10LoadGame_fRK9idCmdArgs\",\"__ZN14idSessionLocal8LoadGameEPKc\",\"__ZN14idSessionLocal9MenuEventEPK10sysEvent_t\",\"__ZN14idSessionLocal12ProcessEventEPK10sysEvent_t\",\"__ZN14idSessionLocal25HandleSaveGameMenuCommandER9idCmdArgsRi\",\"__ZN11idEventLoop12ProcessEventE10sysEvent_t\",\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
+  set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
 endif ()
 
 # fallback for cmake versions without GNUInstallDirs
 if (GNUINSTALLDIRS MATCHES "NOTFOUND")
-    set(CMAKE_INSTALL_BINDIR "bin"
-            CACHE PATH "user executables (bin)")
-    set(CMAKE_INSTALL_LIBDIR "lib${LIB_SUFFIX}"
-            CACHE PATH "object code libraries (lib${LIB_SUFFIX})")
-    set(CMAKE_INSTALL_DATAROOTDIR "share"
-            CACHE PATH "read-only architecture-independent data root (share)")
-    set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_DATAROOTDIR}"
-            CACHE PATH "read-only architecture-independent data (DATAROOTDIR)")
+  set(CMAKE_INSTALL_BINDIR "bin"
+      CACHE PATH "user executables (bin)")
+  set(CMAKE_INSTALL_LIBDIR "lib${LIB_SUFFIX}"
+      CACHE PATH "object code libraries (lib${LIB_SUFFIX})")
+  set(CMAKE_INSTALL_DATAROOTDIR "share"
+      CACHE PATH "read-only architecture-independent data root (share)")
+  set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_DATAROOTDIR}"
+      CACHE PATH "read-only architecture-independent data (DATAROOTDIR)")
 
-    mark_as_advanced(CMAKE_INSTALL_BINDIR CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_DATAROOTDIR CMAKE_INSTALL_DATADIR)
-    foreach (dir BINDIR LIBDIR DATAROOTDIR DATADIR)
-        if (NOT IS_ABSOLUTE ${CMAKE_INSTALL_${dir}})
-            set(CMAKE_INSTALL_FULL_${dir} "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_${dir}}")
-        else ()
-            set(CMAKE_INSTALL_FULL_${dir} "${CMAKE_INSTALL_${dir}}")
-        endif ()
-    endforeach ()
+  mark_as_advanced(CMAKE_INSTALL_BINDIR CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_DATAROOTDIR CMAKE_INSTALL_DATADIR)
+  foreach (dir BINDIR LIBDIR DATAROOTDIR DATADIR)
+    if (NOT IS_ABSOLUTE ${CMAKE_INSTALL_${dir}})
+      set(CMAKE_INSTALL_FULL_${dir} "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_${dir}}")
+    else ()
+      set(CMAKE_INSTALL_FULL_${dir} "${CMAKE_INSTALL_${dir}}")
+    endif ()
+  endforeach ()
 endif ()
 
 set(bindir "${CMAKE_INSTALL_FULL_BINDIR}")
@@ -300,534 +229,442 @@ set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}/dhewm3")
 set(datadir "${CMAKE_INSTALL_FULL_DATADIR}/dhewm3")
 
 configure_file(
-        "${CMAKE_SOURCE_DIR}/config.h.in"
-        "${CMAKE_BINARY_DIR}/config.h"
+    "${CMAKE_SOURCE_DIR}/config.h.in"
+    "${CMAKE_BINARY_DIR}/config.h"
 )
 
 message(STATUS "Building ${CMAKE_BUILD_TYPE} for ${os}-${cpu}")
 
 if (NOT EMSCRIPTEN)
-    message(STATUS "The install target will use the following directories:")
-    message(STATUS "  Binary directory:  ${bindir}")
-    message(STATUS "  Library directory: ${libdir}")
-    message(STATUS "  Data directory:    ${datadir}")
+  message(STATUS "The install target will use the following directories:")
+  message(STATUS "  Binary directory:  ${bindir}")
+  message(STATUS "  Library directory: ${libdir}")
+  message(STATUS "  Data directory:    ${datadir}")
 endif ()
 
 set(src_renderer
-        renderer/Cinematic.cpp
-        renderer/GuiModel.cpp
-        renderer/Image_files.cpp
-        renderer/Image_init.cpp
-        renderer/Image_load.cpp
-        renderer/Image_process.cpp
-        renderer/Image_program.cpp
-        renderer/Interaction.cpp
-        renderer/Material.cpp
-        renderer/MegaTexture.cpp
-        renderer/Model.cpp
-        renderer/ModelDecal.cpp
-        renderer/ModelManager.cpp
-        renderer/ModelOverlay.cpp
-        renderer/Model_beam.cpp
-        renderer/Model_ase.cpp
-        renderer/Model_liquid.cpp
-        renderer/Model_lwo.cpp
-        renderer/Model_ma.cpp
-        renderer/Model_md3.cpp
-        renderer/Model_md5.cpp
-        renderer/Model_prt.cpp
-        renderer/Model_sprite.cpp
-        renderer/RenderEntity.cpp
-        renderer/RenderSystem.cpp
-        renderer/RenderSystem_init.cpp
-        renderer/RenderWorld.cpp
-        renderer/RenderWorld_demo.cpp
-        renderer/RenderWorld_load.cpp
-        renderer/RenderWorld_portals.cpp
-        renderer/VertexCache.cpp
-        renderer/draw_glsl.cpp
-        renderer/draw_common.cpp
-        renderer/tr_backend.cpp
-        renderer/tr_deform.cpp
-        renderer/tr_font.cpp
-        renderer/tr_guisurf.cpp
-        renderer/tr_light.cpp
-        renderer/tr_lightrun.cpp
-        renderer/tr_main.cpp
-        renderer/tr_orderIndexes.cpp
-        renderer/tr_polytope.cpp
-        renderer/tr_render.cpp
-        renderer/tr_rendertools.cpp
-        renderer/tr_shadowbounds.cpp
-        renderer/tr_stencilshadow.cpp
-        renderer/tr_subview.cpp
-        renderer/tr_trace.cpp
-        renderer/tr_trisurf.cpp
-        renderer/tr_turboshadow.cpp
-        )
-
-# I'm a bit sloppy with headers and just glob them in..
-# they're only handled in CMake at all so they turn up in Visual Studio solutions..
+    renderer/Cinematic.cpp
+    renderer/GuiModel.cpp
+    renderer/Image_files.cpp
+    renderer/Image_init.cpp
+    renderer/Image_load.cpp
+    renderer/Image_process.cpp
+    renderer/Image_program.cpp
+    renderer/Interaction.cpp
+    renderer/Material.cpp
+    renderer/MegaTexture.cpp
+    renderer/Model.cpp
+    renderer/ModelDecal.cpp
+    renderer/ModelManager.cpp
+    renderer/ModelOverlay.cpp
+    renderer/Model_beam.cpp
+    renderer/Model_ase.cpp
+    renderer/Model_liquid.cpp
+    renderer/Model_lwo.cpp
+    renderer/Model_ma.cpp
+    renderer/Model_md3.cpp
+    renderer/Model_md5.cpp
+    renderer/Model_prt.cpp
+    renderer/Model_sprite.cpp
+    renderer/RenderEntity.cpp
+    renderer/RenderSystem.cpp
+    renderer/RenderSystem_init.cpp
+    renderer/RenderWorld.cpp
+    renderer/RenderWorld_demo.cpp
+    renderer/RenderWorld_load.cpp
+    renderer/RenderWorld_portals.cpp
+    renderer/VertexCache.cpp
+    renderer/draw_glsl.cpp
+    renderer/draw_common.cpp
+    renderer/tr_backend.cpp
+    renderer/tr_deform.cpp
+    renderer/tr_font.cpp
+    renderer/tr_guisurf.cpp
+    renderer/tr_light.cpp
+    renderer/tr_lightrun.cpp
+    renderer/tr_main.cpp
+    renderer/tr_orderIndexes.cpp
+    renderer/tr_polytope.cpp
+    renderer/tr_render.cpp
+    renderer/tr_rendertools.cpp
+    renderer/tr_shadowbounds.cpp
+    renderer/tr_stencilshadow.cpp
+    renderer/tr_subview.cpp
+    renderer/tr_trace.cpp
+    renderer/tr_trisurf.cpp
+    renderer/tr_turboshadow.cpp
+    )
 
 # globs all the headers from ${PATHPREFIX}/ and adds them to ${SRCLIST}
 function(add_globbed_headers SRCLIST PATHPREFIX)
-	file(GLOB_RECURSE tmp_hdrs RELATIVE "${CMAKE_SOURCE_DIR}" "${PATHPREFIX}/*.h")
-	set(${SRCLIST} ${tmp_hdrs} ${${SRCLIST}} PARENT_SCOPE)
+  file(GLOB_RECURSE tmp_hdrs RELATIVE "${CMAKE_SOURCE_DIR}" "${PATHPREFIX}/*.h")
+  set(${SRCLIST} ${tmp_hdrs} ${${SRCLIST}} PARENT_SCOPE)
 endfunction()
 
 add_globbed_headers(src_renderer "renderer")
 
 set(src_framework
-        framework/CVarSystem.cpp
-        framework/CmdSystem.cpp
-        framework/Common.cpp
-        framework/Compressor.cpp
-        framework/Console.cpp
-        framework/DemoFile.cpp
-        framework/DeclAF.cpp
-        framework/DeclEntityDef.cpp
-        framework/DeclFX.cpp
-        framework/DeclManager.cpp
-        framework/DeclParticle.cpp
-        framework/DeclPDA.cpp
-        framework/DeclSkin.cpp
-        framework/DeclTable.cpp
-        framework/EditField.cpp
-        framework/EventLoop.cpp
-        framework/File.cpp
-        framework/FileSystem.cpp
-        framework/KeyInput.cpp
-        framework/UsercmdGen.cpp
-        framework/Session_menu.cpp
-        framework/Session.cpp
-        framework/async/AsyncClient.cpp
-        framework/async/AsyncNetwork.cpp
-        framework/async/AsyncServer.cpp
-        framework/async/MsgChannel.cpp
-        framework/async/NetworkSystem.cpp
-        framework/async/ServerScan.cpp
-        framework/minizip/ioapi.c
-        framework/minizip/unzip.cpp
-        )
+    framework/CVarSystem.cpp
+    framework/CmdSystem.cpp
+    framework/Common.cpp
+    framework/Compressor.cpp
+    framework/Console.cpp
+    framework/DemoFile.cpp
+    framework/DeclAF.cpp
+    framework/DeclEntityDef.cpp
+    framework/DeclFX.cpp
+    framework/DeclManager.cpp
+    framework/DeclParticle.cpp
+    framework/DeclPDA.cpp
+    framework/DeclSkin.cpp
+    framework/DeclTable.cpp
+    framework/EditField.cpp
+    framework/EventLoop.cpp
+    framework/File.cpp
+    framework/FileSystem.cpp
+    framework/KeyInput.cpp
+    framework/UsercmdGen.cpp
+    framework/Session_menu.cpp
+    framework/Session.cpp
+    framework/async/AsyncClient.cpp
+    framework/async/AsyncNetwork.cpp
+    framework/async/AsyncServer.cpp
+    framework/async/MsgChannel.cpp
+    framework/async/NetworkSystem.cpp
+    framework/async/ServerScan.cpp
+    framework/minizip/ioapi.c
+    framework/minizip/unzip.cpp
+    )
 
 add_globbed_headers(src_framework "framework")
 
 set(src_cm
-        cm/CollisionModel_contacts.cpp
-        cm/CollisionModel_contents.cpp
-        cm/CollisionModel_debug.cpp
-        cm/CollisionModel_files.cpp
-        cm/CollisionModel_load.cpp
-        cm/CollisionModel_rotate.cpp
-        cm/CollisionModel_trace.cpp
-        cm/CollisionModel_translate.cpp
-        )
+    cm/CollisionModel_contacts.cpp
+    cm/CollisionModel_contents.cpp
+    cm/CollisionModel_debug.cpp
+    cm/CollisionModel_files.cpp
+    cm/CollisionModel_load.cpp
+    cm/CollisionModel_rotate.cpp
+    cm/CollisionModel_trace.cpp
+    cm/CollisionModel_translate.cpp
+    )
 
 add_globbed_headers(src_cm "cm")
 
 set(src_dmap
-        tools/compilers/dmap/dmap.cpp
-        tools/compilers/dmap/facebsp.cpp
-        tools/compilers/dmap/gldraw.cpp
-        tools/compilers/dmap/glfile.cpp
-        tools/compilers/dmap/leakfile.cpp
-        tools/compilers/dmap/map.cpp
-        tools/compilers/dmap/optimize.cpp
-        tools/compilers/dmap/output.cpp
-        tools/compilers/dmap/portals.cpp
-        tools/compilers/dmap/shadowopt3.cpp
-        tools/compilers/dmap/tritjunction.cpp
-        tools/compilers/dmap/tritools.cpp
-        tools/compilers/dmap/ubrush.cpp
-        tools/compilers/dmap/usurface.cpp
-        )
+    tools/compilers/dmap/dmap.cpp
+    tools/compilers/dmap/facebsp.cpp
+    tools/compilers/dmap/gldraw.cpp
+    tools/compilers/dmap/glfile.cpp
+    tools/compilers/dmap/leakfile.cpp
+    tools/compilers/dmap/map.cpp
+    tools/compilers/dmap/optimize.cpp
+    tools/compilers/dmap/output.cpp
+    tools/compilers/dmap/portals.cpp
+    tools/compilers/dmap/shadowopt3.cpp
+    tools/compilers/dmap/tritjunction.cpp
+    tools/compilers/dmap/tritools.cpp
+    tools/compilers/dmap/ubrush.cpp
+    tools/compilers/dmap/usurface.cpp
+    )
 
 add_globbed_headers(src_dmap "tools/compilers/dmap")
 
 set(src_aas
-        tools/compilers/aas/AASBuild.cpp
-        tools/compilers/aas/AASBuild_file.cpp
-        tools/compilers/aas/AASBuild_gravity.cpp
-        tools/compilers/aas/AASBuild_ledge.cpp
-        tools/compilers/aas/AASBuild_merge.cpp
-        tools/compilers/aas/AASCluster.cpp
-        tools/compilers/aas/AASFile.cpp
-        tools/compilers/aas/AASFile_optimize.cpp
-        tools/compilers/aas/AASFile_sample.cpp
-        tools/compilers/aas/AASReach.cpp
-        tools/compilers/aas/AASFileManager.cpp
-        tools/compilers/aas/Brush.cpp
-        tools/compilers/aas/BrushBSP.cpp
-        )
+    tools/compilers/aas/AASBuild.cpp
+    tools/compilers/aas/AASBuild_file.cpp
+    tools/compilers/aas/AASBuild_gravity.cpp
+    tools/compilers/aas/AASBuild_ledge.cpp
+    tools/compilers/aas/AASBuild_merge.cpp
+    tools/compilers/aas/AASCluster.cpp
+    tools/compilers/aas/AASFile.cpp
+    tools/compilers/aas/AASFile_optimize.cpp
+    tools/compilers/aas/AASFile_sample.cpp
+    tools/compilers/aas/AASReach.cpp
+    tools/compilers/aas/AASFileManager.cpp
+    tools/compilers/aas/Brush.cpp
+    tools/compilers/aas/BrushBSP.cpp
+    )
 
 add_globbed_headers(src_aas "tools/compilers/aas")
 
 set(src_roq
-        tools/compilers/roqvq/NSBitmapImageRep.cpp
-        tools/compilers/roqvq/codec.cpp
-        tools/compilers/roqvq/roq.cpp
-        tools/compilers/roqvq/roqParam.cpp
-        )
+    tools/compilers/roqvq/NSBitmapImageRep.cpp
+    tools/compilers/roqvq/codec.cpp
+    tools/compilers/roqvq/roq.cpp
+    tools/compilers/roqvq/roqParam.cpp
+    )
 
 add_globbed_headers(src_roq "tools/compilers/roqvq")
 
 set(src_renderbump
-        tools/compilers/renderbump/renderbump.cpp
-        )
+    tools/compilers/renderbump/renderbump.cpp
+    )
 
 add_globbed_headers(src_renderbump "tools/compilers/renderbump")
 
 set(src_snd
-        sound/snd_cache.cpp
-        sound/snd_decoder.cpp
-        sound/snd_efxfile.cpp
-        sound/snd_emitter.cpp
-        sound/snd_shader.cpp
-        sound/snd_system.cpp
-        sound/snd_wavefile.cpp
-        sound/snd_world.cpp
-        )
+    sound/snd_cache.cpp
+    sound/snd_decoder.cpp
+    sound/snd_efxfile.cpp
+    sound/snd_emitter.cpp
+    sound/snd_shader.cpp
+    sound/snd_system.cpp
+    sound/snd_wavefile.cpp
+    sound/snd_world.cpp
+    )
 
 add_globbed_headers(src_snd "sound")
 
 set(src_ui
-        ui/BindWindow.cpp
-        ui/ChoiceWindow.cpp
-        ui/DeviceContext.cpp
-        ui/EditWindow.cpp
-        ui/FieldWindow.cpp
-        ui/GameBearShootWindow.cpp
-        ui/GameBustOutWindow.cpp
-        ui/GameSSDWindow.cpp
-        ui/GuiScript.cpp
-        ui/ListGUI.cpp
-        ui/ListWindow.cpp
-        ui/MarkerWindow.cpp
-        ui/RegExp.cpp
-        ui/RenderWindow.cpp
-        ui/SimpleWindow.cpp
-        ui/SliderWindow.cpp
-        ui/UserInterface.cpp
-        ui/Window.cpp
-        ui/Winvar.cpp
-        )
+    ui/BindWindow.cpp
+    ui/ChoiceWindow.cpp
+    ui/DeviceContext.cpp
+    ui/EditWindow.cpp
+    ui/FieldWindow.cpp
+    ui/GameBearShootWindow.cpp
+    ui/GameBustOutWindow.cpp
+    ui/GameSSDWindow.cpp
+    ui/GuiScript.cpp
+    ui/ListGUI.cpp
+    ui/ListWindow.cpp
+    ui/MarkerWindow.cpp
+    ui/RegExp.cpp
+    ui/RenderWindow.cpp
+    ui/SimpleWindow.cpp
+    ui/SliderWindow.cpp
+    ui/UserInterface.cpp
+    ui/Window.cpp
+    ui/Winvar.cpp
+    )
 
 add_globbed_headers(src_ui "ui")
 
 set(src_idlib
-        idlib/bv/Bounds.cpp
-        idlib/bv/Frustum.cpp
-        idlib/bv/Sphere.cpp
-        idlib/bv/Box.cpp
-        idlib/geometry/DrawVert.cpp
-        idlib/geometry/Winding2D.cpp
-        idlib/geometry/Surface_SweptSpline.cpp
-        idlib/geometry/Winding.cpp
-        idlib/geometry/Surface.cpp
-        idlib/geometry/Surface_Patch.cpp
-        idlib/geometry/TraceModel.cpp
-        idlib/geometry/JointTransform.cpp
-        idlib/hashing/CRC32.cpp
-        idlib/hashing/MD4.cpp
-        idlib/hashing/MD5.cpp
-        idlib/math/Angles.cpp
-        idlib/math/Lcp.cpp
-        idlib/math/Math.cpp
-        idlib/math/Matrix.cpp
-        idlib/math/Ode.cpp
-        idlib/math/Plane.cpp
-        idlib/math/Pluecker.cpp
-        idlib/math/Polynomial.cpp
-        idlib/math/Quat.cpp
-        idlib/math/Rotation.cpp
-        idlib/math/Simd.cpp
-        idlib/math/Simd_Generic.cpp
-        idlib/math/Simd_MMX.cpp
-        idlib/math/Simd_SSE.cpp
-        idlib/math/Simd_SSE2.cpp
-        idlib/math/Simd_SSE3.cpp
-        idlib/math/Vector.cpp
-        idlib/BitMsg.cpp
-        idlib/LangDict.cpp
-        idlib/Lexer.cpp
-        idlib/Lib.cpp
-        idlib/containers/HashIndex.cpp
-        idlib/Dict.cpp
-        idlib/Str.cpp
-        idlib/Parser.cpp
-        idlib/MapFile.cpp
-        idlib/CmdArgs.cpp
-        idlib/Token.cpp
-        idlib/Base64.cpp
-        idlib/Timer.cpp
-        idlib/Heap.cpp
-        )
+    idlib/bv/Bounds.cpp
+    idlib/bv/Frustum.cpp
+    idlib/bv/Sphere.cpp
+    idlib/bv/Box.cpp
+    idlib/geometry/DrawVert.cpp
+    idlib/geometry/Winding2D.cpp
+    idlib/geometry/Surface_SweptSpline.cpp
+    idlib/geometry/Winding.cpp
+    idlib/geometry/Surface.cpp
+    idlib/geometry/Surface_Patch.cpp
+    idlib/geometry/TraceModel.cpp
+    idlib/geometry/JointTransform.cpp
+    idlib/hashing/CRC32.cpp
+    idlib/hashing/MD4.cpp
+    idlib/hashing/MD5.cpp
+    idlib/math/Angles.cpp
+    idlib/math/Lcp.cpp
+    idlib/math/Math.cpp
+    idlib/math/Matrix.cpp
+    idlib/math/Ode.cpp
+    idlib/math/Plane.cpp
+    idlib/math/Pluecker.cpp
+    idlib/math/Polynomial.cpp
+    idlib/math/Quat.cpp
+    idlib/math/Rotation.cpp
+    idlib/math/Simd.cpp
+    idlib/math/Simd_Generic.cpp
+    idlib/math/Simd_MMX.cpp
+    idlib/math/Simd_SSE.cpp
+    idlib/math/Simd_SSE2.cpp
+    idlib/math/Simd_SSE3.cpp
+    idlib/math/Vector.cpp
+    idlib/BitMsg.cpp
+    idlib/LangDict.cpp
+    idlib/Lexer.cpp
+    idlib/Lib.cpp
+    idlib/containers/HashIndex.cpp
+    idlib/Dict.cpp
+    idlib/Str.cpp
+    idlib/Parser.cpp
+    idlib/MapFile.cpp
+    idlib/CmdArgs.cpp
+    idlib/Token.cpp
+    idlib/Base64.cpp
+    idlib/Timer.cpp
+    idlib/Heap.cpp
+    )
 
 add_globbed_headers(src_idlib "idlib")
 
 set(src_game
-        game/AF.cpp
-        game/AFEntity.cpp
-        game/Actor.cpp
-        game/Camera.cpp
-        game/Entity.cpp
-        game/BrittleFracture.cpp
-        game/Fx.cpp
-        game/GameEdit.cpp
-        game/Game_local.cpp
-        game/Game_network.cpp
-        game/Item.cpp
-        game/IK.cpp
-        game/Light.cpp
-        game/Misc.cpp
-        game/Mover.cpp
-        game/Moveable.cpp
-        game/MultiplayerGame.cpp
-        game/Player.cpp
-        game/PlayerIcon.cpp
-        game/PlayerView.cpp
-        game/Projectile.cpp
-        game/Pvs.cpp
-        game/SecurityCamera.cpp
-        game/SmokeParticles.cpp
-        game/Sound.cpp
-        game/Target.cpp
-        game/Trigger.cpp
-        game/Weapon.cpp
-        game/WorldSpawn.cpp
-        game/ai/AAS.cpp
-        game/ai/AAS_debug.cpp
-        game/ai/AAS_pathing.cpp
-        game/ai/AAS_routing.cpp
-        game/ai/AI.cpp
-        game/ai/AI_events.cpp
-        game/ai/AI_pathing.cpp
-        game/ai/AI_Vagary.cpp
-        game/gamesys/DebugGraph.cpp
-        game/gamesys/Class.cpp
-        game/gamesys/Event.cpp
-        game/gamesys/SaveGame.cpp
-        game/gamesys/SysCmds.cpp
-        game/gamesys/SysCvar.cpp
-        game/gamesys/TypeInfo.cpp
-        game/anim/Anim.cpp
-        game/anim/Anim_Blend.cpp
-        game/script/Script_Compiler.cpp
-        game/script/Script_Interpreter.cpp
-        game/script/Script_Program.cpp
-        game/script/Script_Thread.cpp
-        game/physics/Clip.cpp
-        game/physics/Force.cpp
-        game/physics/Force_Constant.cpp
-        game/physics/Force_Drag.cpp
-        game/physics/Force_Field.cpp
-        game/physics/Force_Spring.cpp
-        game/physics/Physics.cpp
-        game/physics/Physics_AF.cpp
-        game/physics/Physics_Actor.cpp
-        game/physics/Physics_Base.cpp
-        game/physics/Physics_Monster.cpp
-        game/physics/Physics_Parametric.cpp
-        game/physics/Physics_Player.cpp
-        game/physics/Physics_RigidBody.cpp
-        game/physics/Physics_Static.cpp
-        game/physics/Physics_StaticMulti.cpp
-        game/physics/Push.cpp
-        )
+    game/AF.cpp
+    game/AFEntity.cpp
+    game/Actor.cpp
+    game/Camera.cpp
+    game/Entity.cpp
+    game/BrittleFracture.cpp
+    game/Fx.cpp
+    game/GameEdit.cpp
+    game/Game_local.cpp
+    game/Game_network.cpp
+    game/Item.cpp
+    game/IK.cpp
+    game/Light.cpp
+    game/Misc.cpp
+    game/Mover.cpp
+    game/Moveable.cpp
+    game/MultiplayerGame.cpp
+    game/Player.cpp
+    game/PlayerIcon.cpp
+    game/PlayerView.cpp
+    game/Projectile.cpp
+    game/Pvs.cpp
+    game/SecurityCamera.cpp
+    game/SmokeParticles.cpp
+    game/Sound.cpp
+    game/Target.cpp
+    game/Trigger.cpp
+    game/Weapon.cpp
+    game/WorldSpawn.cpp
+    game/ai/AAS.cpp
+    game/ai/AAS_debug.cpp
+    game/ai/AAS_pathing.cpp
+    game/ai/AAS_routing.cpp
+    game/ai/AI.cpp
+    game/ai/AI_events.cpp
+    game/ai/AI_pathing.cpp
+    game/ai/AI_Vagary.cpp
+    game/gamesys/DebugGraph.cpp
+    game/gamesys/Class.cpp
+    game/gamesys/Event.cpp
+    game/gamesys/SaveGame.cpp
+    game/gamesys/SysCmds.cpp
+    game/gamesys/SysCvar.cpp
+    game/gamesys/TypeInfo.cpp
+    game/anim/Anim.cpp
+    game/anim/Anim_Blend.cpp
+    game/script/Script_Compiler.cpp
+    game/script/Script_Interpreter.cpp
+    game/script/Script_Program.cpp
+    game/script/Script_Thread.cpp
+    game/physics/Clip.cpp
+    game/physics/Force.cpp
+    game/physics/Force_Constant.cpp
+    game/physics/Force_Drag.cpp
+    game/physics/Force_Field.cpp
+    game/physics/Force_Spring.cpp
+    game/physics/Physics.cpp
+    game/physics/Physics_AF.cpp
+    game/physics/Physics_Actor.cpp
+    game/physics/Physics_Base.cpp
+    game/physics/Physics_Monster.cpp
+    game/physics/Physics_Parametric.cpp
+    game/physics/Physics_Player.cpp
+    game/physics/Physics_RigidBody.cpp
+    game/physics/Physics_Static.cpp
+    game/physics/Physics_StaticMulti.cpp
+    game/physics/Push.cpp
+    )
 
 add_globbed_headers(src_game "game")
 
-set(src_d3xp
-        d3xp/AF.cpp
-        d3xp/AFEntity.cpp
-        d3xp/Actor.cpp
-        d3xp/Camera.cpp
-        d3xp/Entity.cpp
-        d3xp/BrittleFracture.cpp
-        d3xp/Fx.cpp
-        d3xp/GameEdit.cpp
-        d3xp/Game_local.cpp
-        d3xp/Game_network.cpp
-        d3xp/Item.cpp
-        d3xp/IK.cpp
-        d3xp/Light.cpp
-        d3xp/Misc.cpp
-        d3xp/Mover.cpp
-        d3xp/Moveable.cpp
-        d3xp/MultiplayerGame.cpp
-        d3xp/Player.cpp
-        d3xp/PlayerIcon.cpp
-        d3xp/PlayerView.cpp
-        d3xp/Projectile.cpp
-        d3xp/Pvs.cpp
-        d3xp/SecurityCamera.cpp
-        d3xp/SmokeParticles.cpp
-        d3xp/Sound.cpp
-        d3xp/Target.cpp
-        d3xp/Trigger.cpp
-        d3xp/Weapon.cpp
-        d3xp/WorldSpawn.cpp
-        d3xp/ai/AAS.cpp
-        d3xp/ai/AAS_debug.cpp
-        d3xp/ai/AAS_pathing.cpp
-        d3xp/ai/AAS_routing.cpp
-        d3xp/ai/AI.cpp
-        d3xp/ai/AI_events.cpp
-        d3xp/ai/AI_pathing.cpp
-        d3xp/ai/AI_Vagary.cpp
-        d3xp/gamesys/DebugGraph.cpp
-        d3xp/gamesys/Class.cpp
-        d3xp/gamesys/Event.cpp
-        d3xp/gamesys/SaveGame.cpp
-        d3xp/gamesys/SysCmds.cpp
-        d3xp/gamesys/SysCvar.cpp
-        d3xp/gamesys/TypeInfo.cpp
-        d3xp/anim/Anim.cpp
-        d3xp/anim/Anim_Blend.cpp
-        d3xp/script/Script_Compiler.cpp
-        d3xp/script/Script_Interpreter.cpp
-        d3xp/script/Script_Program.cpp
-        d3xp/script/Script_Thread.cpp
-        d3xp/physics/Clip.cpp
-        d3xp/physics/Force.cpp
-        d3xp/physics/Force_Constant.cpp
-        d3xp/physics/Force_Drag.cpp
-        d3xp/physics/Force_Field.cpp
-        d3xp/physics/Force_Spring.cpp
-        d3xp/physics/Physics.cpp
-        d3xp/physics/Physics_AF.cpp
-        d3xp/physics/Physics_Actor.cpp
-        d3xp/physics/Physics_Base.cpp
-        d3xp/physics/Physics_Monster.cpp
-        d3xp/physics/Physics_Parametric.cpp
-        d3xp/physics/Physics_Player.cpp
-        d3xp/physics/Physics_RigidBody.cpp
-        d3xp/physics/Physics_Static.cpp
-        d3xp/physics/Physics_StaticMulti.cpp
-        d3xp/physics/Push.cpp
-        d3xp/Grabber.cpp
-        d3xp/physics/Force_Grab.cpp
-        )
-
-add_globbed_headers(src_d3xp "d3xp")
-
 set(src_core
-        ${src_renderer}
-        ${src_framework}
-        ${src_cm}
-        ${src_dmap}
-        ${src_aas}
-        ${src_roq}
-        ${src_renderbump}
-        ${src_snd}
-        ${src_ui}
-        )
+    ${src_renderer}
+    ${src_framework}
+    ${src_cm}
+    ${src_dmap}
+    ${src_aas}
+    ${src_roq}
+    ${src_renderbump}
+    ${src_snd}
+    ${src_ui}
+    )
 
 set(src_stub_openal sys/stub/openal_stub.cpp)
 set(src_stub_gl sys/stub/stub_gl.cpp)
 
-    set(src_sys_base
-            sys/cpu.cpp
-            sys/threads.cpp
-            sys/events.cpp
-            sys/sys_local.cpp
-            sys/posix/posix_net.cpp
-            sys/posix/posix_main.cpp
-            sys/linux/main.cpp
-            )
+set(src_sys_base
+    sys/cpu.cpp
+    sys/threads.cpp
+    sys/events.cpp
+    sys/sys_local.cpp
+    sys/posix/posix_net.cpp
+    sys/posix/posix_main.cpp
+    sys/linux/main.cpp
+    )
 
-    set(src_sys_core
-            sys/glimp.cpp
-            )
+set(src_sys_core
+    sys/glimp.cpp
+    )
 
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(idlib STATIC ${src_idlib})
 
-    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" AND NOT MINGW)
-        set_target_properties(idlib PROPERTIES COMPILE_FLAGS "-fPIC")
-    endif ()
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" AND NOT MINGW)
+  set_target_properties(idlib PROPERTIES COMPILE_FLAGS "-fPIC")
+endif ()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_idlib})
 
 if (CORE)
-    if (NODLL)
-        add_executable(${DHEWM3BINARY}
-                ${src_core}
-                ${src_sys_base}
-                ${src_sys_core}
-                ${src_game}         # base game is added to core
-                )
+  if (NODLL)
+    add_executable(${DHEWM3BINARY}
+        ${src_core}
+        ${src_sys_base}
+        ${src_sys_core}
+        ${src_game}         # base game is added to core
+        )
 
-        set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
-    else ()
-        add_executable(${DHEWM3BINARY}
-                ${src_core}
-                ${src_sys_base}
-                ${src_sys_core}
-                )
+    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core} ${src_game})
 
-	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core})
+    set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
+  else ()
+    add_executable(${DHEWM3BINARY}
+        ${src_core}
+        ${src_sys_base}
+        ${src_sys_core}
+        )
 
-        set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
-    endif ()
+    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core})
 
-    set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
-    target_link_libraries(${DHEWM3BINARY}
-            idlib
-            ${OPENAL_LIBRARY}
-            ${VORBISFILE_LIBRARIES}
-            ${VORBIS_LIBRARIES}
-            ${OGG_LIBRARIES}
-            ${CURL_LIBRARY}
-            ${JPEG_LIBRARY}
-            ${ZLIB_LIBRARY}
-            ${SDLx_LIBRARY}
-            ${sys_libs})
+    set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
+  endif ()
 
-    if (NOT EMSCRIPTEN)
-        install(TARGETS ${DHEWM3BINARY}
-                RUNTIME DESTINATION "${bindir}"
-                LIBRARY DESTINATION "${libdir}"
-                ARCHIVE DESTINATION "${libdir}"
-                )
-    endif ()
+  set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
+  target_link_libraries(${DHEWM3BINARY}
+      idlib
+      ${OPENAL_LIBRARY}
+      ${VORBISFILE_LIBRARIES}
+      ${VORBIS_LIBRARIES}
+      ${OGG_LIBRARIES}
+      ${JPEG_LIBRARY}
+      ${ZLIB_LIBRARY}
+      ${SDLx_LIBRARY}
+      ${sys_libs})
+
+  if (NOT EMSCRIPTEN)
+    install(TARGETS ${DHEWM3BINARY}
+        RUNTIME DESTINATION "${bindir}"
+        LIBRARY DESTINATION "${libdir}"
+        ARCHIVE DESTINATION "${libdir}"
+        )
+  endif ()
 endif ()
 
 if (BASE)
-    add_library(base SHARED ${src_game})
+  add_library(base SHARED ${src_game})
 
-	source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_game})
+  source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_game})
 
-    set_target_properties(base PROPERTIES PREFIX "")
-    set_target_properties(base PROPERTIES COMPILE_DEFINITIONS "GAME_DLL")
-    set_target_properties(base PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
-    set_target_properties(base PROPERTIES LINK_FLAGS "${ldflags}")
-    set_target_properties(base PROPERTIES INSTALL_NAME_DIR "@executable_path")
-    target_link_libraries(base idlib)
+  set_target_properties(base PROPERTIES PREFIX "")
+  set_target_properties(base PROPERTIES COMPILE_DEFINITIONS "GAME_DLL")
+  set_target_properties(base PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
+  set_target_properties(base PROPERTIES LINK_FLAGS "${ldflags}")
+  set_target_properties(base PROPERTIES INSTALL_NAME_DIR "@executable_path")
+  target_link_libraries(base idlib)
 
-       install(TARGETS base
-                RUNTIME DESTINATION "${bindir}"
-                LIBRARY DESTINATION "${libdir}"
-                ARCHIVE DESTINATION "${libdir}"
-                )
+  install(TARGETS base
+      RUNTIME DESTINATION "${bindir}"
+      LIBRARY DESTINATION "${libdir}"
+      ARCHIVE DESTINATION "${libdir}"
+      )
 
 endif ()
 
-if (D3XP)
-    add_library(d3xp SHARED ${src_d3xp})
-    source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_d3xp})
-    set_target_properties(d3xp PROPERTIES PREFIX "")
-    set_target_properties(d3xp PROPERTIES COMPILE_DEFINITIONS "GAME_DLL;_D3XP;CTF")
-    set_target_properties(d3xp PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/d3xp")
-    set_target_properties(d3xp PROPERTIES LINK_FLAGS "${ldflags}")
-    set_target_properties(d3xp PROPERTIES INSTALL_NAME_DIR "@executable_path")
-    target_link_libraries(d3xp idlib)
-
-        install(TARGETS d3xp
-                RUNTIME DESTINATION "${bindir}"
-                LIBRARY DESTINATION "${libdir}"
-                ARCHIVE DESTINATION "${libdir}"
-                )
-endif ()
