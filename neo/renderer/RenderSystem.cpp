@@ -882,17 +882,17 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 #endif
 
 	// include extra space for OpenGL padding to word boundaries
-	int	c = ( rc->width + 3 ) * rc->height;
-	byte *data = (byte *)R_StaticAlloc( c * 3 );
+	int	c = ( rc->width + 4 ) * rc->height;
+	byte *data = (byte *)R_StaticAlloc( c * 4 );
 
-	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGB, GL_UNSIGNED_BYTE, data );
+	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGBA, GL_UNSIGNED_BYTE, data );
 
 	byte *data2 = (byte *)R_StaticAlloc( c * 4 );
 
 	for ( int i = 0 ; i < c ; i++ ) {
-		data2[ i * 4 ] = data[ i * 3 ];
-		data2[ i * 4 + 1 ] = data[ i * 3 + 1 ];
-		data2[ i * 4 + 2 ] = data[ i * 3 + 2 ];
+		data2[ i * 4 ] = data[ i * 4 ];
+		data2[ i * 4 + 1 ] = data[ i * 4 + 1 ];
+		data2[ i * 4 + 2 ] = data[ i * 4 + 2 ];
 		data2[ i * 4 + 3 ] = 0xff;
 	}
 

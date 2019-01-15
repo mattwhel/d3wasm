@@ -1103,7 +1103,7 @@ If ref isn't specified, the full session UpdateScreen will be done.
 */
 void R_ReadTiledPixels( int width, int height, byte *buffer, renderView_t *ref = NULL ) {
 	// include extra space for OpenGL padding to word boundaries
-	byte	*temp = (byte *)R_StaticAlloc( (glConfig.vidWidth+3) * glConfig.vidHeight * 3 );
+	byte	*temp = (byte *)R_StaticAlloc( (glConfig.vidWidth+4) * glConfig.vidHeight * 4 );
 
 	int	oldWidth = glConfig.vidWidth;
 	int oldHeight = glConfig.vidHeight;
@@ -1141,13 +1141,13 @@ void R_ReadTiledPixels( int width, int height, byte *buffer, renderView_t *ref =
 			qglReadBuffer( GL_FRONT );
 #endif
 
-			qglReadPixels( 0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, temp );
+			qglReadPixels( 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, temp );
 
-			int	row = ( w * 3 + 3 ) & ~3;		// OpenGL pads to dword boundaries
+			int	row = ( w * 4 + 4 ) & ~4;		// OpenGL pads to dword boundaries
 
 			for ( int y = 0 ; y < h ; y++ ) {
-				memcpy( buffer + ( ( yo + y )* width + xo ) * 3,
-					temp + y * row, w * 3 );
+				memcpy( buffer + ( ( yo + y )* width + xo ) * 4,
+					temp + y * row, w * 4 );
 			}
 		}
 	}
