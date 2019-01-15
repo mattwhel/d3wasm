@@ -77,8 +77,12 @@ static const char* const interactionShaderVP =
     "uniform vec4 u_specularMatrixS;\n"
     "uniform vec4 u_specularMatrixT;\n"
     "\n"
+    #ifdef USEREGAL
     "uniform mat4 u_modelViewMatrix;\n"
     "uniform mat4 u_projectionMatrix;\n"
+    #else
+    "uniform mat4 u_modelViewProjectionMatrix;\n"
+    #endif
     "\n"
     "void main(void)\n"
     "{\n"
@@ -112,7 +116,11 @@ static const char* const interactionShaderVP =
     "\n"
     "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
     "\n"
+    #ifdef USEREGAL
     "\tgl_Position = (u_projectionMatrix * u_modelViewMatrix ) * attr_Vertex;\n"
+    #else
+    "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+    #endif
     "}\n";
 
 static const char* const interactionShaderFP =
@@ -391,12 +399,12 @@ static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram, bool needsAttribute
 
   qglGetProgramiv(shaderProgram->program, GL_LINK_STATUS, &linked);
 
-  //if (com_developer.GetBool()) {
+  if (com_developer.GetBool()) {
     qglGetShaderInfoLog(shaderProgram->vertexShader, sizeof(buf), &len, buf);
     common->Printf("VS:\n%.*s\n", len, buf);
     qglGetShaderInfoLog(shaderProgram->fragmentShader, sizeof(buf), &len, buf);
     common->Printf("FS:\n%.*s\n", len, buf);
-  //}
+  }
 
   if (!linked) {
     common->Error("R_LinkGLSLShader: program failed to link\n");
@@ -465,8 +473,12 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->nonPowerOfTwo = qglGetUniformLocation(shader->program, "u_nonPowerOfTwo");
   shader->windowCoords = qglGetUniformLocation(shader->program, "u_windowCoords");
 
+#ifdef USEREGAL
   shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
   shader->projectionMatrix = qglGetUniformLocation(shader->program, "u_projectionMatrix");
+#else
+  shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
+#endif
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
 
   shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
@@ -555,7 +567,13 @@ static void RB_GLSL_EnterWeaponDepthHack(const drawSurf_t *surf) {
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
   matrix[14] *= 0.25;
 
+#ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
+#else
+  float	mat[16];
+  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
 }
 
 /*
@@ -570,7 +588,13 @@ static void RB_GLSL_EnterModelDepthHack(const drawSurf_t *surf) {
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
   matrix[14] -= surf->space->modelDepthHack;
 
+#ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
+#else
+  float	mat[16];
+  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
 }
 
 /*
@@ -581,7 +605,13 @@ RB_LeaveDepthHack
 static void RB_GLSL_LeaveDepthHack(const drawSurf_t *surf) {
   qglDepthRange(0, 1);
 
+#ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
+#else
+  float	mat[16];
+  myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
 }
 
 /*
@@ -875,14 +905,26 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_SelectTextureNoClient(5);
   globalImages->specularTableImage->Bind();
 
+#ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr());
+#else
+  float   mat[16];
+  myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
 
   for (; surf; surf = surf->nextOnLight) {
     // perform setup here that will not change over multiple interaction passes
 
+#ifdef USEREGAL
     // set the modelview matrix for the viewer
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
+#else
+    float   mat[16];
+    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
 
     // set the vertex pointers
     idDrawVert *ac = (idDrawVert *) vertexCache.Position(surf->geo->ambientCache);
