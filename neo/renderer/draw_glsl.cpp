@@ -30,10 +30,186 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "tr_local.h"
 
+static const char* const interactionShaderVP =
+    "#version 100\n"
+    "\n"
+    "precision highp float;\n"
+    "\n"
+    "/*\n"
+    " * Pixel values between vertices are interpolated by Gouraud shading by default,\n"
+    " * rather than the more computationally-expensive Phong shading.\n"
+    " */\n"
+    "//#define BLINN_PHONG\n"
+    "\n"
+    "varying vec2 var_TexDiffuse;\n"
+    "varying vec2 var_TexNormal;\n"
+    "varying vec2 var_TexSpecular;\n"
+    "varying vec4 var_TexLight;\n"
+    "varying mediump vec4 var_Color;\n"
+    "varying vec3 var_L;\n"
+    "varying vec3 var_V;\n"
+    "#if defined(BLINN_PHONG)\n"
+    "varying vec3 var_H;\n"
+    "#endif\n"
+    "\n"
+    "attribute vec4 attr_TexCoord;\n"
+    "attribute vec3 attr_Tangent;\n"
+    "attribute vec3 attr_Bitangent;\n"
+    "attribute vec3 attr_Normal;\n"
+    "attribute vec4 attr_Vertex;\n"
+    "attribute mediump vec4 attr_Color;\n"
+    "\n"
+    "uniform vec4 u_lightProjectionS;\n"
+    "uniform vec4 u_lightProjectionT;\n"
+    "uniform vec4 u_lightFalloff;\n"
+    "uniform vec4 u_lightProjectionQ;\n"
+    "uniform mediump vec4 u_colorModulate;\n"
+    "uniform mediump vec4 u_colorAdd;\n"
+    "uniform mediump vec4 u_glColor;\n"
+    "\n"
+    "uniform vec4 u_lightOrigin;\n"
+    "uniform vec4 u_viewOrigin;\n"
+    "\n"
+    "uniform vec4 u_bumpMatrixS;\n"
+    "uniform vec4 u_bumpMatrixT;\n"
+    "uniform vec4 u_diffuseMatrixS;\n"
+    "uniform vec4 u_diffuseMatrixT;\n"
+    "uniform vec4 u_specularMatrixS;\n"
+    "uniform vec4 u_specularMatrixT;\n"
+    "\n"
+    "uniform mat4 u_modelViewMatrix;\n"
+    "uniform mat4 u_projectionMatrix;\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "\tmat3 M = mat3(attr_Tangent, attr_Bitangent, attr_Normal);\n"
+    "\n"
+    "\tvar_TexNormal.x = dot(u_bumpMatrixS, attr_TexCoord);\n"
+    "\tvar_TexNormal.y = dot(u_bumpMatrixT, attr_TexCoord);\n"
+    "\n"
+    "\tvar_TexDiffuse.x = dot(u_diffuseMatrixS, attr_TexCoord);\n"
+    "\tvar_TexDiffuse.y = dot(u_diffuseMatrixT, attr_TexCoord);\n"
+    "\n"
+    "\tvar_TexSpecular.x = dot(u_specularMatrixS, attr_TexCoord);\n"
+    "\tvar_TexSpecular.y = dot(u_specularMatrixT, attr_TexCoord);\n"
+    "\n"
+    "\tvar_TexLight.x = dot(u_lightProjectionS, attr_Vertex);\n"
+    "\tvar_TexLight.y = dot(u_lightProjectionT, attr_Vertex);\n"
+    "\tvar_TexLight.z = dot(u_lightFalloff, attr_Vertex);\n"
+    "\tvar_TexLight.w = dot(u_lightProjectionQ, attr_Vertex);\n"
+    "\n"
+    "\tvec3 L = u_lightOrigin.xyz - attr_Vertex.xyz;\n"
+    "\tvec3 V = u_viewOrigin.xyz - attr_Vertex.xyz;\n"
+    "#if defined(BLINN_PHONG)\n"
+    "\tvec3 H = normalize(L) + normalize(V);\n"
+    "#endif\n"
+    "\n"
+    "\tvar_L = L * M;\n"
+    "\tvar_V = V * M;\n"
+    "#if defined(BLINN_PHONG)\n"
+    "\tvar_H = H * M;\n"
+    "#endif\n"
+    "\n"
+    "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
+    "\n"
+    "\tgl_Position = (u_projectionMatrix * u_modelViewMatrix ) * attr_Vertex;\n"
+    "}\n";
+
+static const char* const interactionShaderFP =
+    "#version 100\n"
+    "\n"
+    "precision highp float;\n"
+    "\n"
+    "/*\n"
+    " * Pixel values between vertices are interpolated by Gouraud shading by default,\n"
+    " * rather than the more computationally-expensive Phong shading.\n"
+    " */\n"
+    "//#define BLINN_PHONG\n"
+    "\n"
+    "/*\n"
+    " * To soften the diffuse contribution from local lights, the dot product from\n"
+    " * the Lambertian model is scaled by 1/2, add 1/2 and squared.  The result is\n"
+    " * that this dot product, which normally lies in the range of -1 to +1, is\n"
+    " * instead in the range of 0 to 1 and has a more pleasing falloff.\n"
+    " */\n"
+    "//#define HALF_LAMBERT\n"
+    "\n"
+    "varying vec2 var_TexDiffuse;\n"
+    "varying vec2 var_TexNormal;\n"
+    "varying vec2 var_TexSpecular;\n"
+    "varying vec4 var_TexLight;\n"
+    "varying mediump vec4 var_Color;\n"
+    "varying vec3 var_L;\n"
+    "#if defined(BLINN_PHONG)\n"
+    "varying vec3 var_H;\n"
+    "#else\n"
+    "varying vec3 var_V;\n"
+    "#endif\n"
+    "\n"
+    "uniform vec4 u_diffuseColor;\n"
+    "uniform vec4 u_specularColor;\n"
+    "//uniform float u_specularExponent;\n"
+    "\n"
+    "uniform sampler2D u_fragmentMap0;\t/* u_bumpTexture */\n"
+    "uniform sampler2D u_fragmentMap1;\t/* u_lightFalloffTexture */\n"
+    "uniform sampler2D u_fragmentMap2;\t/* u_lightProjectionTexture */\n"
+    "uniform sampler2D u_fragmentMap3;\t/* u_diffuseTexture */\n"
+    "uniform sampler2D u_fragmentMap4;\t/* u_specularTexture */\n"
+    "uniform sampler2D u_fragmentMap5;\t/* u_specularFalloffTexture */\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "\tfloat u_specularExponent = 4.0;\n"
+    "\n"
+    "\tvec3 L = normalize(var_L);\n"
+    "#if defined(BLINN_PHONG)\n"
+    "\tvec3 H = normalize(var_H);\n"
+    "\tvec3 N = 2.0 * texture2D(u_fragmentMap0, var_TexNormal.st).agb - 1.0;\n"
+    "#else\n"
+    "\tvec3 V = normalize(var_V);\n"
+    "\tvec3 N = normalize(2.0 * texture2D(u_fragmentMap0, var_TexNormal.st).agb - 1.0);\n"
+    "#endif\n"
+    "\n"
+    "\tfloat NdotL = clamp(dot(N, L), 0.0, 1.0);\n"
+    "#if defined(HALF_LAMBERT)\n"
+    "\tNdotL *= 0.5;\n"
+    "\tNdotL += 0.5;\n"
+    "\tNdotL = NdotL * NdotL;\n"
+    "#endif\n"
+    "#if defined(BLINN_PHONG)\n"
+    "\tfloat NdotH = clamp(dot(N, H), 0.0, 1.0);\n"
+    "#endif\n"
+    "\n"
+    "\tvec3 lightProjection = texture2DProj(u_fragmentMap2, var_TexLight.xyw).rgb;\n"
+    "\tvec3 lightFalloff = texture2D(u_fragmentMap1, vec2(var_TexLight.z, 0.5)).rgb;\n"
+    "\tvec3 diffuseColor = texture2D(u_fragmentMap3, var_TexDiffuse).rgb * u_diffuseColor.rgb;\n"
+    "\tvec3 specularColor = 2.0 * texture2D(u_fragmentMap4, var_TexSpecular).rgb * u_specularColor.rgb;\n"
+    "\n"
+    "#if defined(BLINN_PHONG)\n"
+    "\tfloat specularFalloff = pow(NdotH, u_specularExponent);\n"
+    "#else\n"
+    "\tvec3 R = -reflect(L, N);\n"
+    "\tfloat RdotV = clamp(dot(R, V), 0.0, 1.0);\n"
+    "\tfloat specularFalloff = pow(RdotV, u_specularExponent);\n"
+    "#endif\n"
+    "\n"
+    "\tvec3 color;\n"
+    "\tcolor = diffuseColor;\n"
+    "\tcolor += specularFalloff * specularColor;\n"
+    "\tcolor *= NdotL * lightProjection;\n"
+    "\tcolor *= lightFalloff;\n"
+    "\n"
+    "\tgl_FragColor = vec4(color, 1.0) * var_Color;\n"
+    "}\n";
+
+static const char* const fogShaderVP = "\n";
+static const char* const fogShaderFP = "\n";
+
 shaderProgram_t interactionShader;
-shaderProgram_t zfillShader;
-shaderProgram_t stencilShadowShader;
-shaderProgram_t defaultShader;
+shaderProgram_t fogShader;
+//shaderProgram_t zfillShader;
+//shaderProgram_t stencilShadowShader;
+//shaderProgram_t defaultShader;
 
 /*
 ====================
@@ -165,28 +341,7 @@ R_LoadGLSLShader
 loads GLSL vertex or fragment shaders
 =================
 */
-static void R_LoadGLSLShader(const char *name, shaderProgram_t *shaderProgram, GLenum type) {
-  idStr fullPath = "glsl/";
-  fullPath += name;
-  char *fileBuffer;
-  char *buffer;
-
-  common->Printf("%s", fullPath.c_str());
-
-  // load the program even if we don't support it, so
-  // fs_copyfiles can generate cross-platform data dumps
-  fileSystem->ReadFile(fullPath.c_str(), (void **) &fileBuffer, NULL);
-
-  if (!fileBuffer) {
-    common->Printf(": File not found\n");
-    return;
-  }
-
-  // copy to stack memory and free
-  buffer = (char *) _alloca(strlen(fileBuffer) + 1);
-  strcpy(buffer, fileBuffer);
-  fileSystem->FreeFile(fileBuffer);
-
+static void R_LoadGLSLShader(const char *buffer, shaderProgram_t *shaderProgram, GLenum type) {
   if (!glConfig.isInitialized) {
     return;
   }
@@ -208,8 +363,6 @@ static void R_LoadGLSLShader(const char *name, shaderProgram_t *shaderProgram, G
       common->Printf("R_LoadGLSLShader: no type\n");
       return;
   }
-
-  common->Printf("\n");
 }
 
 /*
@@ -349,8 +502,8 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&interactionShader, 0, sizeof(shaderProgram_t));
 
   // load interation shaders
-  R_LoadGLSLShader("interaction.vert", &interactionShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader("interaction.frag", &interactionShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(interactionShaderVP, &interactionShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(interactionShaderFP, &interactionShader, GL_FRAGMENT_SHADER);
 
   if (!R_LinkGLSLShader(&interactionShader, true) && !R_ValidateGLSLProgram(&interactionShader)) {
     return false;
@@ -358,41 +511,17 @@ static bool RB_GLSL_InitShaders(void) {
     RB_GLSL_GetUniformLocations(&interactionShader);
   }
 
-  /*memset(&zfillShader, 0, sizeof(shaderProgram_t));
+  memset(&fogShader, 0, sizeof(shaderProgram_t));
 
-  // load zfill shaders
-  R_LoadGLSLShader("zfill.vert", &zfillShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader("zfill.frag", &zfillShader, GL_FRAGMENT_SHADER);
+  // load fog shaders
+  //R_LoadGLSLShader(fogShaderVP, &fogShader, GL_VERTEX_SHADER);
+  //R_LoadGLSLShader(fogShaderFP, &fogShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&zfillShader, true) && !R_ValidateGLSLProgram(&zfillShader)) {
-    return false;
-  } else {
-    RB_GLSL_GetUniformLocations(&zfillShader);
-  }
-
-  memset(&defaultShader, 0, sizeof(shaderProgram_t));
-
-  // load interation shaders
-  R_LoadGLSLShader("default.vert", &defaultShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader("default.frag", &defaultShader, GL_FRAGMENT_SHADER);
-
-  if (!R_LinkGLSLShader(&defaultShader, true) && !R_ValidateGLSLProgram(&defaultShader)) {
-    return false;
-  } else {
-    RB_GLSL_GetUniformLocations(&defaultShader);
-  }
-
-  memset(&stencilShadowShader, 0, sizeof(shaderProgram_t));
-
-  // load interation shaders
-  R_LoadGLSLShader("shadow.vert", &stencilShadowShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader("shadow.frag", &stencilShadowShader, GL_FRAGMENT_SHADER);
-
-  if (!R_LinkGLSLShader(&stencilShadowShader, true) && !R_ValidateGLSLProgram(&stencilShadowShader)) {
-    return false;
-  } else {
-    RB_GLSL_GetUniformLocations(&stencilShadowShader);
-  }*/
+  //if (!R_LinkGLSLShader(&fogShader, true) && !R_ValidateGLSLProgram(&fogShader)) {
+  //return false;
+  //} else {
+    //RB_GLSL_GetUniformLocations(&fogShader);
+  //}
 
   return true;
 }

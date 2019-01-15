@@ -199,7 +199,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-  set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
+  #set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
   set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")

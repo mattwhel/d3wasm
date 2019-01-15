@@ -1393,9 +1393,10 @@ typedef struct shaderProgram_s {
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
 extern shaderProgram_t interactionShader;
-extern shaderProgram_t zfillShader;
-extern shaderProgram_t stencilShadowShader;
-extern shaderProgram_t defaultShader;
+extern shaderProgram_t fogShader;
+//extern shaderProgram_t zfillShader;
+//extern shaderProgram_t stencilShadowShader;
+//extern shaderProgram_t defaultShader;
 
 /*
 ============================================================

@@ -364,7 +364,7 @@ static void R_CheckPortableExtensions( void ) {
 	// ARB_vertex_buffer_object / OpenGL 1.5
 #ifdef USEREGAL
     glConfig.ARBVertexBufferObjectAvailable = true;
-    common->Printf( "...using %s\n", "OpenGL 1.5 Vertex Buffer Objects (partial support)" );
+    common->Printf( "...using %s\n", "OpenGL 1.5 Vertex Buffer Objects" );
     qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBuffer");
 		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)GLimp_ExtensionPointer( "glGenBuffers");
 		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)GLimp_ExtensionPointer( "glBufferData");
