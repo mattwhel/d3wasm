@@ -1325,7 +1325,7 @@ void Com_ExecMachineSpec_f(const idCmdArgs &args) {
   cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
 #endif
 
-#ifdef USEREGAL
+#if 1
   // GAB NOTE Dec 2018: Specific configuration for emscripten
 if ( com_machineSpec.GetInteger() == 4 ) {
 cvarSystem->SetCVarInteger( "image_anisotropy", 8, CVAR_ARCHIVE );
@@ -2672,7 +2672,7 @@ void idCommonLocal::SetMachineSpec(void) {
 
   Printf("Detected\n\t%i MB of System memory\n\n", sysRam);
 
-#ifdef USEREGAL
+#if 1
   Printf( "This system have specific quality requirements (Emscripten/WebGL)!\n" );
   com_machineSpec.SetInteger( 4 );
 #else

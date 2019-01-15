@@ -1375,7 +1375,7 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
 
   // texture 0 is the falloff image
   GL_SelectTexture(0);
-  globalImages->fogImage->Bind();
+	globalImages->fogImage->Bind();
   //GL_Bind( tr.whiteImage );
   qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
   qglEnable(GL_TEXTURE_GEN_S);
@@ -1409,7 +1409,6 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
 
   // S is based on the view origin
   float s = backEnd.viewDef->renderView.vieworg * fogPlanes[2].Normal() + fogPlanes[2][3];
-
   fogPlanes[3][0] = 0;
   fogPlanes[3][1] = 0;
   fogPlanes[3][2] = 0;
@@ -1418,6 +1417,7 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
 
   // draw it
   RB_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_BasicFog);
+
   RB_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_BasicFog);
 
   // the light frustum bounding planes aren't in the depth buffer, so use depthfunc_less instead

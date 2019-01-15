@@ -202,7 +202,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	int		rgbOr, rgbAnd, aOr, aAnd;
 	int		rgbDiffer, rgbaDiffer;
 
-#ifdef USEREGAL
+#if 1
 	// GAB NOTE Dec 2018:
 	// OpenGL ES/WebGL require to have internal_format == format. As Regal does not do format conversion (this is not enabled for now),
 	// and format selected by D3 is always RGBA in the end, we will always return GL_RGBA8 internal format

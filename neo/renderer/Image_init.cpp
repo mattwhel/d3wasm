@@ -54,7 +54,7 @@ idCVar idImageManager::image_anisotropy( "image_anisotropy", "1", CVAR_RENDERER 
 idCVar idImageManager::image_colorMipLevels( "image_colorMipLevels", "0", CVAR_RENDERER | CVAR_BOOL, "development aid to see texture mip usage" );
 idCVar idImageManager::image_preload( "image_preload", "1", CVAR_RENDERER | CVAR_BOOL | CVAR_ARCHIVE, "if 0, dynamically load all images" );
 idCVar idImageManager::image_showBackgroundLoads( "image_showBackgroundLoads", "0", CVAR_RENDERER | CVAR_BOOL, "1 = print number of outstanding background loads" );
-#ifdef USEREGAL
+#if 1
 idCVar idImageManager::image_lodbias( "image_lodbias", "0", CVAR_RENDERER | CVAR_ROM, "change lod bias on mipmapped images" );
 idCVar idImageManager::image_downSize( "image_downSize", "0", CVAR_RENDERER | CVAR_ROM, "controls texture downsampling" );
 idCVar idImageManager::image_forceDownSize( "image_forceDownSize", "0", CVAR_RENDERER | CVAR_ROM | CVAR_BOOL, "" );
