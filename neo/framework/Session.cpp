@@ -536,10 +536,6 @@ void idSessionLocal::StartWipe(const char *_wipeMaterial, bool hold) {
 
   wipeMaterial = declManager->FindMaterial(_wipeMaterial, false);
 
-#ifdef NOMT
-  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
-#endif
-
   wipeStartTic = com_ticNumber;
   wipeStopTic = wipeStartTic + 1000.0f / USERCMD_MSEC * com_wipeSeconds.GetFloat();
   wipeHold = hold;
@@ -557,19 +553,16 @@ void idSessionLocal::CompleteWipe() {
     UpdateScreen(true);
     return;
   }
-#ifdef NOMT
-  common->Async();                       // com_ticNumber is used locally, be sure to run the timer to make things move on
-#endif
   while (com_ticNumber < wipeStopTic) {
 #if ID_CONSOLE_LOCK
     emptyDrawCount = 0;
 #endif
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
+    emscripten_sleep_with_yield(1000.0/60);   // Yields to the browser so that the screen updated at each tic
 #endif
 #ifdef NOMT
-    common->Async();                    // com_ticNumber is used locally, be sure to run the timer to make things move on
+    common->Async();                          // com_ticNumber is used locally, be sure to run the timer to make things move on
 #endif
   }
 }
@@ -596,7 +589,7 @@ void idSessionLocal::ShowLoadingGui() {
     session->Frame();
     session->UpdateScreen(false);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
+    emscripten_sleep_with_yield(1000.0/60);   // Yields to the browser so that the screen updated at each tic
 #endif
   }
 }
@@ -1759,7 +1752,7 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       UpdateScreen();
       pct += 0.05f;
 #ifdef __EMSCRIPTEN__
-      emscripten_sleep_with_yield(1000/60);   // Yields to the browser so that the screen updated at each tic
+      emscripten_sleep_with_yield(1000.0/60);   // Yields to the browser so that the screen updated at each tic
 #endif
     }
   }
