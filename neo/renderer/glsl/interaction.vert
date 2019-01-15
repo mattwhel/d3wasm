@@ -1,42 +1,28 @@
 #version 100
-
 precision highp float;
 
-/*
- * Pixel values between vertices are interpolated by Gouraud shading by default,
- * rather than the more computationally-expensive Phong shading.
- */
+// Option to use Blinn Phong instead of Gouraud
 //#define BLINN_PHONG
 
-varying vec2 var_TexDiffuse;
-varying vec2 var_TexNormal;
-varying vec2 var_TexSpecular;
-varying vec4 var_TexLight;
-varying mediump vec4 var_Color;
-varying vec3 var_L;
-varying vec3 var_V;
-#if defined(BLINN_PHONG)
-varying vec3 var_H;
-#endif
-
+// In
 attribute vec4 attr_TexCoord;
 attribute vec3 attr_Tangent;
 attribute vec3 attr_Bitangent;
 attribute vec3 attr_Normal;
 attribute vec4 attr_Vertex;
-attribute mediump vec4 attr_Color;
+attribute vec4 attr_Color;
 
+// Uniforms
+uniform mat4 u_modelViewMatrix;
+uniform mat4 u_projectionMatrix;
 uniform vec4 u_lightProjectionS;
 uniform vec4 u_lightProjectionT;
 uniform vec4 u_lightFalloff;
 uniform vec4 u_lightProjectionQ;
-uniform mediump vec4 u_colorModulate;
-uniform mediump vec4 u_colorAdd;
-uniform mediump vec4 u_glColor;
-
+uniform vec4 u_colorModulate;
+uniform vec4 u_colorAdd;
 uniform vec4 u_lightOrigin;
 uniform vec4 u_viewOrigin;
-
 uniform vec4 u_bumpMatrixS;
 uniform vec4 u_bumpMatrixT;
 uniform vec4 u_diffuseMatrixS;
@@ -44,8 +30,19 @@ uniform vec4 u_diffuseMatrixT;
 uniform vec4 u_specularMatrixS;
 uniform vec4 u_specularMatrixT;
 
-uniform mat4 u_modelViewMatrix;
-uniform mat4 u_projectionMatrix;
+// Out
+// gl_Position
+varying vec2 var_TexDiffuse;
+varying vec2 var_TexNormal;
+varying vec2 var_TexSpecular;
+varying vec4 var_TexLight;
+varying vec4 var_Color;
+varying vec3 var_L;
+#if defined(BLINN_PHONG)
+varying vec3 var_H;
+#else
+varying vec3 var_V;
+#endif
 
 void main(void)
 {
@@ -72,12 +69,13 @@ void main(void)
 #endif
 
 	var_L = L * M;
-	var_V = V * M;
 #if defined(BLINN_PHONG)
 	var_H = H * M;
+#else
+    var_V = V * M;
 #endif
 
 	var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;
 
-	gl_Position = (u_projectionMatrix * u_modelViewMatrix ) * attr_Vertex;
+	gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;
 }

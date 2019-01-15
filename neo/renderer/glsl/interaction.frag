@@ -1,26 +1,18 @@
 #version 100
-
 precision highp float;
 
-/*
- * Pixel values between vertices are interpolated by Gouraud shading by default,
- * rather than the more computationally-expensive Phong shading.
- */
-//#define BLINN_PHONG
-
-/*
- * To soften the diffuse contribution from local lights, the dot product from
- * the Lambertian model is scaled by 1/2, add 1/2 and squared.  The result is
- * that this dot product, which normally lies in the range of -1 to +1, is
- * instead in the range of 0 to 1 and has a more pleasing falloff.
- */
+// Option to use Half Lambert for shading
 //#define HALF_LAMBERT
 
+// Option to use Blinn Phong instead Gouraud
+//#define BLINN_PHONG
+
+// In
 varying vec2 var_TexDiffuse;
 varying vec2 var_TexNormal;
 varying vec2 var_TexSpecular;
 varying vec4 var_TexLight;
-varying mediump vec4 var_Color;
+varying vec4 var_Color;
 varying vec3 var_L;
 #if defined(BLINN_PHONG)
 varying vec3 var_H;
@@ -28,16 +20,18 @@ varying vec3 var_H;
 varying vec3 var_V;
 #endif
 
+// Uniforms
 uniform vec4 u_diffuseColor;
 uniform vec4 u_specularColor;
 //uniform float u_specularExponent;
-
 uniform sampler2D u_fragmentMap0;	/* u_bumpTexture */
 uniform sampler2D u_fragmentMap1;	/* u_lightFalloffTexture */
 uniform sampler2D u_fragmentMap2;	/* u_lightProjectionTexture */
 uniform sampler2D u_fragmentMap3;	/* u_diffuseTexture */
 uniform sampler2D u_fragmentMap4;	/* u_specularTexture */
-uniform sampler2D u_fragmentMap5;	/* u_specularFalloffTexture */
+
+// Out
+// gl_FragCoord
 
 void main(void)
 {
