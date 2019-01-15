@@ -978,9 +978,8 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
 
   // Restore fixed function pipeline to an acceptable state
   qglEnableClientState(GL_VERTEX_ARRAY);
-  qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
   qglDisableClientState(GL_COLOR_ARRAY);
-  qglDisableClientState(GL_NORMAL_ARRAY);
 }
 
 /*
@@ -993,6 +992,7 @@ void RB_GLSL_DrawInteractions(void) {
   const idMaterial *lightShader;
 
   GL_SelectTexture(0);
+  qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
   //
   // for each light, perform adding and shadowing
@@ -1059,7 +1059,6 @@ void RB_GLSL_DrawInteractions(void) {
 
   // Restore fixed function pipeline to an acceptable state
   qglEnableClientState(GL_VERTEX_ARRAY);
-  qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
   qglDisableClientState(GL_COLOR_ARRAY);
-  qglDisableClientState(GL_NORMAL_ARRAY);
 }

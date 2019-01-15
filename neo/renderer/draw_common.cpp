@@ -1377,9 +1377,7 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
   qglEnable(GL_TEXTURE_GEN_S);
   qglEnable(GL_TEXTURE_GEN_T);
-  qglTexGenf(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-  qglTexGenf(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-  qglTexCoord4f(0.5f, 0.5f, 0.f, 1.f);
+	qglTexCoord2f( 0.5f, 0.5f );		// make sure Q is set
 
   fogPlanes[0][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[2];
   fogPlanes[0][1] = a * backEnd.viewDef->worldSpace.modelViewMatrix[6];
@@ -1398,8 +1396,6 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
   qglEnable(GL_TEXTURE_GEN_S);
   qglEnable(GL_TEXTURE_GEN_T);
-  qglTexGenf(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-  qglTexGenf(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 
   // T will get a texgen for the fade plane, which is always the "top" plane on unrotated lights
   fogPlanes[2][0] = 0.001f * backEnd.vLight->fogPlane[0];
@@ -1414,7 +1410,8 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   fogPlanes[3][2] = 0;
   fogPlanes[3][3] = FOG_ENTER + s;
 
-	qglTexCoord4f( FOG_ENTER + s, FOG_ENTER, 0, 1 );
+	qglTexCoord2f( FOG_ENTER + s, FOG_ENTER );
+
 
   // draw it
   RB_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_BasicFog);
