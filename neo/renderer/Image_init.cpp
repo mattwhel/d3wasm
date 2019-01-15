@@ -786,7 +786,9 @@ void R_FogImage( idImage *image ) {
 			}
             b = (byte)(255 * ( 1.0 - step[b] ));
 			if ( x == 0 || x == FOG_SIZE-1 || y == 0 || y == FOG_SIZE-1 ) {
-				b = 255;		// avoid clamping issues
+				b = 32;		// avoid clamping issues
+				          // GAB TODO: There is INDEED clamping issues in fog
+				          // Keep this until a solution is found
 			}
 			data[y][x][0] =
 			data[y][x][1] =
