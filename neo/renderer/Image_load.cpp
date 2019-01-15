@@ -1704,11 +1704,7 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 		uploadWidth = potWidth;
 		uploadHeight = potHeight;
 		if ( potWidth == imageWidth && potHeight == imageHeight ) {
-#ifdef USEREGAL
-            qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, x, y, imageWidth, imageHeight, 0 );
-#else
-            qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, x, y, imageWidth, imageHeight, 0 );
-#endif
+			qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, x, y, imageWidth, imageHeight, 0 );
 		} else {
 			byte	*junk;
 			// we need to create a dummy image with power of two dimensions,
@@ -1721,11 +1717,8 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 				junk[i+1] = 255;
 			}
 #endif
-#ifdef USEREGAL
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
-#else
-            qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
-#endif
+
 			Mem_Free( junk );
 
 			qglCopyTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, x, y, imageWidth, imageHeight );
@@ -1820,12 +1813,7 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 
 			// upload the base level
 			for ( i = 0 ; i < 6 ; i++ ) {
-#ifdef USEREGAL
-				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA8, cols, rows, 0,
-#else
-				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGB8, cols, rows, 0,
-#endif
-					GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
+				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
 			}
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
@@ -1853,11 +1841,7 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 		if ( cols != uploadWidth || rows != uploadHeight ) {
 			uploadWidth = cols;
 			uploadHeight = rows;
-#ifdef USEREGAL
 			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-#else
-			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
-#endif
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
