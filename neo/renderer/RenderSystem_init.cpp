@@ -1140,11 +1140,8 @@ void R_ReadTiledPixels( int width, int height, byte *buffer, renderView_t *ref =
 #else
 			qglReadBuffer( GL_FRONT );
 #endif
-#ifdef USEREGAL
-			qglReadPixels( 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, temp );
-#else
+
 			qglReadPixels( 0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, temp );
-#endif
 
 			int	row = ( w * 3 + 3 ) & ~3;		// OpenGL pads to dword boundaries
 

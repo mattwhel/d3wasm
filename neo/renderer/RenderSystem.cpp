@@ -876,9 +876,8 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	guiModel->Clear();
 	R_IssueRenderCommands();
 
-#ifdef __EMSCRIPTEN__
-	return;
-#elseif !defined(USE_REGAL)
+#ifdef USEREGAL
+#else
 	qglReadBuffer( GL_BACK );
 #endif
 
@@ -886,11 +885,7 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	int	c = ( rc->width + 3 ) * rc->height;
 	byte *data = (byte *)R_StaticAlloc( c * 3 );
 
-#ifdef USEREGAL
-	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGBA, GL_UNSIGNED_BYTE, data );
-#else
 	qglReadPixels( rc->x, rc->y, rc->width, rc->height, GL_RGB, GL_UNSIGNED_BYTE, data );
-#endif
 
 	byte *data2 = (byte *)R_StaticAlloc( c * 4 );
 
