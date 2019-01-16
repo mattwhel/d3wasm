@@ -1501,7 +1501,7 @@ void RB_STD_LightScale(void) {
   // full screen blends
   qglLoadIdentity();
   qglMatrixMode(GL_PROJECTION);
-  //qglPushMatrix();
+  qglPushMatrix();
   qglLoadIdentity();
   qglOrtho(0, 1, 0, 1, -1, 1);
 
@@ -1530,7 +1530,7 @@ void RB_STD_LightScale(void) {
   }
 
 
-  //qglPopMatrix();
+  qglPopMatrix();
   qglEnable(GL_DEPTH_TEST);
   qglMatrixMode(GL_MODELVIEW);
   GL_Cull(CT_FRONT_SIDED);
