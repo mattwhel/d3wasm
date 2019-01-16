@@ -313,12 +313,6 @@ static void R_CheckPortableExtensions( void ) {
 	// GL_ARB_texture_cube_map / OpenGL 1.3
 	glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
 
-	// GL_ARB_texture_env_dot3 / OpenGL 1.3
-	glConfig.envDot3Available = R_CheckExtension( "GL_ARB_texture_env_dot3" );
-
-	// GL_ARB_texture_env_add / OpenGL 1.3
-	glConfig.textureEnvAddAvailable = R_CheckExtension( "GL_ARB_texture_env_add" );
-
 	// GL_ARB_texture_compression / OpenGL 1.3 + GL_S3_s3tc (extension only)
 	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
 	if ( R_CheckExtension( "GL_ARB_texture_compression" ) && R_CheckExtension( "GL_EXT_texture_compression_s3tc" ) ) {
@@ -347,18 +341,6 @@ static void R_CheckPortableExtensions( void ) {
 	} else {
 		common->Printf( "X..%s not found\n", "GL_1.4_texture_lod_bias" );
 		glConfig.textureLODBiasAvailable = false;
-	}
-
-	// EXT_stencil_wrap / OpenGL 1.4
-	// This isn't very important, but some pathological case might cause a clamp error and give a shadow bug.
-	// Nvidia also believes that future hardware may be able to run faster with this enabled to avoid the
-	// serialization of clamping.
-	if ( R_CheckExtension( "GL_EXT_stencil_wrap" ) ) {
-		tr.stencilIncr = GL_INCR_WRAP_EXT;
-		tr.stencilDecr = GL_DECR_WRAP_EXT;
-	} else {
-		tr.stencilIncr = GL_INCR;
-		tr.stencilDecr = GL_DECR;
 	}
 
 	// ARB_vertex_buffer_object / OpenGL 1.5
@@ -414,7 +396,7 @@ static void R_CheckPortableExtensions( void ) {
 
 	// check for minimum set
 	if ( !glConfig.multitextureAvailable || !glConfig.textureEnvCombineAvailable || !glConfig.cubeMapAvailable
-			 || !glConfig.envDot3Available || !glConfig.ARBVertexBufferObjectAvailable ||!glConfig.GLSLAvailable ) {
+			 || !glConfig.ARBVertexBufferObjectAvailable ||!glConfig.GLSLAvailable ) {
 		common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
 	}
 }
