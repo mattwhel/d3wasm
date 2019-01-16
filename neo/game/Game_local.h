@@ -538,9 +538,6 @@ private:
 	void					RandomizeInitialSpawns( void );
 	static int				sortSpawnPoints( const void *ptr1, const void *ptr2 );
 
-	void					DumpOggSounds( void );
-	void					GetShakeSounds( const idDict *dict );
-
 	virtual void			SelectTimeGroup( int timeGroup );
 	virtual int				GetTimeGroupTime( int timeGroup );
 	virtual void			GetBestGameType( const char* map, const char* gametype, char buf[ MAX_STRING_CHARS ] );

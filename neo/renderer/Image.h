@@ -193,7 +193,7 @@ public:
 	void		Print() const;
 
 	// check for changed timestamp on disk and reload if necessary
-	void		Reload( bool checkPrecompressed, bool force );
+	void		Reload( bool force );
 
 	void		AddReference()				{ refCount++; };
 
@@ -202,12 +202,7 @@ public:
 	void		GetDownsize( int &scaled_width, int &scaled_height ) const;
 	void		MakeDefault();	// fill with a grid pattern
 	void		SetImageFilterAndRepeat() const;
-	bool		ShouldImageBePartialCached();
-	void		WritePrecompressedImage();
-	bool		CheckPrecompressedImage( bool fullLoad );
-	void		UploadPrecompressedImage( byte *data, int len );
-	void		ActuallyLoadImage( bool checkForPrecompressed, bool fromBackEnd );
-	void		StartBackgroundImageLoad();
+	void		ActuallyLoadImage( bool fromBackEnd );
 	int			BitsForInternalFormat( int internalFormat ) const;
 	void		UploadCompressedNormalMap( int width, int height, const byte *rgba, int mipLevel );
 	void		ImageProgramStringToCompressedFileName( const char *imageProg, char *fileName ) const;
@@ -221,8 +216,6 @@ public:
 	int					bindCount;				// incremented each bind
 
 	// background loading information
-	idImage				*partialImage;			// shrunken, space-saving version
-	bool				isPartialImage;			// true if this is pointed to by another image
 	bool				backgroundLoadInProgress;	// true if another thread is reading the complete d3t file
 	backgroundDownload_t	bgl;
 	idImage *			bglNext;				// linked from tr.backgroundImageLoads
@@ -238,7 +231,6 @@ public:
 
 	bool				referencedOutsideLevelLoad;
 	bool				levelLoadReferenced;	// for determining if it needs to be purged
-	bool				precompressedFile;		// true when it was loaded from a .d3t file
 	bool				defaulted;				// true if the default image was generated because a file couldn't be loaded
 	ID_TIME_T				timestamp;				// the most recent of all images used in creation, for reloadImages command
 
@@ -259,9 +251,7 @@ public:
 
 ID_INLINE idImage::idImage() {
 	texnum = TEXTURE_NOT_LOADED;
-	partialImage = NULL;
 	type = TT_DISABLED;
-	isPartialImage = false;
 	frameUsed = 0;
 	classification = 0;
 	backgroundLoadInProgress = false;
@@ -277,7 +267,6 @@ ID_INLINE idImage::idImage() {
 	cubeFiles = CF_2D;
 	referencedOutsideLevelLoad = false;
 	levelLoadReferenced = false;
-	precompressedFile = false;
 	defaulted = false;
 	timestamp = 0;
 	bindCount = 0;
@@ -319,10 +308,6 @@ public:
 	// The callback function should call one of the idImage::Generate* functions to fill in the data
 	idImage *			ImageFromFunction( const char *name, void (*generatorFunction)( idImage *image ));
 
-	// called once a frame to allow any background loads that have been completed
-	// to turn into textures.
-	void				CompleteBackgroundImageLoads();
-
 	// returns the number of bytes of image data bound in the previous frame
 	int					SumOfUsedImages();
 
@@ -362,30 +347,19 @@ public:
 	static idCVar		image_roundDown;			// round bad sizes down to nearest power of two
 	static idCVar		image_colorMipLevels;		// development aid to see texture mip usage
 	static idCVar		image_downSize;				// controls texture downsampling
-	static idCVar		image_useCompression;		// 0 = force everything to high quality
 	static idCVar		image_filter;				// changes texture filtering on mipmapped images
 	static idCVar		image_anisotropy;			// set the maximum texture anisotropy if available
 	static idCVar		image_lodbias;				// change lod bias on mipmapped images
-	static idCVar		image_useAllFormats;		// allow alpha/intensity/luminance/luminance+alpha
-	static idCVar		image_usePrecompressedTextures;	// use .dds files if present
-	static idCVar		image_writePrecompressedTextures; // write .dds files if necessary
 	static idCVar		image_writeNormalTGA;		// debug tool to write out .tgas of the final normal maps
 	static idCVar		image_writeNormalTGAPalletized;		// debug tool to write out palletized versions of the final normal maps
 	static idCVar		image_writeTGA;				// debug tool to write out .tgas of the non normal maps
-	static idCVar		image_useNormalCompression;	// 1 = use 256 color compression for normal maps if available, 2 = use rxgb compression
-	static idCVar		image_useOffLineCompression; // will write a batch file with commands for the offline compression
 	static idCVar		image_preload;				// if 0, dynamically load all images
-	static idCVar		image_cacheMinK;			// maximum K of precompressed files to read at specification time,
-													// the remainder will be dynamically cached
-	static idCVar		image_cacheMegs;			// maximum bytes set aside for temporary loading of full-sized precompressed images
-	static idCVar		image_useCache;				// 1 = do background load image caching
 	static idCVar		image_showBackgroundLoads;	// 1 = print number of outstanding background loads
 	static idCVar		image_forceDownSize;		// allows the ability to force a downsize
 	static idCVar		image_downSizeSpecular;		// downsize specular
 	static idCVar		image_downSizeSpecularLimit;// downsize specular limit
 	static idCVar		image_downSizeBump;			// downsize bump maps
 	static idCVar		image_downSizeBumpLimit;	// downsize bump limit
-	static idCVar		image_ignoreHighQuality;	// ignore high quality on materials
 	static idCVar		image_downSizeLimit;		// downsize diffuse limit
 
 	// built-in images

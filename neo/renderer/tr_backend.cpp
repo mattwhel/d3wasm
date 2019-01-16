@@ -490,7 +490,7 @@ void RB_ShowImages( void ) {
 	for ( i = 0 ; i < globalImages->images.Num() ; i++ ) {
 		image = globalImages->images[i];
 
-		if ( image->texnum == idImage::TEXTURE_NOT_LOADED && image->partialImage == NULL ) {
+		if ( image->texnum == idImage::TEXTURE_NOT_LOADED ) {
 			continue;
 		}
 
@@ -590,9 +590,6 @@ void RB_ExecuteBackEndCommands( const emptyCommand_t *cmds ) {
 
 	// needed for editor rendering
 	RB_SetDefaultGLState();
-
-	// upload any image loads that have completed
-	globalImages->CompleteBackgroundImageLoads();
 
 	for ( ; cmds ; cmds = (const emptyCommand_t *)cmds->next ) {
 		switch ( cmds->commandId ) {

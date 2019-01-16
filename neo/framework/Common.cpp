@@ -117,7 +117,6 @@ idCVar com_timestampPrints("com_timestampPrints", "0", CVAR_SYSTEM,
                            "print time with each console print, 1 = msec, 2 = sec", 0, 2,
                            idCmdSystem::ArgCompletion_Integer < 0, 2 > );
 idCVar com_timescale("timescale", "1", CVAR_SYSTEM | CVAR_FLOAT, "scales the time", 0.1f, 10.0f);
-idCVar com_makingBuild("com_makingBuild", "0", CVAR_BOOL | CVAR_SYSTEM, "1 when making a build");
 idCVar com_updateLoadSize("com_updateLoadSize", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT,
                           "update the load size after loading a map");
 
@@ -1336,16 +1335,11 @@ cvarSystem->SetCVarInteger( "r_mode", 4, CVAR_ARCHIVE );
 cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ROM ); // Not supported by Regal
 cvarSystem->SetCVarInteger( "image_forceDownSize", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_roundDown", 0, CVAR_ROM );
-cvarSystem->SetCVarInteger( "image_useAllFormats", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeSpecular", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeBump", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeSpecularLimit", 64, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeBumpLimit", 256, CVAR_ROM );
-cvarSystem->SetCVarInteger( "image_usePrecompressedTextures", 0, CVAR_ROM );	// Dysfunctional with Regal
 cvarSystem->SetCVarInteger( "image_downsize", 0			, CVAR_ROM );
-cvarSystem->SetCVarInteger( "image_useCompression", 0, CVAR_ROM );		// Dysfunctional with Regal
-cvarSystem->SetCVarInteger( "image_ignoreHighQuality", 0, CVAR_ROM );
-cvarSystem->SetCVarInteger( "image_useNormalCompression", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ROM );    // Not supported by Regal
 
 }
@@ -1357,20 +1351,15 @@ else
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useAllFormats", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecular", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBump", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecularLimit", 64, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBumpLimit", 256, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_usePrecompressedTextures", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downsize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarString("image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_anisotropy", 8, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useCompression", 0, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_ignoreHighQuality", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("s_maxSoundsPerShader", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_mode", 5, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useNormalCompression", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_multiSamples", 0, CVAR_ARCHIVE);
   } else if (com_machineSpec.GetInteger() == 2) {
     cvarSystem->SetCVarString("image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
@@ -1379,18 +1368,13 @@ else
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useAllFormats", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecular", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBump", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecularLimit", 64, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBumpLimit", 256, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_usePrecompressedTextures", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downsize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_anisotropy", 8, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useCompression", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_ignoreHighQuality", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("s_maxSoundsPerShader", 0, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useNormalCompression", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_mode", 4, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_multiSamples", 0, CVAR_ARCHIVE);
   } else if (com_machineSpec.GetInteger() == 1) {
@@ -1401,14 +1385,10 @@ else
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useCompression", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useAllFormats", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_usePrecompressedTextures", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecular", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBump", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecularLimit", 64, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBumpLimit", 256, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useNormalCompression", 2, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_mode", 3, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_multiSamples", 0, CVAR_ARCHIVE);
   } else {
@@ -1417,19 +1397,14 @@ else
     cvarSystem->SetCVarInteger("image_lodbias", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useAllFormats", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_usePrecompressedTextures", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSize", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_anisotropy", 0, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useCompression", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_ignoreHighQuality", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("s_maxSoundsPerShader", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecular", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBump", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeSpecularLimit", 64, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSizeBumpLimit", 256, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_mode", 3, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_useNormalCompression", 2, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("r_multiSamples", 0, CVAR_ARCHIVE);
   }
 #endif

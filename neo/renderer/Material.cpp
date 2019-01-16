@@ -999,9 +999,7 @@ void idMaterial::ParseFragmentMap( idLexer &src, newShaderStage_t *newStage ) {
 		}
 
 		if ( !token.Icmp( "uncompressed" ) || !token.Icmp( "highquality" ) ) {
-			if ( !globalImages->image_ignoreHighQuality.GetInteger() ) {
 				td = TD_HIGH_QUALITY;
-			}
 			continue;
 		}
 		if ( !token.Icmp( "nopicmip" ) ) {
@@ -1256,9 +1254,7 @@ void idMaterial::ParseStage( idLexer &src, const textureRepeat_t trpDefault ) {
 			continue;
 		}
 		if ( !token.Icmp( "uncompressed" ) || !token.Icmp( "highquality" ) ) {
-			if ( !globalImages->image_ignoreHighQuality.GetInteger() ) {
 				td = TD_HIGH_QUALITY;
-			}
 			continue;
 		}
 		if ( !token.Icmp( "forceHighQuality" ) ) {
@@ -2727,11 +2723,11 @@ void idMaterial::ReloadImages( bool force ) const
 		if ( stages[i].newStage ) {
 			for ( int j = 0 ; j < stages[i].newStage->numFragmentProgramImages ; j++ ) {
 				if ( stages[i].newStage->fragmentProgramImages[j] ) {
-					stages[i].newStage->fragmentProgramImages[j]->Reload( false, force );
+					stages[i].newStage->fragmentProgramImages[j]->Reload( force );
 				}
 			}
 		} else if ( stages[i].texture.image ) {
-			stages[i].texture.image->Reload( false, force );
+			stages[i].texture.image->Reload( force );
 		}
 	}
 }

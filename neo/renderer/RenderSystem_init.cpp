@@ -215,10 +215,6 @@ idCVar r_scaleMenusTo43( "r_scaleMenusTo43", "1", CVAR_RENDERER | CVAR_ARCHIVE |
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
 void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
 
-// ARB_texture_compression                                        // OpenGL 1.3
-PFNGLCOMPRESSEDTEXIMAGE2DARBPROC		qglCompressedTexImage2DARB;
-PFNGLGETCOMPRESSEDTEXIMAGEARBPROC		qglGetCompressedTexImageARB;
-
 // ARB_vertex_buffer_object                                       // OpenGL 1.5
 PFNGLBINDBUFFERARBPROC					qglBindBufferARB;
 PFNGLGENBUFFERSARBPROC					qglGenBuffersARB;
@@ -312,16 +308,6 @@ static void R_CheckPortableExtensions( void ) {
 
 	// GL_ARB_texture_cube_map / OpenGL 1.3
 	glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
-
-	// GL_ARB_texture_compression / OpenGL 1.3 + GL_S3_s3tc (extension only)
-	// DRI drivers may have GL_ARB_texture_compression but no GL_EXT_texture_compression_s3tc
-	if ( R_CheckExtension( "GL_ARB_texture_compression" ) && R_CheckExtension( "GL_EXT_texture_compression_s3tc" ) ) {
-		glConfig.textureCompressionAvailable = true;
-		qglCompressedTexImage2DARB = (PFNGLCOMPRESSEDTEXIMAGE2DARBPROC)GLimp_ExtensionPointer( "glCompressedTexImage2DARB" );
-		qglGetCompressedTexImageARB = (PFNGLGETCOMPRESSEDTEXIMAGEARBPROC)GLimp_ExtensionPointer( "glGetCompressedTexImageARB" );
-	} else {
-		glConfig.textureCompressionAvailable = false;
-	}
 
 	// GL_EXT_texture_filter_anisotropic (extension only)
 	glConfig.anisotropicAvailable = R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
@@ -917,10 +903,6 @@ void R_ReportImageDuplication_f( const idCmdArgs &args ) {
 	for ( i = 0 ; i < globalImages->images.Num() ; i++ ) {
 		idImage	*image1 = globalImages->images[i];
 
-		if ( image1->isPartialImage ) {
-			// ignore background loading stubs
-			continue;
-		}
 		if ( image1->generatorFunction ) {
 			// ignore procedural images
 			continue;
@@ -940,9 +922,6 @@ void R_ReportImageDuplication_f( const idCmdArgs &args ) {
 		for ( j = 0 ; j < i ; j++ ) {
 			idImage	*image2 = globalImages->images[j];
 
-			if ( image2->isPartialImage ) {
-				continue;
-			}
 			if ( image2->generatorFunction ) {
 				continue;
 			}

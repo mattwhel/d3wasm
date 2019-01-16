@@ -479,9 +479,7 @@ void idImage::GenerateImage( const byte *pic, int width, int height,
 	// swap the red and alpha for rxgb support
 	// do this even on tga normal maps so we only have to use
 	// one fragment program
-	// if the image is precompressed ( either in palletized mode or true rxgb mode )
-	// then it is loaded above and the swap never happens here
-	if ( depth == TD_BUMP && globalImages->image_useNormalCompression.GetInteger() != 1 ) {
+	if ( depth == TD_BUMP ) {
 		for ( int i = 0; i < scaled_width * scaled_height * 4; i += 4 ) {
 			scaledBuffer[ i + 3 ] = scaledBuffer[ i ];
 			scaledBuffer[ i ] = 0;
@@ -727,531 +725,6 @@ int	idImage::NumLevelsForImageSize( int width, int height ) const {
 }
 
 /*
-================
-WritePrecompressedImage
-
-When we are happy with our source data, we can write out precompressed
-versions of everything to speed future load times.
-================
-*/
-void idImage::WritePrecompressedImage() {
-
-	// Always write the precompressed image if we're making a build
-	if ( !com_makingBuild.GetBool() ) {
-		if ( !globalImages->image_writePrecompressedTextures.GetBool() || !globalImages->image_usePrecompressedTextures.GetBool() ) {
-			return;
-		}
-	}
-
-	if ( !glConfig.isInitialized ) {
-		return;
-	}
-
-	char filename[MAX_IMAGE_NAME];
-	ImageProgramStringToCompressedFileName( imgName, filename );
-
-
-
-	int numLevels = NumLevelsForImageSize( uploadWidth, uploadHeight );
-	if ( numLevels > MAX_TEXTURE_LEVELS ) {
-		common->Warning( "R_WritePrecompressedImage: level > MAX_TEXTURE_LEVELS for image %s", filename );
-		return;
-	}
-
-	// glGetTexImage only supports a small subset of all the available internal formats
-	// We have to use BGRA because DDS is a windows based format
-	int altInternalFormat = 0;
-	int bitSize = 0;
-	switch ( internalFormat ) {
-		case GL_COLOR_INDEX8_EXT:
-		case GL_COLOR_INDEX:
-			// this will not work with dds viewers but we need it in this format to save disk
-			// load speed ( i.e. size )
-			altInternalFormat = GL_COLOR_INDEX;
-			bitSize = 24;
-		break;
-		case 1:
-		case GL_INTENSITY8:
-		case GL_LUMINANCE8:
-		case 3:
-		case GL_RGB8:
-			altInternalFormat = GL_BGR_EXT;
-			bitSize = 24;
-		break;
-		case GL_LUMINANCE8_ALPHA8:
-		case 4:
-		case GL_RGBA8:
-			altInternalFormat = GL_BGRA_EXT;
-			bitSize = 32;
-		break;
-		case GL_ALPHA8:
-			altInternalFormat = GL_ALPHA;
-			bitSize = 8;
-		break;
-		default:
-			if ( FormatIsDXT( internalFormat ) ) {
-				altInternalFormat = internalFormat;
-			} else {
-				common->Warning("Unknown or unsupported format for %s", filename);
-				return;
-			}
-	}
-
-	if ( globalImages->image_useOffLineCompression.GetBool() && FormatIsDXT( altInternalFormat ) ) {
-		idStr outFile = fileSystem->RelativePathToOSPath( filename, "fs_basepath" );
-		idStr inFile = outFile;
-		inFile.StripFileExtension();
-		inFile.SetFileExtension( "tga" );
-		idStr format;
-		if ( depth == TD_BUMP ) {
-			format = "RXGB +red 0.0 +green 0.5 +blue 0.5";
-		} else {
-			switch ( altInternalFormat ) {
-				case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
-					format = "DXT1";
-					break;
-				case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-					format = "DXT1 -alpha_threshold";
-					break;
-				case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-					format = "DXT3";
-					break;
-				case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-					format = "DXT5";
-					break;
-			}
-		}
-		globalImages->AddDDSCommand( va( "z:/d3xp/compressonator/thecompressonator -convert \"%s\" \"%s\" %s -mipmaps\n", inFile.c_str(), outFile.c_str(), format.c_str() ) );
-		return;
-	}
-
-
-	ddsFileHeader_t header;
-	memset( &header, 0, sizeof(header) );
-	header.dwSize = sizeof(header);
-	header.dwFlags = DDSF_CAPS | DDSF_PIXELFORMAT | DDSF_WIDTH | DDSF_HEIGHT;
-	header.dwHeight = uploadHeight;
-	header.dwWidth = uploadWidth;
-
-	if ( FormatIsDXT( altInternalFormat ) ) {
-		// size (in bytes) of the compressed base image
-		header.dwFlags |= DDSF_LINEARSIZE;
-		header.dwPitchOrLinearSize = ( ( uploadWidth + 3 ) / 4 ) * ( ( uploadHeight + 3 ) / 4 )*
-			(altInternalFormat <= GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ? 8 : 16);
-	}
-	else {
-		// 4 Byte aligned line width (from nv_dds)
-		header.dwFlags |= DDSF_PITCH;
-		header.dwPitchOrLinearSize = ( ( uploadWidth * bitSize + 31 ) & -32 ) >> 3;
-	}
-
-	header.dwCaps1 = DDSF_TEXTURE;
-
-	if ( numLevels > 1 ) {
-		header.dwMipMapCount = numLevels;
-		header.dwFlags |= DDSF_MIPMAPCOUNT;
-		header.dwCaps1 |= DDSF_MIPMAP | DDSF_COMPLEX;
-	}
-
-	header.ddspf.dwSize = sizeof(header.ddspf);
-	if ( FormatIsDXT( altInternalFormat ) ) {
-		header.ddspf.dwFlags = DDSF_FOURCC;
-		switch ( altInternalFormat ) {
-		case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
-			header.ddspf.dwFourCC = DDS_MAKEFOURCC('D','X','T','1');
-			break;
-		case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
-			header.ddspf.dwFlags |= DDSF_ALPHAPIXELS;
-			header.ddspf.dwFourCC = DDS_MAKEFOURCC('D','X','T','1');
-			break;
-		case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
-			header.ddspf.dwFourCC = DDS_MAKEFOURCC('D','X','T','3');
-			break;
-		case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
-			header.ddspf.dwFourCC = DDS_MAKEFOURCC('D','X','T','5');
-			break;
-		}
-	} else {
-		header.ddspf.dwFlags = ( internalFormat == GL_COLOR_INDEX8_EXT ) ? DDSF_RGB | DDSF_ID_INDEXCOLOR : DDSF_RGB;
-		header.ddspf.dwRGBBitCount = bitSize;
-		switch ( altInternalFormat ) {
-		case GL_BGRA_EXT:
-		case GL_LUMINANCE_ALPHA:
-			header.ddspf.dwFlags |= DDSF_ALPHAPIXELS;
-			header.ddspf.dwABitMask = 0xFF000000;
-			// Fall through
-		case GL_BGR_EXT:
-		case GL_LUMINANCE:
-		case GL_COLOR_INDEX:
-			header.ddspf.dwRBitMask = 0x00FF0000;
-			header.ddspf.dwGBitMask = 0x0000FF00;
-			header.ddspf.dwBBitMask = 0x000000FF;
-			break;
-		case GL_ALPHA:
-			header.ddspf.dwFlags = DDSF_ALPHAPIXELS;
-			header.ddspf.dwABitMask = 0xFF000000;
-			break;
-		default:
-			common->Warning( "Unknown or unsupported format for %s", filename );
-			return;
-		}
-	}
-
-	idFile *f = fileSystem->OpenFileWrite( filename );
-	if ( f == NULL ) {
-		common->Warning( "Could not open %s trying to write precompressed image", filename );
-		return;
-	}
-	common->Printf( "Writing precompressed image: %s\n", filename );
-
-	f->Write( "DDS ", 4 );
-	f->Write( &header, sizeof(header) );
-
-	// bind to the image so we can read back the contents
-	Bind();
-
-	qglPixelStorei( GL_PACK_ALIGNMENT, 1 );	// otherwise small rows get padded to 32 bits
-
-	int uw = uploadWidth;
-	int uh = uploadHeight;
-
-	// Will be allocated first time through the loop
-	byte *data = NULL;
-
-	for ( int level = 0 ; level < numLevels ; level++ ) {
-
-		int size = 0;
-		if ( FormatIsDXT( altInternalFormat ) ) {
-			size = ( ( uw + 3 ) / 4 ) * ( ( uh + 3 ) / 4 ) *
-				(altInternalFormat <= GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ? 8 : 16);
-		} else {
-			size = uw * uh * (bitSize / 8);
-		}
-
-		if (data == NULL) {
-			data = (byte *)R_StaticAlloc( size );
-		}
-
-		if ( FormatIsDXT( altInternalFormat ) ) {
-			qglGetCompressedTexImageARB( GL_TEXTURE_2D, level, data );
-		} else {
-			qglGetTexImage( GL_TEXTURE_2D, level, altInternalFormat, GL_UNSIGNED_BYTE, data );
-		}
-
-		f->Write( data, size );
-
-		uw /= 2;
-		uh /= 2;
-		if (uw < 1) {
-			uw = 1;
-		}
-		if (uh < 1) {
-			uh = 1;
-		}
-	}
-
-	if (data != NULL) {
-		R_StaticFree( data );
-	}
-
-	fileSystem->CloseFile( f );
-}
-
-/*
-================
-ShouldImageBePartialCached
-
-Returns true if there is a precompressed image, and it is large enough
-to be worth caching
-================
-*/
-bool idImage::ShouldImageBePartialCached() {
-	if ( !glConfig.textureCompressionAvailable ) {
-		return false;
-	}
-
-	if ( !globalImages->image_useCache.GetBool() ) {
-		return false;
-	}
-
-	// the allowDownSize flag does double-duty as don't-partial-load
-	if ( !allowDownSize ) {
-		return false;
-	}
-
-	if ( globalImages->image_cacheMinK.GetInteger() <= 0 ) {
-		return false;
-	}
-
-	// if we are doing a copyFiles, make sure the original images are referenced
-	if ( fileSystem->PerformingCopyFiles() ) {
-		return false;
-	}
-
-	char	filename[MAX_IMAGE_NAME];
-	ImageProgramStringToCompressedFileName( imgName, filename );
-
-	// get the file timestamp
-	fileSystem->ReadFile( filename, NULL, &timestamp );
-
-	if ( timestamp == FILE_NOT_FOUND_TIMESTAMP ) {
-		return false;
-	}
-
-	// open it and get the file size
-	idFile *f;
-
-	f = fileSystem->OpenFileRead( filename );
-	if ( !f ) {
-		return false;
-	}
-
-	int	len = f->Length();
-	fileSystem->CloseFile( f );
-
-	if ( len <= globalImages->image_cacheMinK.GetInteger() * 1024 ) {
-		return false;
-	}
-
-	// we do want to do a partial load
-	return true;
-}
-
-/*
-================
-CheckPrecompressedImage
-
-If fullLoad is false, only the small mip levels of the image will be loaded
-================
-*/
-bool idImage::CheckPrecompressedImage( bool fullLoad ) {
-	if ( !glConfig.isInitialized || !glConfig.textureCompressionAvailable ) {
-		return false;
-	}
-
-#if 1 // ( _D3XP had disabled ) - Allow grabbing of DDS's from original Doom pak files
-	// if we are doing a copyFiles, make sure the original images are referenced
-	if ( fileSystem->PerformingCopyFiles() ) {
-		return false;
-	}
-#endif
-
-	if ( depth == TD_BUMP && globalImages->image_useNormalCompression.GetInteger() != 2 ) {
-		return false;
-	}
-
-	// god i love last minute hacks :-)
-	if ( com_machineSpec.GetInteger() >= 1 && imgName.Icmpn( "lights/", 7 ) == 0 ) {
-		return false;
-	}
-
-	char filename[MAX_IMAGE_NAME];
-	ImageProgramStringToCompressedFileName( imgName, filename );
-
-	// get the file timestamp
-	ID_TIME_T precompTimestamp;
-	fileSystem->ReadFile( filename, NULL, &precompTimestamp );
-
-
-	if ( precompTimestamp == FILE_NOT_FOUND_TIMESTAMP ) {
-		return false;
-	}
-
-	if ( !generatorFunction && timestamp != FILE_NOT_FOUND_TIMESTAMP ) {
-		if ( precompTimestamp < timestamp ) {
-			// The image has changed after being precompressed
-			return false;
-		}
-	}
-
-	timestamp = precompTimestamp;
-
-	// open it and just read the header
-	idFile *f;
-
-	f = fileSystem->OpenFileRead( filename );
-	if ( !f ) {
-		return false;
-	}
-
-	int	len = f->Length();
-	if ( len < sizeof( ddsFileHeader_t ) ) {
-		fileSystem->CloseFile( f );
-		return false;
-	}
-
-	if ( !fullLoad && len > globalImages->image_cacheMinK.GetInteger() * 1024 ) {
-		len = globalImages->image_cacheMinK.GetInteger() * 1024;
-	}
-
-	byte *data = (byte *)R_StaticAlloc( len );
-
-	f->Read( data, len );
-
-	fileSystem->CloseFile( f );
-
-	unsigned int magic = LittleInt( *(unsigned int *)data );
-	ddsFileHeader_t	*_header = (ddsFileHeader_t *)(data + 4);
-	int ddspf_dwFlags = LittleInt( _header->ddspf.dwFlags );
-
-	if ( magic != DDS_MAKEFOURCC('D', 'D', 'S', ' ')) {
-		common->Printf( "CheckPrecompressedImage( %s ): magic != 'DDS '\n", imgName.c_str() );
-		R_StaticFree( data );
-		return false;
-	}
-
-	// if we don't support color index textures, we must load the full image
-	// should we just expand the 256 color image to 32 bit for upload?
-	if ( ddspf_dwFlags & DDSF_ID_INDEXCOLOR ) {
-		R_StaticFree( data );
-		return false;
-	}
-
-	// upload all the levels
-	UploadPrecompressedImage( data, len );
-
-	R_StaticFree( data );
-
-	return true;
-}
-
-/*
-===================
-UploadPrecompressedImage
-
-This can be called by the front end during nromal loading,
-or by the backend after a background read of the file
-has completed
-===================
-*/
-void idImage::UploadPrecompressedImage( byte *data, int len ) {
-	ddsFileHeader_t	*header = (ddsFileHeader_t *)(data + 4);
-
-	// ( not byte swapping dwReserved1 dwReserved2 )
-	header->dwSize = LittleInt( header->dwSize );
-	header->dwFlags = LittleInt( header->dwFlags );
-	header->dwHeight = LittleInt( header->dwHeight );
-	header->dwWidth = LittleInt( header->dwWidth );
-	header->dwPitchOrLinearSize = LittleInt( header->dwPitchOrLinearSize );
-	header->dwDepth = LittleInt( header->dwDepth );
-	header->dwMipMapCount = LittleInt( header->dwMipMapCount );
-	header->dwCaps1 = LittleInt( header->dwCaps1 );
-	header->dwCaps2 = LittleInt( header->dwCaps2 );
-
-	header->ddspf.dwSize = LittleInt( header->ddspf.dwSize );
-	header->ddspf.dwFlags = LittleInt( header->ddspf.dwFlags );
-	header->ddspf.dwFourCC = LittleInt( header->ddspf.dwFourCC );
-	header->ddspf.dwRGBBitCount = LittleInt( header->ddspf.dwRGBBitCount );
-	header->ddspf.dwRBitMask = LittleInt( header->ddspf.dwRBitMask );
-	header->ddspf.dwGBitMask = LittleInt( header->ddspf.dwGBitMask );
-	header->ddspf.dwBBitMask = LittleInt( header->ddspf.dwBBitMask );
-	header->ddspf.dwABitMask = LittleInt( header->ddspf.dwABitMask );
-
-	// generate the texture number
-	qglGenTextures( 1, &texnum );
-
-	int externalFormat = 0;
-
-	precompressedFile = true;
-
-	uploadWidth = header->dwWidth;
-	uploadHeight = header->dwHeight;
-	if ( header->ddspf.dwFlags & DDSF_FOURCC ) {
-		switch ( header->ddspf.dwFourCC ) {
-		case DDS_MAKEFOURCC( 'D', 'X', 'T', '1' ):
-			if ( header->ddspf.dwFlags & DDSF_ALPHAPIXELS ) {
-				internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-			} else {
-				internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-			}
-			break;
-		case DDS_MAKEFOURCC( 'D', 'X', 'T', '3' ):
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			break;
-		case DDS_MAKEFOURCC( 'D', 'X', 'T', '5' ):
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-			break;
-		case DDS_MAKEFOURCC( 'R', 'X', 'G', 'B' ):
-			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-			break;
-		default:
-			common->Warning( "Invalid compressed internal format\n" );
-			return;
-		}
-	} else if ( ( header->ddspf.dwFlags & DDSF_RGBA ) && header->ddspf.dwRGBBitCount == 32 ) {
-		externalFormat = GL_BGRA_EXT;
-		internalFormat = GL_RGBA8;
-	} else if ( ( header->ddspf.dwFlags & DDSF_RGB ) && header->ddspf.dwRGBBitCount == 32 ) {
-		externalFormat = GL_BGRA_EXT;
-		internalFormat = GL_RGBA8;
-	} else if ( ( header->ddspf.dwFlags & DDSF_RGB ) && header->ddspf.dwRGBBitCount == 24 ) {
-		if ( header->ddspf.dwFlags & DDSF_ID_INDEXCOLOR ) {
-			externalFormat = GL_COLOR_INDEX;
-			internalFormat = GL_COLOR_INDEX8_EXT;
-		} else {
-			externalFormat = GL_BGR_EXT;
-			internalFormat = GL_RGB8;
-		}
-	} else if ( header->ddspf.dwRGBBitCount == 8 ) {
-		externalFormat = GL_ALPHA;
-		internalFormat = GL_ALPHA8;
-	} else {
-		common->Warning( "Invalid uncompressed internal format\n" );
-		return;
-	}
-
-	type = TT_2D;			// FIXME: we may want to support pre-compressed cube maps in the future
-
-	Bind();
-
-	int numMipmaps = 1;
-	if ( header->dwFlags & DDSF_MIPMAPCOUNT ) {
-		numMipmaps = header->dwMipMapCount;
-	}
-
-	int uw = uploadWidth;
-	int uh = uploadHeight;
-
-	// We may skip some mip maps if we are downsizing
-	int skipMip = 0;
-	GetDownsize( uploadWidth, uploadHeight );
-
-	byte *imagedata = data + sizeof(ddsFileHeader_t) + 4;
-
-	for ( int i = 0 ; i < numMipmaps; i++ ) {
-		int size = 0;
-		if ( FormatIsDXT( internalFormat ) ) {
-			size = ( ( uw + 3 ) / 4 ) * ( ( uh + 3 ) / 4 ) *
-				(internalFormat <= GL_COMPRESSED_RGBA_S3TC_DXT1_EXT ? 8 : 16);
-		} else {
-			size = uw * uh * (header->ddspf.dwRGBBitCount / 8);
-		}
-
-		if ( uw > uploadWidth || uh > uploadHeight ) {
-			skipMip++;
-		} else {
-			if ( FormatIsDXT( internalFormat ) ) {
-				qglCompressedTexImage2DARB( GL_TEXTURE_2D, i - skipMip, internalFormat, uw, uh, 0, size, imagedata );
-			} else {
-				qglTexImage2D( GL_TEXTURE_2D, i - skipMip, internalFormat, uw, uh, 0, externalFormat, GL_UNSIGNED_BYTE, imagedata );
-			}
-		}
-
-		imagedata += size;
-		uw /= 2;
-		uh /= 2;
-		if (uw < 1) {
-			uw = 1;
-		}
-		if (uh < 1) {
-			uh = 1;
-		}
-	}
-
-	SetImageFilterAndRepeat();
-}
-
-/*
 ===============
 ActuallyLoadImage
 
@@ -1259,23 +732,13 @@ Absolutely every image goes through this path
 On exit, the idImage will have a valid OpenGL texture number that can be bound
 ===============
 */
-void	idImage::ActuallyLoadImage( bool checkForPrecompressed, bool fromBackEnd ) {
+void	idImage::ActuallyLoadImage( bool fromBackEnd ) {
 	int		width, height;
 	byte	*pic;
 
 	// this is the ONLY place generatorFunction will ever be called
 	if ( generatorFunction ) {
 		generatorFunction( this );
-		return;
-	}
-
-	// if we are a partial image, we are only going to load from a compressed file
-	if ( isPartialImage ) {
-		if ( CheckPrecompressedImage( false ) ) {
-			return;
-		}
-		// this is an error -- the partial image failed to load
-		MakeDefault();
 		return;
 	}
 
@@ -1295,7 +758,6 @@ void	idImage::ActuallyLoadImage( bool checkForPrecompressed, bool fromBackEnd ) 
 		}
 
 		GenerateCubeImage( (const byte **)pics, width, filter, allowDownSize, depth );
-		precompressedFile = false;
 
 		for ( int i = 0 ; i < 6 ; i++ ) {
 			if ( pics[i] ) {
@@ -1305,13 +767,6 @@ void	idImage::ActuallyLoadImage( bool checkForPrecompressed, bool fromBackEnd ) 
 	} else {
 		// see if we have a pre-generated image file that is
 		// already image processed and compressed
-		if ( checkForPrecompressed && globalImages->image_usePrecompressedTextures.GetBool() ) {
-			if ( CheckPrecompressedImage( true ) ) {
-				// we got the precompressed image
-				return;
-			}
-			// fall through to load the normal image
-		}
 
 		R_LoadImageProgram( imgName, &pic, &width, &height, &timestamp, &depth );
 
@@ -1320,19 +775,7 @@ void	idImage::ActuallyLoadImage( bool checkForPrecompressed, bool fromBackEnd ) 
 			MakeDefault();
 			return;
 		}
-/*
-		// swap the red and alpha for rxgb support
-		// do this even on tga normal maps so we only have to use
-		// one fragment program
-		// if the image is precompressed ( either in palletized mode or true rxgb mode )
-		// then it is loaded above and the swap never happens here
-		if ( depth == TD_BUMP && globalImages->image_useNormalCompression.GetInteger() != 1 ) {
-			for ( int i = 0; i < width * height * 4; i += 4 ) {
-				pic[ i + 3 ] = pic[ i ];
-				pic[ i ] = 0;
-			}
-		}
-*/
+
 		// build a hash for checking duplicate image files
 		// NOTE: takes about 10% of image load times (SD)
 		// may not be strictly necessary, but some code uses it, so let's leave it in
@@ -1340,12 +783,8 @@ void	idImage::ActuallyLoadImage( bool checkForPrecompressed, bool fromBackEnd ) 
 
 		GenerateImage( pic, width, height, filter, allowDownSize, repeat, depth );
 		timestamp = timestamp;
-		precompressedFile = false;
 
 		R_StaticFree( pic );
-
-		// write out the precompressed version of this file if needed
-		WritePrecompressedImage();
 	}
 }
 
@@ -1378,36 +817,11 @@ Automatically enables 2D mapping, cube mapping, or 3D texturing if needed
 ==============
 */
 void idImage::Bind() {
-	// if this is an image that we are caching, move it to the front of the LRU chain
-	if ( partialImage ) {
-		if ( cacheUsageNext ) {
-			// unlink from old position
-			cacheUsageNext->cacheUsagePrev = cacheUsagePrev;
-			cacheUsagePrev->cacheUsageNext = cacheUsageNext;
-		}
-		// link in at the head of the list
-		cacheUsageNext = globalImages->cacheLRU.cacheUsageNext;
-		cacheUsagePrev = &globalImages->cacheLRU;
-
-		cacheUsageNext->cacheUsagePrev = this;
-		cacheUsagePrev->cacheUsageNext = this;
-	}
-
 	// load the image if necessary (FIXME: not SMP safe!)
 	if ( texnum == TEXTURE_NOT_LOADED ) {
-		if ( partialImage ) {
-			// if we have a partial image, go ahead and use that
-			this->partialImage->Bind();
-
-			// start a background load of the full thing if it isn't already in the queue
-			if ( !backgroundLoadInProgress ) {
-				StartBackgroundImageLoad();
-			}
-			return;
-		}
 
 		// load the image on demand here, which isn't our normal game operating mode
-		ActuallyLoadImage( true, true );	// check for precompressed, load is from back end
+		ActuallyLoadImage( true );
 	}
 
 
@@ -1464,36 +878,11 @@ do any enable / disable changes
 ==============
 */
 void idImage::BindFragment() {
-	// if this is an image that we are caching, move it to the front of the LRU chain
-	if ( partialImage ) {
-		if ( cacheUsageNext ) {
-			// unlink from old position
-			cacheUsageNext->cacheUsagePrev = cacheUsagePrev;
-			cacheUsagePrev->cacheUsageNext = cacheUsageNext;
-		}
-		// link in at the head of the list
-		cacheUsageNext = globalImages->cacheLRU.cacheUsageNext;
-		cacheUsagePrev = &globalImages->cacheLRU;
-
-		cacheUsageNext->cacheUsagePrev = this;
-		cacheUsagePrev->cacheUsageNext = this;
-	}
 
 	// load the image if necessary (FIXME: not SMP safe!)
 	if ( texnum == TEXTURE_NOT_LOADED ) {
-		if ( partialImage ) {
-			// if we have a partial image, go ahead and use that
-			this->partialImage->BindFragment();
-
-			// start a background load of the full thing if it isn't already in the queue
-			if ( !backgroundLoadInProgress ) {
-				StartBackgroundImageLoad();
-			}
-			return;
-		}
-
 		// load the image on demand here, which isn't our normal game operating mode
-		ActuallyLoadImage( true, true );	// check for precompressed, load is from back end
+		ActuallyLoadImage( true );
 	}
 
 
@@ -1747,9 +1136,7 @@ Print
 ==================
 */
 void idImage::Print() const {
-	if ( precompressedFile ) {
-		common->Printf( "P" );
-	} else if ( generatorFunction ) {
+	if ( generatorFunction ) {
 		common->Printf( "F" );
 	} else {
 		common->Printf( " " );
