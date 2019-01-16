@@ -1664,20 +1664,14 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
   tri = surf->geo;
   shader = surf->material;
 
-#warning TODO
-#if 0
   // update the clip plane if needed
   if (backEnd.viewDef->numClipPlanes && surf->space != backEnd.currentSpace) {
-    GL_SelectTexture(1);
-
     idPlane	plane;
 
     R_GlobalPlaneToLocal(surf->space->modelMatrix, backEnd.viewDef->clipPlanes[0], plane);
     plane[3] += 0.5;	// the notch is in the middle
-    qglTexGenfv(GL_S, GL_OBJECT_PLANE, plane.ToFloatPtr());
-    GL_SelectTexture(0);
+    // Pass the Clip Plane
   }
-#endif
 
   if (!shader->IsDrawn()) {
     return;
@@ -1837,17 +1831,14 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
 
   GL_UseProgram(&zfillShader);
 
-#warning unimplemented in GLES shaders
-#if 0
   // enable the second texture for mirror plane clipping if needed
   if (backEnd.viewDef->numClipPlanes) {
-    GL_SelectTexture(1);
+    GL_SelectTextureNoClient(1);
     globalImages->alphaNotchImage->Bind();
-    GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
-    qglEnable(GL_TEXTURE_GEN_S);
-    qglTexCoord2f(1, 0.5);
+    // Disable Vertex Array
+    // Pass a boolean to say to compute the TexGen
+    //GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
   }
-#endif
 
   // the first texture will be used for alpha tested surfaces
   GL_SelectTexture(0);
@@ -1882,10 +1873,8 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
 
 #if 0
   if (backEnd.viewDef->numClipPlanes) {
-    GL_SelectTexture(1);
+    GL_SelectTextureNoClient(1);
     globalImages->BindNull();
-    qglDisable(GL_TEXTURE_GEN_S);
-    GL_SelectTexture(0);
   }
 #endif
 
