@@ -164,6 +164,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
   add_compile_options(-fvisibility=hidden)
 
   # TODO fix these warnings
+  #add_compile_options(--profiling-funcs)
   add_compile_options(-Wno-sign-compare)
   add_compile_options(-Wno-switch)
   add_compile_options(-Wno-format-security)
@@ -204,7 +205,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
   set(ldflags "${ldflags} -o dhewm3.html")
-
+  #set(ldflags "${ldflags} --profiling-funcs")
   set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   set(ldflags "${ldflags} -s FULL_ES2=1")
