@@ -1563,7 +1563,7 @@ void RB_STD_DrawView(void) {
 
   // fill the depth buffer and clear color buffer to black except on
   // subviews
-	RB_STD_FillDepthBuffer( drawSurfs, numDrawSurfs );
+	RB_GLSL_FillDepthBuffer( drawSurfs, numDrawSurfs );
 
   // main light renderer
   RB_GLSL_DrawInteractions();

@@ -1179,7 +1179,6 @@ void RB_GLSL_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
   for ( drawSurf = drawSurfs ; drawSurf ; drawSurf = drawSurf->nextOnLight ) {
     // change the matrix if needed
     if ( drawSurf->space != backEnd.currentSpace ) {
-      qglLoadMatrixf( drawSurf->space->modelViewMatrix );
 #ifdef USEREGAL
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
 #else
@@ -1326,6 +1325,572 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
 
   GL_SelectTextureNoClient(1);
   globalImages->BindNull();
+
+  GL_UseProgram(NULL);
+
+  GL_SelectTexture(0);
+  globalImages->BindNull();
+  // Restore fixed function pipeline to an acceptable state
+  qglEnableClientState( GL_VERTEX_ARRAY );
+}
+
+/*
+====================
+RB_RenderDrawSurfListWithFunction
+
+The triangle functions can check backEnd.currentSpace != surf->space
+to see if they need to perform any new matrix setup.  The modelview
+matrix will already have been loaded, and backEnd.currentSpace will
+be updated after the triangle function completes.
+====================
+*/
+void RB_GLSL_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
+                                             void (*triFunc_)( const drawSurf_t *) ) {
+  int				i;
+  const drawSurf_t		*drawSurf;
+
+  backEnd.currentSpace = NULL;
+
+  for (i = 0  ; i < numDrawSurfs ; i++ ) {
+    drawSurf = drawSurfs[i];
+
+    // change the matrix if needed
+    if ( drawSurf->space != backEnd.currentSpace ) {
+#ifdef USEREGAL
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
+#else
+      float   mat[16];
+      myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
+    }
+
+    if ( drawSurf->space->weaponDepthHack ) {
+      RB_GLSL_EnterWeaponDepthHack(drawSurf);
+    }
+
+    if ( drawSurf->space->modelDepthHack != 0.0f ) {
+      RB_GLSL_EnterModelDepthHack( drawSurf );
+    }
+
+    // change the scissor if needed
+    if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
+      backEnd.currentScissor = drawSurf->scissorRect;
+      qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+                  backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+                  backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+                  backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
+    }
+
+    // render it
+    triFunc_( drawSurf );
+
+    if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
+      RB_GLSL_LeaveDepthHack(drawSurf);
+    }
+
+    backEnd.currentSpace = drawSurf->space;
+  }
+}
+
+/*
+======================
+RB_GLSL_LoadShaderTextureMatrix
+======================
+*/
+void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const textureStage_t *texture)
+{
+  float	matrix[16];
+
+  if (texture->hasMatrix) {
+    RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
+  } else {
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+  }
+}
+
+
+/*
+================
+RB_FinishStageTexturing
+================
+*/
+void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t *surf, idDrawVert *ac)
+{
+  // unset privatePolygonOffset if necessary
+  if (pStage->privatePolygonOffset && !surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
+    qglDisable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  if (pStage->texture.texgen == TG_DIFFUSE_CUBE || pStage->texture.texgen == TG_SKYBOX_CUBE
+      || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), (void *)&ac->st);
+  }
+
+#if !defined(GL_ES_VERSION_2_0)
+#if 0
+  if (pStage->texture.texgen == TG_SCREEN) {
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+		glDisable(GL_TEXTURE_GEN_Q);
+	}
+
+	if (pStage->texture.texgen == TG_SCREEN2) {
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+		glDisable(GL_TEXTURE_GEN_Q);
+	}
+
+	if (pStage->texture.texgen == TG_GLASSWARP) {
+		GL_SelectTexture(2);
+		globalImages->BindNull();
+
+		GL_SelectTexture(1);
+
+		RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+		glDisable(GL_TEXTURE_GEN_Q);
+		glDisable(GL_FRAGMENT_PROGRAM_ARB);
+		globalImages->BindNull();
+		GL_SelectTexture(0);
+	}
+
+	if (pStage->texture.texgen == TG_REFLECT_CUBE) {
+		// see if there is also a bump map specified
+		const shaderStage_t *bumpStage = surf->material->GetBumpStage();
+
+		if (bumpStage) {
+			// per-pixel reflection mapping with bump mapping
+			GL_SelectTexture(1);
+			globalImages->BindNull();
+			GL_SelectTexture(0);
+
+			GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
+			GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
+		} else {
+			// per-pixel reflection mapping without bump mapping
+		}
+
+		GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+		glDisable(GL_FRAGMENT_PROGRAM_ARB);
+		glDisable(GL_VERTEX_PROGRAM_ARB);
+	}
+#endif
+#endif
+
+  if (pStage->texture.hasMatrix) {
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+  }
+}
+
+/*
+================
+RB_PrepareStageTexturing
+================
+*/
+void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage,  const drawSurf_t *surf, idDrawVert *ac)
+{
+  // set privatePolygonOffset if necessary
+  if (pStage->privatePolygonOffset) {
+    qglEnable(GL_POLYGON_OFFSET_FILL);
+    qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * pStage->privatePolygonOffset);
+  }
+
+  // set the texture matrix if needed
+  RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+
+  // texgens
+  if (pStage->texture.texgen == TG_DIFFUSE_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                           ac->normal.ToFloatPtr());
+  }
+
+  if (pStage->texture.texgen == TG_SKYBOX_CUBE || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, 0,
+                           vertexCache.Position(surf->dynamicTexCoords));
+  }
+
+#if !defined(GL_ES_VERSION_2_0)
+#if 0
+  if (pStage->texture.texgen == TG_SCREEN) {
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+		glEnable(GL_TEXTURE_GEN_Q);
+
+		float	mat[16], plane[4];
+		myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+
+		plane[0] = mat[0];
+		plane[1] = mat[4];
+		plane[2] = mat[8];
+		plane[3] = mat[12];
+		glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+
+		plane[0] = mat[1];
+		plane[1] = mat[5];
+		plane[2] = mat[9];
+		plane[3] = mat[13];
+		glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
+
+		plane[0] = mat[3];
+		plane[1] = mat[7];
+		plane[2] = mat[11];
+		plane[3] = mat[15];
+		glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
+	}
+
+	if (pStage->texture.texgen == TG_SCREEN2) {
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+		glEnable(GL_TEXTURE_GEN_Q);
+
+		float	mat[16], plane[4];
+		myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+
+		plane[0] = mat[0];
+		plane[1] = mat[4];
+		plane[2] = mat[8];
+		plane[3] = mat[12];
+		glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+
+		plane[0] = mat[1];
+		plane[1] = mat[5];
+		plane[2] = mat[9];
+		plane[3] = mat[13];
+		glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
+
+		plane[0] = mat[3];
+		plane[1] = mat[7];
+		plane[2] = mat[11];
+		plane[3] = mat[15];
+		glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
+	}
+
+	if (pStage->texture.texgen == TG_GLASSWARP) {
+		glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_GLASSWARP);
+		glEnable(GL_FRAGMENT_PROGRAM_ARB);
+
+		GL_SelectTexture(2);
+		globalImages->scratchImage->Bind();
+
+		GL_SelectTexture(1);
+		globalImages->scratchImage2->Bind();
+
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+		glEnable(GL_TEXTURE_GEN_Q);
+
+		float	mat[16], plane[4];
+		myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+
+		plane[0] = mat[0];
+		plane[1] = mat[4];
+		plane[2] = mat[8];
+		plane[3] = mat[12];
+		glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+
+		plane[0] = mat[1];
+		plane[1] = mat[5];
+		plane[2] = mat[9];
+		plane[3] = mat[13];
+		glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
+
+		plane[0] = mat[3];
+		plane[1] = mat[7];
+		plane[2] = mat[11];
+		plane[3] = mat[15];
+		glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
+
+		GL_SelectTexture(0);
+	}
+
+	if (pStage->texture.texgen == TG_REFLECT_CUBE) {
+		// see if there is also a bump map specified
+		const shaderStage_t *bumpStage = surf->material->GetBumpStage();
+
+		if (bumpStage) {
+			// per-pixel reflection mapping with bump mapping
+			GL_SelectTexture(1);
+			bumpStage->texture.image->Bind();
+			GL_SelectTexture(0);
+
+			glNormalPointer(GL_FLOAT, sizeof(idDrawVert), ac->normal.ToFloatPtr());
+			GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[1].ToFloatPtr());
+			GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Tangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[0].ToFloatPtr());
+
+			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
+			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
+			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+
+			// Program env 5, 6, 7, 8 have been set in RB_SetProgramEnvironmentSpace
+
+			glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_BUMPY_ENVIRONMENT);
+			glEnable(GL_FRAGMENT_PROGRAM_ARB);
+			glBindProgramARB(GL_VERTEX_PROGRAM_ARB, VPROG_BUMPY_ENVIRONMENT);
+			glEnable(GL_VERTEX_PROGRAM_ARB);
+		} else {
+			// per-pixel reflection mapping without a normal map
+			glNormalPointer(GL_FLOAT, sizeof(idDrawVert), ac->normal.ToFloatPtr());
+			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+
+			glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_ENVIRONMENT);
+			glEnable(GL_FRAGMENT_PROGRAM_ARB);
+			glBindProgramARB(GL_VERTEX_PROGRAM_ARB, VPROG_ENVIRONMENT);
+			glEnable(GL_VERTEX_PROGRAM_ARB);
+		}
+	}
+#endif
+#endif
+}
+
+/*
+==================
+RB_T_FillDepthBuffer
+==================
+*/
+void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
+{
+  int			stage;
+  const idMaterial	*shader;
+  const shaderStage_t *pStage;
+  const float	*regs;
+  float		color[4];
+  const srfTriangles_t	*tri;
+  const float	one[1] = { 1 };
+
+  tri = surf->geo;
+  shader = surf->material;
+
+#warning TODO
+#if 0
+  // update the clip plane if needed
+  if (backEnd.viewDef->numClipPlanes && surf->space != backEnd.currentSpace) {
+    GL_SelectTexture(1);
+
+    idPlane	plane;
+
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, backEnd.viewDef->clipPlanes[0], plane);
+    plane[3] += 0.5;	// the notch is in the middle
+    qglTexGenfv(GL_S, GL_OBJECT_PLANE, plane.ToFloatPtr());
+    GL_SelectTexture(0);
+  }
+#endif
+
+  if (!shader->IsDrawn()) {
+    return;
+  }
+
+  // some deforms may disable themselves by setting numIndexes = 0
+  if (!tri->numIndexes) {
+    return;
+  }
+
+  // translucent surfaces don't put anything in the depth buffer and don't
+  // test against it, which makes them fail the mirror clip plane operation
+  if (shader->Coverage() == MC_TRANSLUCENT) {
+    return;
+  }
+
+  if (!tri->ambientCache) {
+    return;
+  }
+
+  // get the expressions for conditionals / color / texcoords
+  regs = surf->shaderRegisters;
+
+  // if all stages of a material have been conditioned off, don't do anything
+  for (stage = 0; stage < shader->GetNumStages() ; stage++) {
+    pStage = shader->GetStage(stage);
+
+    // check the stage enable condition
+    if (regs[ pStage->conditionRegister ] != 0) {
+      break;
+    }
+  }
+
+  if (stage == shader->GetNumStages()) {
+    return;
+  }
+
+  // set polygon offset if necessary
+  if (shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
+    qglEnable(GL_POLYGON_OFFSET_FILL);
+    qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * shader->GetPolygonOffset());
+  }
+
+  // subviews will just down-modulate the color buffer by overbright
+  if (shader->GetSort() == SS_SUBVIEW) {
+    GL_State(GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO | GLS_DEPTHFUNC_LESS);
+    color[0] =
+    color[1] =
+    color[2] = (1.0 / backEnd.overBright);
+    color[3] = 1;
+  } else {
+    // others just draw black
+    color[0] = 0;
+    color[1] = 0;
+    color[2] = 0;
+    color[3] = 1;
+  }
+
+  idDrawVert *ac = (idDrawVert *)vertexCache.Position(tri->ambientCache);
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), reinterpret_cast<void *>(&ac->st));
+
+  bool drawSolid = false;
+
+  if (shader->Coverage() == MC_OPAQUE) {
+    drawSolid = true;
+  }
+
+  // we may have multiple alpha tested stages
+  if (shader->Coverage() == MC_PERFORATED) {
+    // if the only alpha tested stages are condition register omitted,
+    // draw a normal opaque surface
+    bool	didDraw = false;
+
+    // perforated surfaces may have multiple alpha tested stages
+    for (stage = 0; stage < shader->GetNumStages() ; stage++) {
+      pStage = shader->GetStage(stage);
+
+      if (!pStage->hasAlphaTest) {
+        continue;
+      }
+
+      // check the stage enable condition
+      if (regs[ pStage->conditionRegister ] == 0) {
+        continue;
+      }
+
+      // if we at least tried to draw an alpha tested stage,
+      // we won't draw the opaque surface
+      didDraw = true;
+
+      // set the alpha modulate
+      color[3] = regs[ pStage->color.registers[3] ];
+
+      // skip the entire stage if alpha would be black
+      if (color[3] <= 0) {
+        continue;
+      }
+
+      GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
+      GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), &regs[pStage->alphaTestRegister]);
+
+      // bind the texture
+      pStage->texture.image->Bind();
+
+      // set texture matrix and texGens
+      RB_GLSL_PrepareStageTexturing(pStage, surf, ac);
+
+      // draw it
+      RB_DrawElementsWithCounters(tri);
+
+      RB_GLSL_FinishStageTexturing(pStage, surf, ac);
+    }
+
+    if (!didDraw) {
+      drawSolid = true;
+    }
+  }
+
+  // draw the entire surface solid
+  if (drawSolid) {
+    GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
+    GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
+
+    globalImages->whiteImage->Bind();
+
+    // draw it
+    RB_DrawElementsWithCounters(tri);
+  }
+
+
+  // reset polygon offset
+  if (shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
+    qglDisable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  // reset blending
+  if (shader->GetSort() == SS_SUBVIEW) {
+    GL_State(GLS_DEPTHFUNC_LESS);
+  }
+}
+
+/*
+=====================
+RB_STD_FillDepthBuffer
+
+If we are rendering a subview with a near clip plane, use a second texture
+to force the alpha test to fail when behind that clip plane
+=====================
+*/
+void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
+{
+  // if we are just doing 2D rendering, no need to fill the depth buffer
+  if (!backEnd.viewDef->viewEntitys) {
+    return;
+  }
+
+  GL_UseProgram(&zfillShader);
+
+#warning unimplemented in GLES shaders
+#if 0
+  // enable the second texture for mirror plane clipping if needed
+  if (backEnd.viewDef->numClipPlanes) {
+    GL_SelectTexture(1);
+    globalImages->alphaNotchImage->Bind();
+    GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+    qglEnable(GL_TEXTURE_GEN_S);
+    qglTexCoord2f(1, 0.5);
+  }
+#endif
+
+  // the first texture will be used for alpha tested surfaces
+  GL_SelectTexture(0);
+
+  // Setup Uniforms
+  // Projection and ModelView matrices
+#ifdef USEREGAL
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr()); // Loads identity by default
+#else
+  float   mat[16];
+  myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
+
+  // Setup Attributes
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+
+  // decal surfaces may enable polygon offset
+  qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
+
+  GL_State(GLS_DEPTHFUNC_LESS);
+
+  // Enable stencil test if we are going to be using it for shadows.
+  // If we didn't do this, it would be legal behavior to get z fighting
+  // from the ambient pass and the light passes.
+  qglEnable(GL_STENCIL_TEST);
+  qglStencilFunc(GL_ALWAYS, 1, 255);
+
+  RB_GLSL_RenderDrawSurfListWithFunction(drawSurfs, numDrawSurfs, RB_T_GLSL_FillDepthBuffer);
+
+#if 0
+  if (backEnd.viewDef->numClipPlanes) {
+    GL_SelectTexture(1);
+    globalImages->BindNull();
+    qglDisable(GL_TEXTURE_GEN_S);
+    GL_SelectTexture(0);
+  }
+#endif
+
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   GL_UseProgram(NULL);
 
