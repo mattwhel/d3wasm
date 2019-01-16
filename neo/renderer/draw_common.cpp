@@ -1556,9 +1556,9 @@ void RB_STD_DrawView(void) {
   RB_DetermineLightScale();
 
   //
-  // For Interactions pass there is now ONLY the GLSL path (no more ARB and ARB2 paths)
+  // For DepthFill, Interactions and Fog pass there is now ONLY the GLSL path (no more ARB and ARB2 paths)
   //
-  // However DepthFill, Shadow, Ambient Surface Shaders and Fog passes are still using standard ARB path
+  // However Shadow, Ambient Surface and BlendLight are still using standard ARB path
   //
 
   // fill the depth buffer and clear color buffer to black except on
