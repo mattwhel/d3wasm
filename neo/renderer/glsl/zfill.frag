@@ -1,16 +1,20 @@
 #version 100
-
 precision highp float;
 
-uniform sampler2D u_fragmentMap0;
-uniform mediump float u_alphaTest;
-uniform mediump vec4 u_glColor;
+// In
+varying vec2 var_texDiffuse;
 
-varying vec2 var_TexDiffuse;
+// Uniforms
+uniform sampler2D u_fragmentMap0;
+uniform float u_alphaTest;
+uniform vec4 u_glColor;
+
+// Out
+// gl_FragCoord
 
 void main(void)
 {
-	if (u_alphaTest > texture2D(u_fragmentMap0, var_TexDiffuse).a) {
+	if (u_alphaTest > texture2D(u_fragmentMap0, var_texDiffuse).a) {
 		discard;
 	}
 

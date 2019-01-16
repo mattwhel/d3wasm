@@ -1406,7 +1406,7 @@ void RB_GLSL_DrawInteractions(void);
 void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t fogShader;
-//extern shaderProgram_t zfillShader;
+extern shaderProgram_t zfillShader;
 //extern shaderProgram_t stencilShadowShader;
 //extern shaderProgram_t defaultShader;
 
