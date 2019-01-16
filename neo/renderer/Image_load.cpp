@@ -206,7 +206,7 @@ GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, in
 	// GAB NOTE Dec 2018:
 	// OpenGL ES/WebGL require to have internal_format == format. As Regal does not do format conversion (this is not enabled for now),
 	// and format selected by D3 is always RGBA in the end, we will always return GL_RGBA8 internal format
-	return GL_RGBA8;
+	return GL_RGBA;
 #else
 
 	// determine if the rgb channels are all the same
@@ -1717,7 +1717,7 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight, bo
 				junk[i+1] = 255;
 			}
 #endif
-			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
+			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, potWidth, potHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, junk );
 
 			Mem_Free( junk );
 
@@ -1813,7 +1813,7 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 
 			// upload the base level
 			for ( i = 0 ; i < 6 ; i++ ) {
-				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
+				qglTexImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT+i, 0, GL_RGBA, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data + cols*rows*4*i );
 			}
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
@@ -1841,7 +1841,7 @@ void idImage::UploadScratch( const byte *data, int cols, int rows ) {
 		if ( cols != uploadWidth || rows != uploadHeight ) {
 			uploadWidth = cols;
 			uploadHeight = rows;
-			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA8, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+			qglTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, cols, rows, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
 		} else {
 			// otherwise, just subimage upload it so that drivers can tell we are going to be changing
 			// it and don't try and do a texture compression
