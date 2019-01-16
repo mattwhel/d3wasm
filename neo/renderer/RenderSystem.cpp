@@ -666,8 +666,7 @@ void idRenderSystemLocal::EndFrame( int *frontEndMsec, int *backEndMsec ) {
 
 #ifdef USEREGAL
 	// GAB Note Dec 2018: Clear the Alpha channel, so that final render will not blend with the HTML5 background
-	qglClearColor(1,1,1,1);
-	qglColorMask(false, false, false, true);
+	qglColorMask(0, 0, 0, 1);
 	qglClear(GL_COLOR_BUFFER_BIT);
 #endif
 }

@@ -233,11 +233,6 @@ GL_Uniform1fv
 */
 static void GL_Uniform1fv(GLint location, const GLfloat *value)
 {
-  if (!backEnd.glState.currentProgram) {
-    common->Printf("GL_Uniform1fv: no current program object\n");
-    return;
-  }
-
   qglUniform1fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
 }
 
@@ -248,11 +243,6 @@ GL_Uniform4fv
 */
 static void GL_Uniform4fv(GLint location, const GLfloat *value)
 {
-  if (!backEnd.glState.currentProgram) {
-    common->Printf("GL_Uniform4fv: no current program object\n");
-    return;
-  }
-
   qglUniform4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
 }
 
@@ -263,11 +253,6 @@ GL_UniformMatrix4fv
 */
 static void GL_UniformMatrix4fv(GLint location, const GLfloat *value)
 {
-  if (!backEnd.glState.currentProgram) {
-    common->Printf("GL_Uniform4fv: no current program object\n");
-    return;
-  }
-
   qglUniformMatrix4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, GL_FALSE, value);
 }
 
@@ -278,16 +263,6 @@ GL_EnableVertexAttribArray
 */
 static void GL_EnableVertexAttribArray(GLuint index)
 {
-  if (!backEnd.glState.currentProgram) {
-    common->Printf("GL_EnableVertexAttribArray: no current program object\n");
-    return;
-  }
-
-  if ((*(GLint *)((char *)backEnd.glState.currentProgram + index)) == -1) {
-    common->Printf("GL_EnableVertexAttribArray: unbound attribute index\n");
-    return;
-  }
-
   qglEnableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
 }
 
@@ -298,16 +273,6 @@ GL_DisableVertexAttribArray
 */
 static void GL_DisableVertexAttribArray(GLuint index)
 {
-  if (!backEnd.glState.currentProgram) {
-    common->Printf("GL_DisableVertexAttribArray: no current program object\n");
-    return;
-  }
-
-  if ((*(GLint *)((char *)backEnd.glState.currentProgram + index)) == -1) {
-    common->Printf("GL_DisableVertexAttribArray: unbound attribute index\n");
-    return;
-  }
-
   qglDisableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
 }
 
@@ -320,16 +285,6 @@ static void GL_VertexAttribPointer(GLuint index, GLint size, GLenum type,
                             GLboolean normalized, GLsizei stride,
                             const GLvoid *pointer)
 {
-  if (!backEnd.glState.currentProgram) {
-    common->Printf("GL_VertexAttribPointer: no current program object\n");
-    return;
-  }
-
-  if ((*(GLint *)((char *)backEnd.glState.currentProgram + index)) == -1) {
-    common->Printf("GL_VertexAttribPointer: unbound attribute index\n");
-    return;
-  }
-
   qglVertexAttribPointer(*(GLint *)((char *)backEnd.glState.currentProgram + index),
                          size, type, normalized, stride, pointer);
 }
@@ -612,8 +567,13 @@ GL_SelectTextureNoClient
 ====================
 */
 static void GL_SelectTextureNoClient(int unit) {
-  backEnd.glState.currenttmu = unit;
+  if ( backEnd.glState.currenttmu == unit ) {
+    return;
+  }
+
   qglActiveTextureARB(GL_TEXTURE0 + unit);
+
+  backEnd.glState.currenttmu = unit;
 }
 
 /*
@@ -875,12 +835,11 @@ RB_GLSL_CreateDrawInteractions
 */
 static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   if (!surf) {
-    GL_UseProgram(NULL);
     return;
   }
 
   // perform setup here that will be constant for all interactions
-  GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHMASK | backEnd.depthFunc);
+  GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL);
 
   // bind the vertex and fragment shader
   GL_UseProgram(&interactionShader);
@@ -894,8 +853,9 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
   // texture 5 is the specular lookup table
-  GL_SelectTextureNoClient(5);
-  globalImages->specularTableImage->Bind();
+  // GAB Note: Not used by the shader
+  //GL_SelectTextureNoClient(5);
+  //globalImages->specularTableImage->Bind();
 
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
@@ -948,8 +908,8 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
   // disable features
-  GL_SelectTextureNoClient(5);
-  globalImages->BindNull();
+  //GL_SelectTextureNoClient(5);
+  //globalImages->BindNull();
 
   GL_SelectTextureNoClient(4);
   globalImages->BindNull();
@@ -963,11 +923,10 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_SelectTextureNoClient(1);
   globalImages->BindNull();
 
-  backEnd.glState.currenttmu = -1;
-  GL_SelectTexture(0);
-
   GL_UseProgram(NULL);
 
+  GL_SelectTexture(0);
+  globalImages->BindNull();
   // Restore fixed function pipeline to an acceptable state
   qglEnableClientState(GL_VERTEX_ARRAY);
   qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -982,9 +941,6 @@ RB_GLSL_DrawInteractions
 void RB_GLSL_DrawInteractions(void) {
   viewLight_t *vLight;
   const idMaterial *lightShader;
-
-  GL_SelectTexture(0);
-  qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 
   //
   // for each light, perform adding and shadowing
@@ -1040,17 +996,8 @@ void RB_GLSL_DrawInteractions(void) {
     qglStencilFunc(GL_ALWAYS, 128, 255);
     backEnd.depthFunc = GLS_DEPTHFUNC_LESS;
     RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions);
-
-    backEnd.depthFunc = GLS_DEPTHFUNC_EQUAL;
   }
 
   // disable stencil shadow test
   qglStencilFunc(GL_ALWAYS, 128, 255);
-
-  GL_SelectTexture(0);
-
-  // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState(GL_VERTEX_ARRAY);
-  qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  qglDisableClientState(GL_COLOR_ARRAY);
 }

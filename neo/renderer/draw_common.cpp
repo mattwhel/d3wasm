@@ -1459,31 +1459,6 @@ void RB_STD_FogAllLights(void) {
       continue;
     }
 
-#if 0 // _D3XP disabled that
-    if ( r_ignore.GetInteger() ) {
-      // we use the stencil buffer to guarantee that no pixels will be
-      // double fogged, which happens in some areas that are thousands of
-      // units from the origin
-      backEnd.currentScissor = vLight->scissorRect;
-      if ( r_useScissor.GetBool() ) {
-        qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-          backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-          backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-          backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
-      }
-      qglClear( GL_STENCIL_BUFFER_BIT );
-
-      qglEnable( GL_STENCIL_TEST );
-
-      // only pass on the cleared stencil values
-      qglStencilFunc( GL_EQUAL, 128, 255 );
-
-      // when we pass the stencil test and depth test and are going to draw,
-      // increment the stencil buffer so we don't ever draw on that pixel again
-      qglStencilOp( GL_KEEP, GL_KEEP, GL_INCR );
-    }
-#endif
-
     if (vLight->lightShader->IsFogLight()) {
       RB_FogPass(vLight->globalInteractions, vLight->localInteractions);
     } else if (vLight->lightShader->IsBlendLight()) {
