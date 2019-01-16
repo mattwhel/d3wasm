@@ -146,9 +146,8 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
 
   set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
   set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
-  set(CMAKE_C_FLAGS_PROFILE "-g --D_DEBUG -O1 -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs --D_DEBUG -O1 -fno-omit-frame-pointer")
   set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-  #set(CMAKE_C_FLAGS_RELEASE "-O3 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
   set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
 
@@ -200,7 +199,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-  #set(ldflags "${ldflags} --embed-file ../neo/renderer/glsl/@/usr/local/share/dhewm3/base/glsl")
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
   set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")

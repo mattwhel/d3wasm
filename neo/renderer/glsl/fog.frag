@@ -6,8 +6,8 @@ varying vec2 var_texFog;            // input Fog TexCoord
 varying vec2 var_texFogEnter;       // input FogEnter TexCoord
 
 // Uniforms
-uniform sampler2D u_fogImage;       // Fog Image
-uniform sampler2D u_fogEnterImage;  // FogEnter Image
+uniform sampler2D u_fragmentMap0;   // Fog Image
+uniform sampler2D u_fragmentMap1;   // Fog Enter Image
 uniform vec4      u_fogColor;       // Fog Color
 
 // Out

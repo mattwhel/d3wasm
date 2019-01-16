@@ -1458,9 +1458,9 @@ void RB_STD_FogAllLights(void) {
     }
 
     if (vLight->lightShader->IsFogLight()) {
-      RB_FogPass(vLight->globalInteractions, vLight->localInteractions);
+      RB_GLSL_FogPass(vLight->globalInteractions, vLight->localInteractions);
     } else if (vLight->lightShader->IsBlendLight()) {
-      RB_BlendLight(vLight->globalInteractions, vLight->localInteractions);
+      //RB_BlendLight(vLight->globalInteractions, vLight->localInteractions);
     }
     qglDisable(GL_STENCIL_TEST);
   }

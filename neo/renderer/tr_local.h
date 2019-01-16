@@ -1380,14 +1380,12 @@ typedef struct shaderProgram_s {
 	GLint		diffuseColor;
 	GLint		specularColor;
 
-	GLint		fogImage;
-	GLint		fogEnterImage;
 	GLint		fogColor;
 
-	GLint		texgen0S;
-	GLint		texgen0T;
-	GLint		texgen1S;
-	GLint		texgen1T;
+	GLint		texGen0S;
+	GLint		texGen0T;
+	GLint		texGen1S;
+	GLint		texGen1T;
 
 	/* gl_... */
 	GLint		attr_TexCoord;
@@ -1405,6 +1403,7 @@ typedef struct shaderProgram_s {
 
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
+void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t fogShader;
 //extern shaderProgram_t zfillShader;

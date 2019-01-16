@@ -210,8 +210,12 @@ static const char* const fogShaderVP =
     "attribute vec4 attr_Vertex;      // input Vertex Coordinates\n"
     "\n"
     "// Uniforms\n"
-    "uniform mat4 u_modelViewMatrix;  // ModelView Matrix\n"
-    "uniform mat4 u_projectionMatrix; // Projection Matrix\n"
+    #ifdef USEREGAL
+    "uniform mat4 u_modelViewMatrix;\n"
+    "uniform mat4 u_projectionMatrix;\n"
+    #else
+    "uniform mat4 u_modelViewProjectionMatrix;\n"
+    #endif
     "uniform vec4 u_texGen0S;         // fogPlane 0\n"
     "uniform vec4 u_texGen0T;         // fogPlane 1\n"
     "uniform vec4 u_texGen1S;         // fogPlane 3 (not 2!)\n"
@@ -224,7 +228,11 @@ static const char* const fogShaderVP =
     "\n"
     "void main(void)\n"
     "{\n"
-    "  gl_Position       = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
+    #ifdef USEREGAL
+    "  gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
+    #else
+    "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+    #endif
     "\n"
     "  var_texFog.x      = dot(u_texGen0S, attr_Vertex);\n"
     "  var_texFog.y      = dot(u_texGen0T, attr_Vertex);\n"
@@ -242,8 +250,8 @@ static const char* const fogShaderFP =
     "varying vec2 var_texFogEnter;       // input FogEnter TexCoord\n"
     "\n"
     "// Uniforms\n"
-    "uniform sampler2D u_fogImage;       // Fog Image\n"
-    "uniform sampler2D u_fogEnterImage;  // FogEnter Image\n"
+    "uniform sampler2D u_fragmentMap0;\t // Fog Image\n"
+    "uniform sampler2D u_fragmentMap1;\t // Fog Enter Image\n"
     "uniform vec4      u_fogColor;       // Fog Color\n"
     "\n"
     "// Out\n"
@@ -251,7 +259,7 @@ static const char* const fogShaderFP =
     "\n"
     "void main(void)\n"
     "{\n"
-    "  gl_FragColor = texture2D( u_fogImage, var_texFog ) * texture2D( u_fogEnterImage, var_texFogEnter ) * vec4(u_fogColor.rgb, 1.0);\n"
+    "  gl_FragColor = texture2D( u_fragmentMap0, var_texFog ) * texture2D( u_fragmentMap1, var_texFogEnter ) * vec4(u_fogColor.rgb, 1.0);\n"
     "}\n";
 
 shaderProgram_t interactionShader;
@@ -495,13 +503,11 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
     qglUniform1i(shader->u_fragmentMap[i], i);
   }
 
-  shader->fogImage = qglGetUniformLocation(shader->program, "u_fogImage");
-  shader->fogEnterImage = qglGetUniformLocation(shader->program, "u_fogEnterImage");
   shader->fogColor = qglGetUniformLocation(shader->program, "u_fogColor");
-  shader->texgen0S = qglGetUniformLocation(shader->program, "u_texgen0S");
-  shader->texgen0T = qglGetUniformLocation(shader->program, "u_texgen0T");
-  shader->texgen1S = qglGetUniformLocation(shader->program, "u_texgen1S");
-  shader->texgen1T = qglGetUniformLocation(shader->program, "u_texgen1T");
+  shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
+  shader->texGen0T = qglGetUniformLocation(shader->program, "u_texGen0T");
+  shader->texGen1S = qglGetUniformLocation(shader->program, "u_texGen1S");
+  shader->texGen1T = qglGetUniformLocation(shader->program, "u_texGen1T");
 
   GL_CheckErrors();
 
@@ -916,7 +922,6 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
 
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr());
 #else
   float   mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
@@ -1069,30 +1074,84 @@ static void RB_T_GLSL_BasicFog(const drawSurf_t *surf) {
   if (backEnd.currentSpace != surf->space) {
     idPlane local;
 
-    GL_SelectTexture(0);
-
+    //S
     R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[0], local);
     local[3] += 0.5;
-    qglTexGenfv(GL_S, GL_OBJECT_PLANE, local.ToFloatPtr());
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0S), local.ToFloatPtr());
 
-    //R_GlobalPlaneToLocal( surf->space->modelMatrix, fogPlanes[1], local );
-    //local[3] += 0.5;
+    //T
     local[0] = local[1] = local[2] = 0;
     local[3] = 0.5;
-    qglTexGenfv(GL_T, GL_OBJECT_PLANE, local.ToFloatPtr());
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0T), local.ToFloatPtr());
 
-    GL_SelectTexture(1);
-
-    // GL_S is constant per viewer
+    //T
     R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[2], local);
     local[3] += FOG_ENTER;
-    qglTexGenfv(GL_T, GL_OBJECT_PLANE, local.ToFloatPtr());
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1T), local.ToFloatPtr());
 
+    //S
     R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[3], local);
-    qglTexGenfv(GL_S, GL_OBJECT_PLANE, local.ToFloatPtr());
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1S), local.ToFloatPtr());
   }
 
   RB_T_RenderTriangleSurface(surf);
+}
+
+
+/*
+======================
+RB_RenderDrawSurfChainWithFunction
+======================
+*/
+void RB_GLSL_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
+                                              void (*triFunc_)( const drawSurf_t *) ) {
+  const drawSurf_t		*drawSurf;
+
+  backEnd.currentSpace = NULL;
+
+  for ( drawSurf = drawSurfs ; drawSurf ; drawSurf = drawSurf->nextOnLight ) {
+    // change the matrix if needed
+    if ( drawSurf->space != backEnd.currentSpace ) {
+      qglLoadMatrixf( drawSurf->space->modelViewMatrix );
+#ifdef USEREGAL
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
+#else
+      float   mat[16];
+      myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
+    }
+
+    idDrawVert *ac = (idDrawVert *) vertexCache.Position(drawSurf->geo->ambientCache);
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                           ac->xyz.ToFloatPtr());
+
+    if ( drawSurf->space->weaponDepthHack ) {
+      RB_GLSL_EnterWeaponDepthHack(drawSurf);
+    }
+
+    if ( drawSurf->space->modelDepthHack ) {
+      RB_GLSL_EnterModelDepthHack( drawSurf );
+    }
+
+    // change the scissor if needed
+    if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
+      backEnd.currentScissor = drawSurf->scissorRect;
+      qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+                  backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+                  backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+                  backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
+    }
+
+    // render it
+    triFunc_( drawSurf );
+
+    if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
+      RB_GLSL_LeaveDepthHack(drawSurf);
+    }
+
+    backEnd.currentSpace = drawSurf->space;
+  }
 }
 
 /*
@@ -1100,14 +1159,12 @@ static void RB_T_GLSL_BasicFog(const drawSurf_t *surf) {
 RB_FogPass
 ==================
 */
-static void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) {
+void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) {
   const srfTriangles_t *frustumTris;
   drawSurf_t ds;
   const idMaterial *lightShader;
   const shaderStage_t *stage;
   const float *regs;
-
-  GL_UseProgram(&fogShader);
 
   // create a surface for the light frustom triangles, which are oriented drawn side out
   frustumTris = backEnd.vLight->frustumTris;
@@ -1116,6 +1173,9 @@ static void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawS
   if (!frustumTris->ambientCache) {
     return;
   }
+
+  GL_UseProgram(&fogShader);
+
   memset(&ds, 0, sizeof(ds));
   ds.space = &backEnd.viewDef->worldSpace;
   ds.geo = frustumTris;
@@ -1136,7 +1196,7 @@ static void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawS
   // Projection and ModelView matrices
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr());
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr()); // Loads identity by default
 #else
   float   mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
@@ -1144,6 +1204,9 @@ static void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawS
 #endif
   // FogColor
   GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), backEnd.lightColor);
+
+  // Setup Attributes
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
 
   // calculate the falloff planes
   const float a = (backEnd.lightColor[3] <= 1.0) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / backEnd.lightColor[3];
@@ -1181,19 +1244,26 @@ static void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawS
 
   // draw it
   GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL);
-  RB_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_BasicFog);
-  RB_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_GLSL_BasicFog);
+  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_BasicFog);
+  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_GLSL_BasicFog);
 
   // the light frustum bounding planes aren't in the depth buffer, so use depthfunc_less instead
   // of depthfunc_equal
   GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_LESS);
   GL_Cull(CT_BACK_SIDED);
-  RB_RenderDrawSurfChainWithFunction(&ds, RB_T_GLSL_BasicFog);
+  RB_GLSL_RenderDrawSurfChainWithFunction(&ds, RB_T_GLSL_BasicFog);
   GL_Cull(CT_FRONT_SIDED);
+  GL_State(GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL); // Restore DepthFunc
+
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
 
   GL_SelectTextureNoClient(1);
   globalImages->BindNull();
 
+  GL_UseProgram(NULL);
+
   GL_SelectTexture(0);
   globalImages->BindNull();
+  // Restore fixed function pipeline to an acceptable state
+  qglEnableClientState( GL_VERTEX_ARRAY );
 }
