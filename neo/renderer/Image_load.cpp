@@ -189,164 +189,6 @@ static byte	mipBlendColors[16][4] = {
 };
 
 /*
-===============
-SelectInternalFormat
-
-This may need to scan six cube map images
-===============
-*/
-GLenum idImage::SelectInternalFormat( const byte **dataPtrs, int numDataPtrs, int width, int height,
-									 textureDepth_t minimumDepth ) const {
-	int		i, c;
-	const byte	*scan;
-	int		rgbOr, rgbAnd, aOr, aAnd;
-	int		rgbDiffer, rgbaDiffer;
-
-#if 1
-	// GAB NOTE Dec 2018:
-	// OpenGL ES/WebGL require to have internal_format == format. As Regal does not do format conversion (this is not enabled for now),
-	// and format selected by D3 is always RGBA in the end, we will always return GL_RGBA8 internal format
-	return GL_RGBA;
-#else
-
-	// determine if the rgb channels are all the same
-	// and if either all rgb or all alpha are 255
-	c = width*height;
-	rgbDiffer = 0;
-	rgbaDiffer = 0;
-	rgbOr = 0;
-	rgbAnd = -1;
-	aOr = 0;
-	aAnd = -1;
-
-	for ( int side = 0 ; side < numDataPtrs ; side++ ) {
-		scan = dataPtrs[side];
-		for ( i = 0; i < c; i++, scan += 4 ) {
-			int		cor, cand;
-
-			aOr |= scan[3];
-			aAnd &= scan[3];
-
-			cor = scan[0] | scan[1] | scan[2];
-			cand = scan[0] & scan[1] & scan[2];
-
-			// if rgb are all the same, the or and and will match
-			rgbDiffer |= ( cor ^ cand );
-
-			rgbOr |= cor;
-			rgbAnd &= cand;
-
-			cor |= scan[3];
-			cand &= scan[3];
-
-			rgbaDiffer |= ( cor ^ cand );
-		}
-	}
-
-	// we assume that all 0 implies that the alpha channel isn't needed,
-	// because some tools will spit out 32 bit images with a 0 alpha instead
-	// of 255 alpha, but if the alpha actually is referenced, there will be
-	// different behavior in the compressed vs uncompressed states.
-	bool needAlpha;
-	if ( aAnd == 255 || aOr == 0 ) {
-		needAlpha = false;
-	} else {
-		needAlpha = true;
-	}
-
-	// catch normal maps first
-	if ( minimumDepth == TD_BUMP ) {
-		if ( globalImages->image_useCompression.GetBool() && globalImages->image_useNormalCompression.GetInteger() && glConfig.textureCompressionAvailable ) {
-			// image_useNormalCompression == 2 uses rxgb format which produces really good quality for medium settings
-			return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		} else {
-			// we always need the alpha channel for bump maps for swizzling
-			return GL_RGBA8;
-		}
-	}
-
-	// allow a complete override of image compression with a cvar
-	if ( !globalImages->image_useCompression.GetBool() ) {
-		minimumDepth = TD_HIGH_QUALITY;
-	}
-
-	if ( minimumDepth == TD_SPECULAR ) {
-		// we are assuming that any alpha channel is unintentional
-		if ( glConfig.textureCompressionAvailable ) {
-			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		} else {
-			return GL_RGB5;
-		}
-	}
-	if ( minimumDepth == TD_DIFFUSE ) {
-		// we might intentionally have an alpha channel for alpha tested textures
-		if ( glConfig.textureCompressionAvailable ) {
-			if ( !needAlpha ) {
-				return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-			} else {
-				return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			}
-		} else if ( ( aAnd == 255 || aOr == 0 ) ) {
-			return GL_RGB5;
-		} else {
-			return GL_RGBA4;
-		}
-	}
-
-	// there will probably be some drivers that don't
-	// correctly handle the intensity/alpha/luminance/luminance+alpha
-	// formats, so provide a fallback that only uses the rgb/rgba formats
-	if ( !globalImages->image_useAllFormats.GetBool() ) {
-		// pretend rgb is varying and inconsistant, which
-		// prevents any of the more compact forms
-		rgbDiffer = 1;
-		rgbaDiffer = 1;
-		rgbAnd = 0;
-	}
-
-	// cases without alpha
-	if ( !needAlpha ) {
-		if ( minimumDepth == TD_HIGH_QUALITY ) {
-			return GL_RGB8;			// four bytes
-		}
-		if ( glConfig.textureCompressionAvailable ) {
-			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;	// half byte
-		}
-		return GL_RGB5;			// two bytes
-	}
-
-	// cases with alpha
-	if ( !rgbaDiffer ) {
-		if ( minimumDepth != TD_HIGH_QUALITY && glConfig.textureCompressionAvailable ) {
-			return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
-		}
-		return GL_INTENSITY8;	// single byte for all channels
-	}
-
-#if 0
-	// we don't support alpha textures any more, because there
-	// is a discrepancy in the definition of TEX_ENV_COMBINE that
-	// causes them to be treated as 0 0 0 A, instead of 1 1 1 A as
-	// normal texture modulation treats them
-	if ( rgbAnd == 255 ) {
-		return GL_ALPHA8;		// single byte, only alpha
-	}
-#endif
-
-	if ( minimumDepth == TD_HIGH_QUALITY ) {
-		return GL_RGBA8;	// four bytes
-	}
-	if ( glConfig.textureCompressionAvailable ) {
-		return GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;	// one byte
-	}
-	if ( !rgbDiffer ) {
-		return GL_LUMINANCE8_ALPHA8;	// two bytes, max quality
-	}
-	return GL_RGBA4;	// two bytes
-#endif
-}
-
-/*
 ==================
 SetImageFilterAndRepeat
 ==================
@@ -542,7 +384,7 @@ void idImage::GenerateImage( const byte *pic, int width, int height,
 	qglGenTextures( 1, &texnum );
 
 	// select proper internal format before we resample
-	internalFormat = SelectInternalFormat( &pic, 1, width, height, depth );
+	internalFormat = GL_RGBA;
 
 	// copy or resample data as appropriate for first MIP level
 	if ( ( scaled_width == width ) && ( scaled_height == height ) ) {
@@ -750,7 +592,7 @@ void idImage::GenerateCubeImage( const byte *pic[6], int size,
 	qglGenTextures( 1, &texnum );
 
 	// select proper internal format before we resample
-	internalFormat = SelectInternalFormat( pic, 6, width, height, depth );
+	internalFormat = GL_RGBA;
 
 	// don't bother with downsample for now
 	scaled_width = width;
