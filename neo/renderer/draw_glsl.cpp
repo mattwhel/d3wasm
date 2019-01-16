@@ -30,7 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "tr_local.h"
 
-static const char* const interactionShaderVP =
+static const char *const interactionShaderVP =
     "#version 100\n"
     "precision highp float;\n"
     "\n"
@@ -121,7 +121,7 @@ static const char* const interactionShaderVP =
     #endif
     "}\n";
 
-static const char* const interactionShaderFP =
+static const char *const interactionShaderFP =
     "#version 100\n"
     "precision highp float;\n"
     "\n"
@@ -202,7 +202,7 @@ static const char* const interactionShaderFP =
     "\tgl_FragColor = vec4(color, 1.0) * var_Color;\n"
     "}\n";
 
-static const char* const fogShaderVP =
+static const char *const fogShaderVP =
     "#version 100\n"
     "precision highp float;\n"
     "\n"
@@ -241,7 +241,7 @@ static const char* const fogShaderVP =
     "  var_texFogEnter.y = dot(u_texGen1T, attr_Vertex);\n"
     "}\n";
 
-static const char* const fogShaderFP =
+static const char *const fogShaderFP =
     "#version 100\n"
     "precision highp float;\n"
     "\n"
@@ -262,7 +262,7 @@ static const char* const fogShaderFP =
     "  gl_FragColor = texture2D( u_fragmentMap0, var_texFog ) * texture2D( u_fragmentMap1, var_texFogEnter ) * vec4(u_fogColor.rgb, 1.0);\n"
     "}\n";
 
-static const char* const zfillShaderVP =
+static const char *const zfillShaderVP =
     "#version 100\n"
     "precision highp float;\n"
     "\n"
@@ -277,14 +277,21 @@ static const char* const zfillShaderVP =
     #else
     "uniform mat4 u_modelViewProjectionMatrix;\n"
     #endif
+    "uniform bool u_clip;\n"
+    "uniform vec4 u_texGen0S;\n"
     "\n"
     "// Out\n"
     "// gl_Position\n"
     "varying vec2 var_texDiffuse;\n"
+    "varying vec2 var_texClip;\n"
     "\n"
     "void main(void)\n"
     "{\n"
-    "\tvar_texDiffuse = attr_TexCoord.xy;\n"
+    "    if ( u_clip ) {\n"
+    "        var_texClip = vec2( dot( u_texGen0S, attr_Vertex), 0 );\n"
+    "    }\n"
+    "\n"
+    "    var_texDiffuse = attr_TexCoord.xy;\n"
     "\n"
     #ifdef USEREGAL
     "  gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
@@ -293,26 +300,37 @@ static const char* const zfillShaderVP =
     #endif
     "}\n";
 
-static const char* const zfillShaderFP =
+static const char *const zfillShaderFP =
     "#version 100\n"
     "precision highp float;\n"
     "\n"
     "// In\n"
     "varying vec2 var_texDiffuse;\n"
+    "varying vec2 var_texClip;\n"
     "\n"
     "// Uniforms\n"
     "uniform sampler2D u_fragmentMap0;\n"
+    "uniform sampler2D u_fragmentMap1;\n"
     "uniform float u_alphaTest;\n"
     "uniform vec4 u_glColor;\n"
+    "uniform bool u_clip;\n"
     "\n"
     "// Out\n"
     "// gl_FragCoord\n"
     "\n"
     "void main(void)\n"
     "{\n"
-    "\tif (u_alphaTest > texture2D(u_fragmentMap0, var_texDiffuse).a) {\n"
-    "\t\tdiscard;\n"
-    "\t}\n"
+    "    if( !u_clip )\n"
+    "    {\n"
+    "        if (u_alphaTest > texture2D(u_fragmentMap0, var_texDiffuse).a) {\n"
+    "            discard;\n"
+    "        }\n"
+    "    }\n"
+    "    else {\n"
+    "       if (u_alphaTest > (texture2D(u_fragmentMap0, var_texDiffuse).a * texture2D(u_fragmentMap1, var_texClip).a) ) {\n"
+    "            discard;\n"
+    "       }\n"
+    "    }\n"
     "\n"
     "\tgl_FragColor = u_glColor;\n"
     "}\n";
@@ -328,8 +346,7 @@ shaderProgram_t zfillShader;
 GL_UseProgram
 ====================
 */
-static void GL_UseProgram(shaderProgram_t *program)
-{
+static void GL_UseProgram(shaderProgram_t *program) {
   if (backEnd.glState.currentProgram == program) {
     return;
   }
@@ -343,9 +360,8 @@ static void GL_UseProgram(shaderProgram_t *program)
 GL_Uniform1fv
 ====================
 */
-static void GL_Uniform1fv(GLint location, const GLfloat *value)
-{
-  qglUniform1fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
+static void GL_Uniform1fv(GLint location, const GLfloat *value) {
+  qglUniform1fv(*(GLint * )((char *) backEnd.glState.currentProgram + location), 1, value);
 }
 
 /*
@@ -353,9 +369,8 @@ static void GL_Uniform1fv(GLint location, const GLfloat *value)
 GL_Uniform4fv
 ====================
 */
-static void GL_Uniform4fv(GLint location, const GLfloat *value)
-{
-  qglUniform4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, value);
+static void GL_Uniform4fv(GLint location, const GLfloat *value) {
+  qglUniform4fv(*(GLint * )((char *) backEnd.glState.currentProgram + location), 1, value);
 }
 
 /*
@@ -363,9 +378,8 @@ static void GL_Uniform4fv(GLint location, const GLfloat *value)
 GL_UniformMatrix4fv
 ====================
 */
-static void GL_UniformMatrix4fv(GLint location, const GLfloat *value)
-{
-  qglUniformMatrix4fv(*(GLint *)((char *)backEnd.glState.currentProgram + location), 1, GL_FALSE, value);
+static void GL_UniformMatrix4fv(GLint location, const GLfloat *value) {
+  qglUniformMatrix4fv(*(GLint * )((char *) backEnd.glState.currentProgram + location), 1, GL_FALSE, value);
 }
 
 /*
@@ -373,9 +387,8 @@ static void GL_UniformMatrix4fv(GLint location, const GLfloat *value)
 GL_EnableVertexAttribArray
 ====================
 */
-static void GL_EnableVertexAttribArray(GLuint index)
-{
-  qglEnableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
+static void GL_EnableVertexAttribArray(GLuint index) {
+  qglEnableVertexAttribArray(*(GLint * )((char *) backEnd.glState.currentProgram + index));
 }
 
 /*
@@ -383,9 +396,8 @@ static void GL_EnableVertexAttribArray(GLuint index)
 GL_DisableVertexAttribArray
 ====================
 */
-static void GL_DisableVertexAttribArray(GLuint index)
-{
-  qglDisableVertexAttribArray(*(GLint *)((char *)backEnd.glState.currentProgram + index));
+static void GL_DisableVertexAttribArray(GLuint index) {
+  qglDisableVertexAttribArray(*(GLint * )((char *) backEnd.glState.currentProgram + index));
 }
 
 /*
@@ -394,10 +406,9 @@ GL_VertexAttribPointer
 ====================
 */
 static void GL_VertexAttribPointer(GLuint index, GLint size, GLenum type,
-                            GLboolean normalized, GLsizei stride,
-                            const GLvoid *pointer)
-{
-  qglVertexAttribPointer(*(GLint *)((char *)backEnd.glState.currentProgram + index),
+                                   GLboolean normalized, GLsizei stride,
+                                   const GLvoid *pointer) {
+  qglVertexAttribPointer(*(GLint * )((char *) backEnd.glState.currentProgram + index),
                          size, type, normalized, stride, pointer);
 }
 
@@ -564,6 +575,8 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->texGen1S = qglGetUniformLocation(shader->program, "u_texGen1S");
   shader->texGen1T = qglGetUniformLocation(shader->program, "u_texGen1T");
 
+  shader->clip = qglGetUniformLocation(shader->program, "u_clip");
+
   GL_CheckErrors();
 
   GL_UseProgram(NULL);
@@ -647,7 +660,7 @@ static void RB_GLSL_EnterWeaponDepthHack(const drawSurf_t *surf) {
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
 #else
-  float	mat[16];
+  float mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -668,7 +681,7 @@ static void RB_GLSL_EnterModelDepthHack(const drawSurf_t *surf) {
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
 #else
-  float	mat[16];
+  float mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -685,7 +698,7 @@ static void RB_GLSL_LeaveDepthHack(const drawSurf_t *surf) {
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
 #else
-  float	mat[16];
+  float mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -697,7 +710,7 @@ GL_SelectTextureNoClient
 ====================
 */
 static void GL_SelectTextureNoClient(int unit) {
-  if ( backEnd.glState.currenttmu == unit ) {
+  if (backEnd.glState.currenttmu == unit) {
     return;
   }
 
@@ -805,7 +818,8 @@ This can be used by different draw_* backends to decompose a complex light / sur
 interaction into primitive interactions
 =============
 */
-static void RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *)) {
+static void
+RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteraction)(const drawInteraction_t *)) {
   const idMaterial *surfaceShader = surf->material;
   const float *surfaceRegs = surf->shaderRegisters;
   const viewLight_t *vLight = backEnd.vLight;
@@ -990,7 +1004,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
 #else
-  float   mat[16];
+  float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -1002,7 +1016,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
     // set the modelview matrix for the viewer
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
 #else
-    float   mat[16];
+    float mat[16];
     myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -1057,7 +1071,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_SelectTexture(0);
   globalImages->BindNull();
   // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState( GL_VERTEX_ARRAY );
+  qglEnableClientState(GL_VERTEX_ARRAY);
 }
 
 /*
@@ -1170,19 +1184,19 @@ static void RB_T_GLSL_BasicFog(const drawSurf_t *surf) {
 RB_RenderDrawSurfChainWithFunction
 ======================
 */
-void RB_GLSL_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
-                                              void (*triFunc_)( const drawSurf_t *) ) {
-  const drawSurf_t		*drawSurf;
+void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t *drawSurfs,
+                                             void (*triFunc_)(const drawSurf_t *)) {
+  const drawSurf_t *drawSurf;
 
   backEnd.currentSpace = NULL;
 
-  for ( drawSurf = drawSurfs ; drawSurf ; drawSurf = drawSurf->nextOnLight ) {
+  for (drawSurf = drawSurfs; drawSurf; drawSurf = drawSurf->nextOnLight) {
     // change the matrix if needed
-    if ( drawSurf->space != backEnd.currentSpace ) {
+    if (drawSurf->space != backEnd.currentSpace) {
 #ifdef USEREGAL
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
 #else
-      float   mat[16];
+      float mat[16];
       myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -1192,27 +1206,27 @@ void RB_GLSL_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                            ac->xyz.ToFloatPtr());
 
-    if ( drawSurf->space->weaponDepthHack ) {
+    if (drawSurf->space->weaponDepthHack) {
       RB_GLSL_EnterWeaponDepthHack(drawSurf);
     }
 
-    if ( drawSurf->space->modelDepthHack ) {
-      RB_GLSL_EnterModelDepthHack( drawSurf );
+    if (drawSurf->space->modelDepthHack) {
+      RB_GLSL_EnterModelDepthHack(drawSurf);
     }
 
     // change the scissor if needed
-    if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
+    if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(drawSurf->scissorRect)) {
       backEnd.currentScissor = drawSurf->scissorRect;
-      qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-                  backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-                  backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-                  backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
+      qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+                 backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+                 backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+                 backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
     }
 
     // render it
-    triFunc_( drawSurf );
+    triFunc_(drawSurf);
 
-    if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
+    if (drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f) {
       RB_GLSL_LeaveDepthHack(drawSurf);
     }
 
@@ -1264,7 +1278,7 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr()); // Loads identity by default
 #else
-  float   mat[16];
+  float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -1331,7 +1345,7 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   GL_SelectTexture(0);
   globalImages->BindNull();
   // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState( GL_VERTEX_ARRAY );
+  qglEnableClientState(GL_VERTEX_ARRAY);
 }
 
 /*
@@ -1344,48 +1358,48 @@ matrix will already have been loaded, and backEnd.currentSpace will
 be updated after the triangle function completes.
 ====================
 */
-void RB_GLSL_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
-                                             void (*triFunc_)( const drawSurf_t *) ) {
-  int				i;
-  const drawSurf_t		*drawSurf;
+void RB_GLSL_RenderDrawSurfListWithFunction(drawSurf_t **drawSurfs, int numDrawSurfs,
+                                            void (*triFunc_)(const drawSurf_t *)) {
+  int i;
+  const drawSurf_t *drawSurf;
 
   backEnd.currentSpace = NULL;
 
-  for (i = 0  ; i < numDrawSurfs ; i++ ) {
+  for (i = 0; i < numDrawSurfs; i++) {
     drawSurf = drawSurfs[i];
 
     // change the matrix if needed
-    if ( drawSurf->space != backEnd.currentSpace ) {
+    if (drawSurf->space != backEnd.currentSpace) {
 #ifdef USEREGAL
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
 #else
-      float   mat[16];
+      float mat[16];
       myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
     }
 
-    if ( drawSurf->space->weaponDepthHack ) {
+    if (drawSurf->space->weaponDepthHack) {
       RB_GLSL_EnterWeaponDepthHack(drawSurf);
     }
 
-    if ( drawSurf->space->modelDepthHack != 0.0f ) {
-      RB_GLSL_EnterModelDepthHack( drawSurf );
+    if (drawSurf->space->modelDepthHack != 0.0f) {
+      RB_GLSL_EnterModelDepthHack(drawSurf);
     }
 
     // change the scissor if needed
-    if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
+    if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(drawSurf->scissorRect)) {
       backEnd.currentScissor = drawSurf->scissorRect;
-      qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-                  backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-                  backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-                  backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
+      qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+                 backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+                 backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+                 backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
     }
 
     // render it
-    triFunc_( drawSurf );
+    triFunc_(drawSurf);
 
-    if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
+    if (drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f) {
       RB_GLSL_LeaveDepthHack(drawSurf);
     }
 
@@ -1398,9 +1412,8 @@ void RB_GLSL_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDraw
 RB_GLSL_LoadShaderTextureMatrix
 ======================
 */
-void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const textureStage_t *texture)
-{
-  float	matrix[16];
+void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const textureStage_t *texture) {
+  float matrix[16];
 
   if (texture->hasMatrix) {
     RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
@@ -1416,8 +1429,7 @@ void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const texture
 RB_FinishStageTexturing
 ================
 */
-void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t *surf, idDrawVert *ac)
-{
+void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t *surf, idDrawVert *ac) {
   // unset privatePolygonOffset if necessary
   if (pStage->privatePolygonOffset && !surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
     qglDisable(GL_POLYGON_OFFSET_FILL);
@@ -1425,59 +1437,60 @@ void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t 
 
   if (pStage->texture.texgen == TG_DIFFUSE_CUBE || pStage->texture.texgen == TG_SKYBOX_CUBE
       || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
-    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), (void *)&ac->st);
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
+                           (void *) &ac->st);
   }
 
 #if !defined(GL_ES_VERSION_2_0)
 #if 0
   if (pStage->texture.texgen == TG_SCREEN) {
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_Q);
-	}
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+    glDisable(GL_TEXTURE_GEN_Q);
+  }
 
-	if (pStage->texture.texgen == TG_SCREEN2) {
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_Q);
-	}
+  if (pStage->texture.texgen == TG_SCREEN2) {
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+    glDisable(GL_TEXTURE_GEN_Q);
+  }
 
-	if (pStage->texture.texgen == TG_GLASSWARP) {
-		GL_SelectTexture(2);
-		globalImages->BindNull();
+  if (pStage->texture.texgen == TG_GLASSWARP) {
+    GL_SelectTexture(2);
+    globalImages->BindNull();
 
-		GL_SelectTexture(1);
+    GL_SelectTexture(1);
 
-		RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+    RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
 
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_Q);
-		glDisable(GL_FRAGMENT_PROGRAM_ARB);
-		globalImages->BindNull();
-		GL_SelectTexture(0);
-	}
+    glDisable(GL_TEXTURE_GEN_S);
+    glDisable(GL_TEXTURE_GEN_T);
+    glDisable(GL_TEXTURE_GEN_Q);
+    glDisable(GL_FRAGMENT_PROGRAM_ARB);
+    globalImages->BindNull();
+    GL_SelectTexture(0);
+  }
 
-	if (pStage->texture.texgen == TG_REFLECT_CUBE) {
-		// see if there is also a bump map specified
-		const shaderStage_t *bumpStage = surf->material->GetBumpStage();
+  if (pStage->texture.texgen == TG_REFLECT_CUBE) {
+    // see if there is also a bump map specified
+    const shaderStage_t *bumpStage = surf->material->GetBumpStage();
 
-		if (bumpStage) {
-			// per-pixel reflection mapping with bump mapping
-			GL_SelectTexture(1);
-			globalImages->BindNull();
-			GL_SelectTexture(0);
+    if (bumpStage) {
+      // per-pixel reflection mapping with bump mapping
+      GL_SelectTexture(1);
+      globalImages->BindNull();
+      GL_SelectTexture(0);
 
-			GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-			GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-		} else {
-			// per-pixel reflection mapping without bump mapping
-		}
+      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
+      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
+    } else {
+      // per-pixel reflection mapping without bump mapping
+    }
 
-		GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-		glDisable(GL_FRAGMENT_PROGRAM_ARB);
-		glDisable(GL_VERTEX_PROGRAM_ARB);
-	}
+    GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+    glDisable(GL_FRAGMENT_PROGRAM_ARB);
+    glDisable(GL_VERTEX_PROGRAM_ARB);
+  }
 #endif
 #endif
 
@@ -1491,8 +1504,7 @@ void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t 
 RB_PrepareStageTexturing
 ================
 */
-void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage,  const drawSurf_t *surf, idDrawVert *ac)
-{
+void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage, const drawSurf_t *surf, idDrawVert *ac) {
   // set privatePolygonOffset if necessary
   if (pStage->privatePolygonOffset) {
     qglEnable(GL_POLYGON_OFFSET_FILL);
@@ -1516,132 +1528,132 @@ void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage,  const drawSurf_
 #if !defined(GL_ES_VERSION_2_0)
 #if 0
   if (pStage->texture.texgen == TG_SCREEN) {
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_Q);
+    glEnable(GL_TEXTURE_GEN_S);
+    glEnable(GL_TEXTURE_GEN_T);
+    glEnable(GL_TEXTURE_GEN_Q);
 
-		float	mat[16], plane[4];
-		myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+    float	mat[16], plane[4];
+    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
 
-		plane[0] = mat[0];
-		plane[1] = mat[4];
-		plane[2] = mat[8];
-		plane[3] = mat[12];
-		glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[0];
+    plane[1] = mat[4];
+    plane[2] = mat[8];
+    plane[3] = mat[12];
+    glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
 
-		plane[0] = mat[1];
-		plane[1] = mat[5];
-		plane[2] = mat[9];
-		plane[3] = mat[13];
-		glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[1];
+    plane[1] = mat[5];
+    plane[2] = mat[9];
+    plane[3] = mat[13];
+    glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
 
-		plane[0] = mat[3];
-		plane[1] = mat[7];
-		plane[2] = mat[11];
-		plane[3] = mat[15];
-		glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
-	}
+    plane[0] = mat[3];
+    plane[1] = mat[7];
+    plane[2] = mat[11];
+    plane[3] = mat[15];
+    glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
+  }
 
-	if (pStage->texture.texgen == TG_SCREEN2) {
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_Q);
+  if (pStage->texture.texgen == TG_SCREEN2) {
+    glEnable(GL_TEXTURE_GEN_S);
+    glEnable(GL_TEXTURE_GEN_T);
+    glEnable(GL_TEXTURE_GEN_Q);
 
-		float	mat[16], plane[4];
-		myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+    float	mat[16], plane[4];
+    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
 
-		plane[0] = mat[0];
-		plane[1] = mat[4];
-		plane[2] = mat[8];
-		plane[3] = mat[12];
-		glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[0];
+    plane[1] = mat[4];
+    plane[2] = mat[8];
+    plane[3] = mat[12];
+    glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
 
-		plane[0] = mat[1];
-		plane[1] = mat[5];
-		plane[2] = mat[9];
-		plane[3] = mat[13];
-		glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[1];
+    plane[1] = mat[5];
+    plane[2] = mat[9];
+    plane[3] = mat[13];
+    glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
 
-		plane[0] = mat[3];
-		plane[1] = mat[7];
-		plane[2] = mat[11];
-		plane[3] = mat[15];
-		glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
-	}
+    plane[0] = mat[3];
+    plane[1] = mat[7];
+    plane[2] = mat[11];
+    plane[3] = mat[15];
+    glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
+  }
 
-	if (pStage->texture.texgen == TG_GLASSWARP) {
-		glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_GLASSWARP);
-		glEnable(GL_FRAGMENT_PROGRAM_ARB);
+  if (pStage->texture.texgen == TG_GLASSWARP) {
+    glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_GLASSWARP);
+    glEnable(GL_FRAGMENT_PROGRAM_ARB);
 
-		GL_SelectTexture(2);
-		globalImages->scratchImage->Bind();
+    GL_SelectTexture(2);
+    globalImages->scratchImage->Bind();
 
-		GL_SelectTexture(1);
-		globalImages->scratchImage2->Bind();
+    GL_SelectTexture(1);
+    globalImages->scratchImage2->Bind();
 
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_Q);
+    glEnable(GL_TEXTURE_GEN_S);
+    glEnable(GL_TEXTURE_GEN_T);
+    glEnable(GL_TEXTURE_GEN_Q);
 
-		float	mat[16], plane[4];
-		myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+    float	mat[16], plane[4];
+    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
 
-		plane[0] = mat[0];
-		plane[1] = mat[4];
-		plane[2] = mat[8];
-		plane[3] = mat[12];
-		glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[0];
+    plane[1] = mat[4];
+    plane[2] = mat[8];
+    plane[3] = mat[12];
+    glTexGenfv(GL_S, GL_OBJECT_PLANE, plane);
 
-		plane[0] = mat[1];
-		plane[1] = mat[5];
-		plane[2] = mat[9];
-		plane[3] = mat[13];
-		glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[1];
+    plane[1] = mat[5];
+    plane[2] = mat[9];
+    plane[3] = mat[13];
+    glTexGenfv(GL_T, GL_OBJECT_PLANE, plane);
 
-		plane[0] = mat[3];
-		plane[1] = mat[7];
-		plane[2] = mat[11];
-		plane[3] = mat[15];
-		glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
+    plane[0] = mat[3];
+    plane[1] = mat[7];
+    plane[2] = mat[11];
+    plane[3] = mat[15];
+    glTexGenfv(GL_Q, GL_OBJECT_PLANE, plane);
 
-		GL_SelectTexture(0);
-	}
+    GL_SelectTexture(0);
+  }
 
-	if (pStage->texture.texgen == TG_REFLECT_CUBE) {
-		// see if there is also a bump map specified
-		const shaderStage_t *bumpStage = surf->material->GetBumpStage();
+  if (pStage->texture.texgen == TG_REFLECT_CUBE) {
+    // see if there is also a bump map specified
+    const shaderStage_t *bumpStage = surf->material->GetBumpStage();
 
-		if (bumpStage) {
-			// per-pixel reflection mapping with bump mapping
-			GL_SelectTexture(1);
-			bumpStage->texture.image->Bind();
-			GL_SelectTexture(0);
+    if (bumpStage) {
+      // per-pixel reflection mapping with bump mapping
+      GL_SelectTexture(1);
+      bumpStage->texture.image->Bind();
+      GL_SelectTexture(0);
 
-			glNormalPointer(GL_FLOAT, sizeof(idDrawVert), ac->normal.ToFloatPtr());
-			GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[1].ToFloatPtr());
-			GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Tangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[0].ToFloatPtr());
+      glNormalPointer(GL_FLOAT, sizeof(idDrawVert), ac->normal.ToFloatPtr());
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[1].ToFloatPtr());
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Tangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[0].ToFloatPtr());
 
-			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
 
-			// Program env 5, 6, 7, 8 have been set in RB_SetProgramEnvironmentSpace
+      // Program env 5, 6, 7, 8 have been set in RB_SetProgramEnvironmentSpace
 
-			glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_BUMPY_ENVIRONMENT);
-			glEnable(GL_FRAGMENT_PROGRAM_ARB);
-			glBindProgramARB(GL_VERTEX_PROGRAM_ARB, VPROG_BUMPY_ENVIRONMENT);
-			glEnable(GL_VERTEX_PROGRAM_ARB);
-		} else {
-			// per-pixel reflection mapping without a normal map
-			glNormalPointer(GL_FLOAT, sizeof(idDrawVert), ac->normal.ToFloatPtr());
-			GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_BUMPY_ENVIRONMENT);
+      glEnable(GL_FRAGMENT_PROGRAM_ARB);
+      glBindProgramARB(GL_VERTEX_PROGRAM_ARB, VPROG_BUMPY_ENVIRONMENT);
+      glEnable(GL_VERTEX_PROGRAM_ARB);
+    } else {
+      // per-pixel reflection mapping without a normal map
+      glNormalPointer(GL_FLOAT, sizeof(idDrawVert), ac->normal.ToFloatPtr());
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
 
-			glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_ENVIRONMENT);
-			glEnable(GL_FRAGMENT_PROGRAM_ARB);
-			glBindProgramARB(GL_VERTEX_PROGRAM_ARB, VPROG_ENVIRONMENT);
-			glEnable(GL_VERTEX_PROGRAM_ARB);
-		}
-	}
+      glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB, FPROG_ENVIRONMENT);
+      glEnable(GL_FRAGMENT_PROGRAM_ARB);
+      glBindProgramARB(GL_VERTEX_PROGRAM_ARB, VPROG_ENVIRONMENT);
+      glEnable(GL_VERTEX_PROGRAM_ARB);
+    }
+  }
 #endif
 #endif
 }
@@ -1651,26 +1663,26 @@ void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage,  const drawSurf_
 RB_T_FillDepthBuffer
 ==================
 */
-void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
-{
-  int			stage;
-  const idMaterial	*shader;
+void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf) {
+  int stage;
+  const idMaterial *shader;
   const shaderStage_t *pStage;
-  const float	*regs;
-  float		color[4];
-  const srfTriangles_t	*tri;
-  const float	one[1] = { 1 };
+  const float *regs;
+  float color[4];
+  const srfTriangles_t *tri;
+  const float one[1] = {1};
 
   tri = surf->geo;
   shader = surf->material;
 
   // update the clip plane if needed
   if (backEnd.viewDef->numClipPlanes && surf->space != backEnd.currentSpace) {
-    idPlane	plane;
+    idPlane plane;
 
     R_GlobalPlaneToLocal(surf->space->modelMatrix, backEnd.viewDef->clipPlanes[0], plane);
-    plane[3] += 0.5;	// the notch is in the middle
-    // Pass the Clip Plane
+    plane[3] += 0.5;  // the notch is in the middle
+
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0S), plane.ToFloatPtr());
   }
 
   if (!shader->IsDrawn()) {
@@ -1696,11 +1708,11 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
   regs = surf->shaderRegisters;
 
   // if all stages of a material have been conditioned off, don't do anything
-  for (stage = 0; stage < shader->GetNumStages() ; stage++) {
+  for (stage = 0; stage < shader->GetNumStages(); stage++) {
     pStage = shader->GetStage(stage);
 
     // check the stage enable condition
-    if (regs[ pStage->conditionRegister ] != 0) {
+    if (regs[pStage->conditionRegister] != 0) {
       break;
     }
   }
@@ -1730,9 +1742,11 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
     color[3] = 1;
   }
 
-  idDrawVert *ac = (idDrawVert *)vertexCache.Position(tri->ambientCache);
-  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
-  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), reinterpret_cast<void *>(&ac->st));
+  idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                         ac->xyz.ToFloatPtr());
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
+                         reinterpret_cast<void *>(&ac->st));
 
   bool drawSolid = false;
 
@@ -1744,10 +1758,10 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
   if (shader->Coverage() == MC_PERFORATED) {
     // if the only alpha tested stages are condition register omitted,
     // draw a normal opaque surface
-    bool	didDraw = false;
+    bool didDraw = false;
 
     // perforated surfaces may have multiple alpha tested stages
-    for (stage = 0; stage < shader->GetNumStages() ; stage++) {
+    for (stage = 0; stage < shader->GetNumStages(); stage++) {
       pStage = shader->GetStage(stage);
 
       if (!pStage->hasAlphaTest) {
@@ -1755,7 +1769,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
       }
 
       // check the stage enable condition
-      if (regs[ pStage->conditionRegister ] == 0) {
+      if (regs[pStage->conditionRegister] == 0) {
         continue;
       }
 
@@ -1764,7 +1778,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf)
       didDraw = true;
 
       // set the alpha modulate
-      color[3] = regs[ pStage->color.registers[3] ];
+      color[3] = regs[pStage->color.registers[3]];
 
       // skip the entire stage if alpha would be black
       if (color[3] <= 0) {
@@ -1822,8 +1836,7 @@ If we are rendering a subview with a near clip plane, use a second texture
 to force the alpha test to fail when behind that clip plane
 =====================
 */
-void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
-{
+void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   // if we are just doing 2D rendering, no need to fill the depth buffer
   if (!backEnd.viewDef->viewEntitys) {
     return;
@@ -1833,11 +1846,13 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
 
   // enable the second texture for mirror plane clipping if needed
   if (backEnd.viewDef->numClipPlanes) {
+    static const GLfloat ftrue = 1.f;
     GL_SelectTextureNoClient(1);
     globalImages->alphaNotchImage->Bind();
-    // Disable Vertex Array
-    // Pass a boolean to say to compute the TexGen
-    //GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+    GL_Uniform1fv(offsetof(shaderProgram_t, clip), &ftrue);
+  } else {
+    static const GLfloat ffalse = 0.f;
+    GL_Uniform1fv(offsetof(shaderProgram_t, clip), &ffalse);
   }
 
   // the first texture will be used for alpha tested surfaces
@@ -1849,7 +1864,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr()); // Loads identity by default
 #else
-  float   mat[16];
+  float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
@@ -1871,20 +1886,18 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs)
 
   RB_GLSL_RenderDrawSurfListWithFunction(drawSurfs, numDrawSurfs, RB_T_GLSL_FillDepthBuffer);
 
-#if 0
   if (backEnd.viewDef->numClipPlanes) {
     GL_SelectTextureNoClient(1);
     globalImages->BindNull();
   }
-#endif
 
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
 
   GL_UseProgram(NULL);
 
   GL_SelectTexture(0);
   globalImages->BindNull();
   // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState( GL_VERTEX_ARRAY );
+  qglEnableClientState(GL_VERTEX_ARRAY);
 }

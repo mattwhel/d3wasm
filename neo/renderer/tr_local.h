@@ -1386,6 +1386,8 @@ typedef struct shaderProgram_s {
 	GLint		texGen1S;
 	GLint		texGen1T;
 
+	GLint		clip;
+
 	/* gl_... */
 	GLint		attr_TexCoord;
 	GLint		attr_Tangent;
