@@ -202,8 +202,57 @@ static const char* const interactionShaderFP =
     "\tgl_FragColor = vec4(color, 1.0) * var_Color;\n"
     "}\n";
 
-static const char* const fogShaderVP = "\n";
-static const char* const fogShaderFP = "\n";
+static const char* const fogShaderVP =
+    "#version 100\n"
+    "precision highp float;\n"
+    "\n"
+    "// In\n"
+    "attribute vec4 attr_Vertex;      // input Vertex Coordinates\n"
+    "\n"
+    "// Uniforms\n"
+    "uniform mat4 u_modelViewMatrix;  // ModelView Matrix\n"
+    "uniform mat4 u_projectionMatrix; // Projection Matrix\n"
+    "uniform vec4 u_texGen0S;         // fogPlane 0\n"
+    "uniform vec4 u_texGen0T;         // fogPlane 1\n"
+    "uniform vec4 u_texGen1S;         // fogPlane 3 (not 2!)\n"
+    "uniform vec4 u_texGen1T;         // fogPlane 2\n"
+    "\n"
+    "// Out\n"
+    "// gl_Position                   // output Vertex Coordinates\n"
+    "varying vec2 var_texFog;         // output Fog TexCoord\n"
+    "varying vec2 var_texFogEnter;    // output FogEnter TexCoord\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "  gl_Position       = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
+    "\n"
+    "  var_texFog.x      = dot(u_texGen0S, attr_Vertex);\n"
+    "  var_texFog.y      = dot(u_texGen0T, attr_Vertex);\n"
+    "\n"
+    "  var_texFogEnter.x = dot(u_texGen1S, attr_Vertex);\n"
+    "  var_texFogEnter.y = dot(u_texGen1T, attr_Vertex);\n"
+    "}\n";
+
+static const char* const fogShaderFP =
+    "#version 100\n"
+    "precision highp float;\n"
+    "\n"
+    "// In\n"
+    "varying vec2 var_texFog;            // input Fog TexCoord\n"
+    "varying vec2 var_texFogEnter;       // input FogEnter TexCoord\n"
+    "\n"
+    "// Uniforms\n"
+    "uniform sampler2D u_fogImage;       // Fog Image\n"
+    "uniform sampler2D u_fogEnterImage;  // FogEnter Image\n"
+    "uniform vec4      u_fogColor;       // Fog Color\n"
+    "\n"
+    "// Out\n"
+    "// gl_FragCoord                     // output Fragment color\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "  gl_FragColor = texture2D( u_fogImage, var_texFog ) * texture2D( u_fogEnterImage, var_texFogEnter ) * vec4(u_fogColor.rgb, 1.0);\n"
+    "}\n";
 
 shaderProgram_t interactionShader;
 shaderProgram_t fogShader;
@@ -446,6 +495,14 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
     qglUniform1i(shader->u_fragmentMap[i], i);
   }
 
+  shader->fogImage = qglGetUniformLocation(shader->program, "u_fogImage");
+  shader->fogEnterImage = qglGetUniformLocation(shader->program, "u_fogEnterImage");
+  shader->fogColor = qglGetUniformLocation(shader->program, "u_fogColor");
+  shader->texgen0S = qglGetUniformLocation(shader->program, "u_texgen0S");
+  shader->texgen0T = qglGetUniformLocation(shader->program, "u_texgen0T");
+  shader->texgen1S = qglGetUniformLocation(shader->program, "u_texgen1S");
+  shader->texgen1T = qglGetUniformLocation(shader->program, "u_texgen1T");
+
   GL_CheckErrors();
 
   GL_UseProgram(NULL);
@@ -473,14 +530,14 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&fogShader, 0, sizeof(shaderProgram_t));
 
   // load fog shaders
-  //R_LoadGLSLShader(fogShaderVP, &fogShader, GL_VERTEX_SHADER);
-  //R_LoadGLSLShader(fogShaderFP, &fogShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(fogShaderVP, &fogShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(fogShaderFP, &fogShader, GL_FRAGMENT_SHADER);
 
-  //if (!R_LinkGLSLShader(&fogShader, true) && !R_ValidateGLSLProgram(&fogShader)) {
-  //return false;
-  //} else {
-    //RB_GLSL_GetUniformLocations(&fogShader);
-  //}
+  if (!R_LinkGLSLShader(&fogShader, true) && !R_ValidateGLSLProgram(&fogShader)) {
+    return false;
+  } else {
+    RB_GLSL_GetUniformLocations(&fogShader);
+  }
 
   return true;
 }
@@ -928,9 +985,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_SelectTexture(0);
   globalImages->BindNull();
   // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState(GL_VERTEX_ARRAY);
-  qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  qglDisableClientState(GL_COLOR_ARRAY);
+  qglEnableClientState( GL_VERTEX_ARRAY );
 }
 
 /*
@@ -1000,4 +1055,145 @@ void RB_GLSL_DrawInteractions(void) {
 
   // disable stencil shadow test
   qglStencilFunc(GL_ALWAYS, 128, 255);
+}
+
+
+static idPlane fogPlanes[4];
+
+/*
+=====================
+RB_T_BasicFog
+=====================
+*/
+static void RB_T_GLSL_BasicFog(const drawSurf_t *surf) {
+  if (backEnd.currentSpace != surf->space) {
+    idPlane local;
+
+    GL_SelectTexture(0);
+
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[0], local);
+    local[3] += 0.5;
+    qglTexGenfv(GL_S, GL_OBJECT_PLANE, local.ToFloatPtr());
+
+    //R_GlobalPlaneToLocal( surf->space->modelMatrix, fogPlanes[1], local );
+    //local[3] += 0.5;
+    local[0] = local[1] = local[2] = 0;
+    local[3] = 0.5;
+    qglTexGenfv(GL_T, GL_OBJECT_PLANE, local.ToFloatPtr());
+
+    GL_SelectTexture(1);
+
+    // GL_S is constant per viewer
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[2], local);
+    local[3] += FOG_ENTER;
+    qglTexGenfv(GL_T, GL_OBJECT_PLANE, local.ToFloatPtr());
+
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[3], local);
+    qglTexGenfv(GL_S, GL_OBJECT_PLANE, local.ToFloatPtr());
+  }
+
+  RB_T_RenderTriangleSurface(surf);
+}
+
+/*
+==================
+RB_FogPass
+==================
+*/
+static void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) {
+  const srfTriangles_t *frustumTris;
+  drawSurf_t ds;
+  const idMaterial *lightShader;
+  const shaderStage_t *stage;
+  const float *regs;
+
+  GL_UseProgram(&fogShader);
+
+  // create a surface for the light frustom triangles, which are oriented drawn side out
+  frustumTris = backEnd.vLight->frustumTris;
+
+  // if we ran out of vertex cache memory, skip it
+  if (!frustumTris->ambientCache) {
+    return;
+  }
+  memset(&ds, 0, sizeof(ds));
+  ds.space = &backEnd.viewDef->worldSpace;
+  ds.geo = frustumTris;
+  ds.scissorRect = backEnd.viewDef->scissor;
+
+  // find the current color and density of the fog
+  lightShader = backEnd.vLight->lightShader;
+  regs = backEnd.vLight->shaderRegisters;
+  // assume fog shaders have only a single stage
+  stage = lightShader->GetStage(0);
+
+  backEnd.lightColor[0] = regs[stage->color.registers[0]];
+  backEnd.lightColor[1] = regs[stage->color.registers[1]];
+  backEnd.lightColor[2] = regs[stage->color.registers[2]];
+  backEnd.lightColor[3] = regs[stage->color.registers[3]];
+
+  // Setup Uniforms
+  // Projection and ModelView matrices
+#ifdef USEREGAL
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), mat4_identity.ToFloatPtr());
+#else
+  float   mat[16];
+  myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
+  // FogColor
+  GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), backEnd.lightColor);
+
+  // calculate the falloff planes
+  const float a = (backEnd.lightColor[3] <= 1.0) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / backEnd.lightColor[3];
+
+  // texture 0 is the falloff image
+  GL_SelectTextureNoClient(0);
+  globalImages->fogImage->Bind();
+
+  fogPlanes[0][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[2];
+  fogPlanes[0][1] = a * backEnd.viewDef->worldSpace.modelViewMatrix[6];
+  fogPlanes[0][2] = a * backEnd.viewDef->worldSpace.modelViewMatrix[10];
+  fogPlanes[0][3] = a * backEnd.viewDef->worldSpace.modelViewMatrix[14];
+
+  fogPlanes[1][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[0];
+  fogPlanes[1][1] = a * backEnd.viewDef->worldSpace.modelViewMatrix[4];
+  fogPlanes[1][2] = a * backEnd.viewDef->worldSpace.modelViewMatrix[8];
+  fogPlanes[1][3] = a * backEnd.viewDef->worldSpace.modelViewMatrix[12];
+
+  // texture 1 is the entering plane fade correction
+  GL_SelectTextureNoClient(1);
+  globalImages->fogEnterImage->Bind();
+
+  // T will get a texgen for the fade plane, which is always the "top" plane on unrotated lights
+  fogPlanes[2][0] = 0.001f * backEnd.vLight->fogPlane[0];
+  fogPlanes[2][1] = 0.001f * backEnd.vLight->fogPlane[1];
+  fogPlanes[2][2] = 0.001f * backEnd.vLight->fogPlane[2];
+  fogPlanes[2][3] = 0.001f * backEnd.vLight->fogPlane[3];
+
+  // S is based on the view origin
+  const float s = backEnd.viewDef->renderView.vieworg * fogPlanes[2].Normal() + fogPlanes[2][3];
+  fogPlanes[3][0] = 0;
+  fogPlanes[3][1] = 0;
+  fogPlanes[3][2] = 0;
+  fogPlanes[3][3] = FOG_ENTER + s;
+
+  // draw it
+  GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL);
+  RB_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_BasicFog);
+  RB_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_GLSL_BasicFog);
+
+  // the light frustum bounding planes aren't in the depth buffer, so use depthfunc_less instead
+  // of depthfunc_equal
+  GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_LESS);
+  GL_Cull(CT_BACK_SIDED);
+  RB_RenderDrawSurfChainWithFunction(&ds, RB_T_GLSL_BasicFog);
+  GL_Cull(CT_FRONT_SIDED);
+
+  GL_SelectTextureNoClient(1);
+  globalImages->BindNull();
+
+  GL_SelectTexture(0);
+  globalImages->BindNull();
 }

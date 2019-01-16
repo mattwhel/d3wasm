@@ -2,18 +2,18 @@
 precision highp float;
 
 // In
-varying vec2 var_TexFog;            // input Fog TexCoord
-varying vec2 var_TexFogEnter;       // input FogEnter TexCoord
+varying vec2 var_texFog;            // input Fog TexCoord
+varying vec2 var_texFogEnter;       // input FogEnter TexCoord
 
 // Uniforms
-uniform sampler2D u_FogImage;       // Fog Image
-uniform sampler2D u_FogEnterImage;  // FogEnter Image
-uniform vec4      u_FogColor;       // Fog Color
+uniform sampler2D u_fogImage;       // Fog Image
+uniform sampler2D u_fogEnterImage;  // FogEnter Image
+uniform vec4      u_fogColor;       // Fog Color
 
 // Out
 // gl_FragCoord                     // output Fragment color
 
 void main(void)
 {
-  gl_FragColor = texture2D( u_FogImage, var_TCFog ) * texture2D( var_TCFogEnter, u_FogEnterImage ) * vec4(u_FogColor.rgb, 1.0);
+  gl_FragColor = texture2D( u_fogImage, var_texFog ) * texture2D( u_fogEnterImage , var_texFogEnter ) * vec4(u_fogColor.rgb, 1.0);
 }

@@ -1287,7 +1287,6 @@ static idPlane fogPlanes[4];
 /*
 =====================
 RB_T_BasicFog
-
 =====================
 */
 static void RB_T_BasicFog(const drawSurf_t *surf) {
@@ -1434,7 +1433,6 @@ static void RB_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2
   qglDisable(GL_TEXTURE_GEN_S);
   qglDisable(GL_TEXTURE_GEN_T);
 }
-
 
 /*
 ==================

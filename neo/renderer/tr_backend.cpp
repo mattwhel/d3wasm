@@ -46,10 +46,10 @@ void RB_SetDefaultGLState( void ) {
 	qglClearDepth(1.0f);
 	qglColor4f (1,1,1,1);
 
-	// the vertex array is always enabled
+	GL_SelectTexture( 0 );
+	// the vertex and texture arrays are always enabled
 	qglEnableClientState( GL_VERTEX_ARRAY );
 	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-	qglDisableClientState( GL_COLOR_ARRAY );
 
 	//
 	// make sure our GL state vector is set correctly
