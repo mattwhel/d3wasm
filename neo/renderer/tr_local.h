@@ -1592,32 +1592,6 @@ void *R_StaticAlloc( int bytes );		// just malloc with error checking
 void *R_ClearedStaticAlloc( int bytes );	// with memset
 void R_StaticFree( void *data );
 
-
-/*
-=============================================================
-
-RENDERER DEBUG TOOLS
-
-=============================================================
-*/
-
-float RB_DrawTextLength( const char *text, float scale, int len );
-void RB_AddDebugText( const char *text, const idVec3 &origin, float scale, const idVec4 &color, const idMat3 &viewAxis, const int align, const int lifetime, const bool depthTest );
-void RB_ClearDebugText( int time );
-void RB_AddDebugLine( const idVec4 &color, const idVec3 &start, const idVec3 &end, const int lifeTime, const bool depthTest );
-void RB_ClearDebugLines( int time );
-void RB_AddDebugPolygon( const idVec4 &color, const idWinding &winding, const int lifeTime, const bool depthTest );
-void RB_ClearDebugPolygons( int time );
-void RB_DrawBounds( const idBounds &bounds );
-void RB_ShowLights( drawSurf_t **drawSurfs, int numDrawSurfs );
-void RB_ShowLightCount( drawSurf_t **drawSurfs, int numDrawSurfs );
-void RB_PolygonClear( void );
-void RB_ScanStencilBuffer( void );
-void RB_ShowDestinationAlpha( void );
-void RB_ShowOverdraw( void );
-void RB_RenderDebugTools( drawSurf_t **drawSurfs, int numDrawSurfs );
-void RB_ShutdownDebugTools( void );
-
 /*
 =============================================================
 

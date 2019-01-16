@@ -2055,8 +2055,6 @@ void idRenderSystemLocal::Shutdown( void ) {
 
 	R_ShutdownTriSurfData();
 
-	RB_ShutdownDebugTools();
-
 	delete guiModel;
 	delete demoGuiModel;
 

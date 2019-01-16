@@ -660,7 +660,7 @@ void RB_DrawView( const void *data ) {
 
 	backEnd.pc.c_surfaces += backEnd.viewDef->numDrawSurfs;
 
-	RB_ShowOverdraw();
+	//RB_ShowOverdraw();
 
 	// render the scene, jumping to the hardware specific interaction renderers
 	RB_STD_DrawView();
