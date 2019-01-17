@@ -411,7 +411,7 @@ static const char *const stencilShadowShaderVP =
     "void main(void)\n"
     "{\n"
     #ifdef USEREGAL
-    "\tgl_Position = (u_projectionMatrix * u_modelViewMatrix) * attr_Vertex;\n"
+    "\tgl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
     #else
     "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
     #endif
@@ -2367,8 +2367,6 @@ static void RB_T_GLSL_Shadow(const drawSurf_t *surf) {
     return;
   }
 
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
-
   GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 4, GL_FLOAT, false, sizeof(shadowCache_t),
                          vertexCache.Position(tri->shadowCache));
 
@@ -2458,7 +2456,6 @@ static void RB_T_GLSL_Shadow(const drawSurf_t *surf) {
     RB_DrawShadowElementsWithCounters(tri, numIndexes);
     GL_Cull(CT_FRONT_SIDED);
     qglEnable(GL_STENCIL_TEST);
-    GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
 
     return;
   }
@@ -2505,7 +2502,16 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
 
   GL_SelectTexture(0);
   globalImages->BindNull();
+
   GL_UseProgram(&stencilShadowShader);
+
+#ifdef USEREGAL
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
+#else
+  float mat[16];
+  myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+#endif
 
   // for visualizing the shadows
   if (r_showShadows.GetInteger()) {
@@ -2525,7 +2531,13 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
 
   qglStencilFunc(GL_ALWAYS, 1, 255);
 
+  // Setup Attributes
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
+
   RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow);
+
+  // Setup Attributes
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
 
   GL_Cull(CT_FRONT_SIDED);
 
