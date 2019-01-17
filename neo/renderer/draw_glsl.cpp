@@ -109,7 +109,7 @@ static const char *const interactionShaderVP =
     "#if defined(BLINN_PHONG)\n"
     "\tvar_H = H * M;\n"
     "#else\n"
-    "    var_V = V * M;\n"
+    "\tvar_V = V * M;\n"
     "#endif\n"
     "\n"
     "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
@@ -388,11 +388,58 @@ static const char *const defaultShaderFP =
     "\tgl_FragColor = texture2D(u_fragmentMap0, var_TexDiffuse) * u_glColor * var_Color;\n"
     "}\n";
 
+static const char *const stencilShadowShaderVP =
+    "#version 100\n"
+    "precision highp float;\n"
+    "\n"
+    "// In\n"
+    "attribute vec4 attr_Vertex;\n"
+    "\n"
+    "// Uniforms\n"
+    #ifdef USEREGAL
+    "uniform mat4 u_modelViewMatrix;\n"
+    "uniform mat4 u_projectionMatrix;\n"
+    #else
+    "uniform mat4 u_modelViewProjectionMatrix;\n"
+    #endif
+    "uniform vec4 u_glColor;\n"
+    "uniform vec4 u_lightOrigin;\n"
+    "\n"
+    "// Out\n"
+    "// gl_Position\n"
+    "varying vec4 var_Color;\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    #ifdef USEREGAL
+    "\tgl_Position = (u_projectionMatrix * u_modelViewMatrix) * (attr_Vertex.w * u_lightOrigin + attr_Vertex - u_lightOrigin);\n"
+    #else
+    "\tgl_Position = u_modelViewProjectionMatrix * (attr_Vertex.w * u_lightOrigin + attr_Vertex - u_lightOrigin);\n"
+    #endif
+    "\n"
+    "\tvar_Color = u_glColor;\n"
+    "}\n";
+
+static const char *const stencilShadowShaderFP =
+    "#version 100\n"
+    "precision highp float;\n"
+    "\n"
+    "// In\n"
+    "varying vec4 var_Color;\n"
+    "\n"
+    "// Out\n"
+    "// gl_FragColor\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "\tgl_FragColor = var_Color;\n"
+    "}\n";
+
 shaderProgram_t interactionShader;
 shaderProgram_t fogShader;
 shaderProgram_t zfillShader;
 shaderProgram_t defaultShader;
-//shaderProgram_t stencilShadowShader;
+shaderProgram_t stencilShadowShader;
 
 /*
 ====================
@@ -503,7 +550,7 @@ R_LinkGLSLShader
 links the GLSL vertex and fragment shaders together to form a GLSL program
 =================
 */
-static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram, bool needsAttributes) {
+static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram) {
   char buf[BUFSIZ];
   int len;
   GLint status;
@@ -648,7 +695,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(interactionShaderVP, &interactionShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(interactionShaderFP, &interactionShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&interactionShader, true) && !R_ValidateGLSLProgram(&interactionShader)) {
+  if (!R_LinkGLSLShader(&interactionShader) && !R_ValidateGLSLProgram(&interactionShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&interactionShader);
@@ -660,7 +707,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(defaultShaderVP, &defaultShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(defaultShaderFP, &defaultShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&defaultShader, true) && !R_ValidateGLSLProgram(&defaultShader)) {
+  if (!R_LinkGLSLShader(&defaultShader) && !R_ValidateGLSLProgram(&defaultShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&defaultShader);
@@ -672,7 +719,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(zfillShaderVP, &zfillShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(zfillShaderFP, &zfillShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&zfillShader, true) && !R_ValidateGLSLProgram(&zfillShader)) {
+  if (!R_LinkGLSLShader(&zfillShader) && !R_ValidateGLSLProgram(&zfillShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&zfillShader);
@@ -684,10 +731,22 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(fogShaderVP, &fogShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(fogShaderFP, &fogShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&fogShader, true) && !R_ValidateGLSLProgram(&fogShader)) {
+  if (!R_LinkGLSLShader(&fogShader) && !R_ValidateGLSLProgram(&fogShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&fogShader);
+  }
+
+  memset(&stencilShadowShader, 0, sizeof(shaderProgram_t));
+
+  // load interation shaders
+  R_LoadGLSLShader(stencilShadowShaderVP, &stencilShadowShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(stencilShadowShaderFP, &stencilShadowShader, GL_FRAGMENT_SHADER);
+
+  if (!R_LinkGLSLShader(&stencilShadowShader) && !R_ValidateGLSLProgram(&stencilShadowShader)) {
+    return false;
+  } else {
+    RB_GLSL_GetUniformLocations(&stencilShadowShader);
   }
 
   return true;
@@ -996,7 +1055,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
           }
 
           RB_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.diffuseImage,
-                               inter.diffuseMatrix, inter.diffuseColor.ToFloatPtr());
+                                inter.diffuseMatrix, inter.diffuseColor.ToFloatPtr());
           inter.diffuseColor[0] *= lightColor[0];
           inter.diffuseColor[1] *= lightColor[1];
           inter.diffuseColor[2] *= lightColor[2];
@@ -1015,7 +1074,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
           }
 
           RB_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.specularImage,
-                               inter.specularMatrix, inter.specularColor.ToFloatPtr());
+                                inter.specularMatrix, inter.specularColor.ToFloatPtr());
           inter.specularColor[0] *= lightColor[0];
           inter.specularColor[1] *= lightColor[1];
           inter.specularColor[2] *= lightColor[2];
@@ -1972,14 +2031,13 @@ RB_GLSL_T_RenderShaderPasses
 This is also called for the generated 2D rendering
 ==================
 */
-void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
-{
-  int			stage;
-  const idMaterial	*shader;
+void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf) {
+  int stage;
+  const idMaterial *shader;
   const shaderStage_t *pStage;
-  const float	*regs;
-  float		color[4];
-  const srfTriangles_t	*tri;
+  const float *regs;
+  float color[4];
+  const srfTriangles_t *tri;
 
   tri = surf->geo;
   shader = surf->material;
@@ -1999,8 +2057,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
     const struct viewEntity_s *space = backEnd.currentSpace;
 
     // set eye position in local space
-    float	parm[4];
-    R_GlobalPointToLocal(space->modelMatrix, backEnd.viewDef->renderView.vieworg, *(idVec3 *)parm);
+    float parm[4];
+    R_GlobalPointToLocal(space->modelMatrix, backEnd.viewDef->renderView.vieworg, *(idVec3 *) parm);
     parm[3] = 1.0;
     GL_Uniform4fv(offsetof(shaderProgram_t, localEyeOrigin), parm);
 
@@ -2018,9 +2076,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
   if (r_useScissor.GetBool() && !backEnd.currentScissor.Equals(surf->scissorRect)) {
     backEnd.currentScissor = surf->scissorRect;
     qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-              backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-              backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-              backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
+               backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+               backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+               backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
   }
 
   // some deforms may disable themselves by setting numIndexes = 0
@@ -2053,15 +2111,17 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
     RB_GLSL_EnterModelDepthHack(surf);
   }
 
-  idDrawVert *ac = (idDrawVert *)vertexCache.Position(tri->ambientCache);
-  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
-  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), reinterpret_cast<void *>(&ac->st));
+  idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                         ac->xyz.ToFloatPtr());
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
+                         reinterpret_cast<void *>(&ac->st));
 
-  for (stage = 0; stage < shader->GetNumStages() ; stage++) {
+  for (stage = 0; stage < shader->GetNumStages(); stage++) {
     pStage = shader->GetStage(stage);
 
     // check the enable condition
-    if (regs[ pStage->conditionRegister ] == 0) {
+    if (regs[pStage->conditionRegister] == 0) {
       continue;
     }
 
@@ -2071,7 +2131,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
     }
 
     // skip if the stage is ( GL_ZERO, GL_ONE ), which is used for some alpha masks
-    if ((pStage->drawStateBits & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_ZERO | GLS_DSTBLEND_ONE)) {
+    if ((pStage->drawStateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_ZERO | GLS_DSTBLEND_ONE)) {
       continue;
     }
 
@@ -2089,12 +2149,16 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
         continue;
       }
 
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert), (void *)&ac->color);
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Tangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[0].ToFloatPtr());
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->tangents[1].ToFloatPtr());
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->normal.ToFloatPtr());
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
+                             (void *) &ac->color);
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Tangent), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                             ac->tangents[0].ToFloatPtr());
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                             ac->tangents[1].ToFloatPtr());
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                             ac->normal.ToFloatPtr());
 
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));	// gl_Color
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
       GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
       GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
       GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
@@ -2104,7 +2168,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
       // draw it
       RB_DrawElementsWithCounters(tri);
 
-      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));	// gl_Color
+      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
       GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
       GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
       GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
@@ -2118,32 +2182,34 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
     //--------------------------
 
     // set the color
-    color[0] = regs[ pStage->color.registers[0] ];
-    color[1] = regs[ pStage->color.registers[1] ];
-    color[2] = regs[ pStage->color.registers[2] ];
-    color[3] = regs[ pStage->color.registers[3] ];
+    color[0] = regs[pStage->color.registers[0]];
+    color[1] = regs[pStage->color.registers[1]];
+    color[2] = regs[pStage->color.registers[2]];
+    color[3] = regs[pStage->color.registers[3]];
 
     // skip the entire stage if an add would be black
-    if ((pStage->drawStateBits & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE)
+    if ((pStage->drawStateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE)
         && color[0] <= 0 && color[1] <= 0 && color[2] <= 0) {
       continue;
     }
 
     // skip the entire stage if a blend would be completely transparent
-    if ((pStage->drawStateBits & (GLS_SRCBLEND_BITS|GLS_DSTBLEND_BITS)) == (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA)
+    if ((pStage->drawStateBits & (GLS_SRCBLEND_BITS | GLS_DSTBLEND_BITS)) ==
+        (GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA)
         && color[3] <= 0) {
       continue;
     }
 
     // select the vertex color source
     if (pStage->vertexColor != SVC_IGNORE) {
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert), (void *)&ac->color);
+      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
+                             (void *) &ac->color);
       GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
     }
 
-    static const float zero[4] = { 0, 0, 0, 0 };
-    static const float one[4] = { 1, 1, 1, 1 };
-    static const float negOne[4] = { -1, -1, -1, -1 };
+    static const float zero[4] = {0, 0, 0, 0};
+    static const float one[4] = {1, 1, 1, 1};
+    static const float negOne[4] = {-1, -1, -1, -1};
 
     switch (pStage->vertexColor) {
       case SVC_IGNORE:
@@ -2197,9 +2263,8 @@ RB_GLSL_DrawShaderPasses
 Draw non-light dependent passes
 =====================
 */
-int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs)
-{
-  int				i;
+int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
+  int i;
 
   // only obey skipAmbient if we are rendering a view
   if (backEnd.viewDef->viewEntitys && r_skipAmbient.GetBool()) {
@@ -2216,8 +2281,10 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs)
     // only dump if in a 3d view
     if (backEnd.viewDef->viewEntitys) {
       globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
-                                                        backEnd.viewDef->viewport.y1,  backEnd.viewDef->viewport.x2 -  backEnd.viewDef->viewport.x1 + 1,
-                                                        backEnd.viewDef->viewport.y2 -  backEnd.viewDef->viewport.y1 + 1, true);
+                                                        backEnd.viewDef->viewport.y1,
+                                                        backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
+                                                        backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1,
+                                                        true);
     }
 
     backEnd.currentRenderCopied = true;
@@ -2247,7 +2314,7 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs)
   // surfaces won't draw any ambient passes
   backEnd.currentSpace = NULL;
 
-  for (i = 0  ; i < numDrawSurfs ; i++) {
+  for (i = 0; i < numDrawSurfs; i++) {
     if (drawSurfs[i]->material->SuppressInSubview()) {
       continue;
     }

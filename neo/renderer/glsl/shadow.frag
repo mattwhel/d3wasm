@@ -1,8 +1,11 @@
 #version 100
+precision highp float;
 
-precision mediump float;
-
+// In
 varying vec4 var_Color;
+
+// Out
+// gl_FragColor
 
 void main(void)
 {
