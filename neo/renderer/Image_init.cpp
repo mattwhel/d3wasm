@@ -1735,11 +1735,13 @@ void idImageManager::BindNull() {
 	tmu = &backEnd.glState.tmu[backEnd.glState.currenttmu];
 
 	if ( tmu->textureType == TT_CUBIC ) {
-		qglDisable( GL_TEXTURE_CUBE_MAP );
-	} else if ( tmu->textureType == TT_2D ) {
-		qglDisable( GL_TEXTURE_2D );
-	}
-	tmu->textureType = TT_DISABLED;
+		qglBindTexture( GL_TEXTURE_CUBE_MAP, 0 );
+    tmu->currentCubeMap = -1;
+  } else if ( tmu->textureType == TT_2D ) {
+		qglBindTexture( GL_TEXTURE_2D, 0 );
+    tmu->current2DMap = -1;
+  }
+  tmu->textureType = TT_DISABLED;
 }
 
 /*

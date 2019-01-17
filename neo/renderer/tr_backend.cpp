@@ -43,9 +43,11 @@ may touch, including the editor.
 void RB_SetDefaultGLState( void ) {
 	int		i;
 
+	// Clear the Depth buffer
 	qglClearDepthf(1.0f);
 
-	GL_SelectTexture( 0 );
+	// No shaders set by default
+	GL_UseProgram(NULL);
 
 	//
 	// make sure our GL state vector is set correctly
@@ -53,6 +55,7 @@ void RB_SetDefaultGLState( void ) {
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
 	backEnd.glState.forceGlState = true;
 
+	// All channels are used
 	qglColorMask( 1, 1, 1, 1 );
 
 	qglEnable( GL_DEPTH_TEST );
@@ -70,11 +73,9 @@ void RB_SetDefaultGLState( void ) {
 		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 	}
 
-	for ( i = 8 - 1 ; i >= 0 ; i-- ) {
+	for ( i = glConfig.maxTextureUnits - 1 ; i >= 0 ; i-- ) {
 		GL_SelectTexture( i );
-
-		qglDisable( GL_TEXTURE_2D );
-		qglDisable( GL_TEXTURE_CUBE_MAP );
+    globalImages->BindNull();
 	}
 }
 
@@ -421,10 +422,6 @@ void RB_ExecuteBackEndCommands( const emptyCommand_t *cmds ) {
 			break;
 		}
 	}
-
-	// go back to the default texture so the editor doesn't mess up a bound image
-	qglBindTexture( GL_TEXTURE_2D, 0 );
-	backEnd.glState.tmu[0].current2DMap = -1;
 
 	// stop rendering on this thread
 	backEndFinishTime = Sys_Milliseconds();

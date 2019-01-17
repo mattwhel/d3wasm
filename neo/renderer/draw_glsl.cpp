@@ -400,7 +400,7 @@ shaderProgram_t stencilShadowShader;
 GL_UseProgram
 ====================
 */
-static void GL_UseProgram(shaderProgram_t *program) {
+void GL_UseProgram(shaderProgram_t *program) {
   if (backEnd.glState.currentProgram == program) {
     return;
   }
@@ -441,7 +441,7 @@ static void GL_UniformMatrix4fv(GLint location, const GLfloat *value) {
 GL_EnableVertexAttribArray
 ====================
 */
-static void GL_EnableVertexAttribArray(GLuint index) {
+void GL_EnableVertexAttribArray(GLuint index) {
   qglEnableVertexAttribArray(*(GLint * )((char *) backEnd.glState.currentProgram + index));
 }
 
@@ -624,6 +624,9 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->texGen1T = qglGetUniformLocation(shader->program, "u_texGen1T");
 
   shader->clip = qglGetUniformLocation(shader->program, "u_clip");
+
+  // Vertex Attrib is always enabled
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
 
   GL_CheckErrors();
 
@@ -1038,7 +1041,6 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
   float mat[16];
@@ -1078,7 +1080,6 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
     GL_SelectTexture(4);
@@ -1095,7 +1096,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
 
   GL_UseProgram(NULL);
 
-    GL_SelectTexture(0);
+  GL_SelectTexture(0);
   globalImages->BindNull();
 }
 
@@ -1301,9 +1302,6 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   // FogColor
   GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), backEnd.lightColor);
 
-  // Setup Attributes
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
-
   // calculate the falloff planes
   const float a = (backEnd.lightColor[3] <= 1.0) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / backEnd.lightColor[3];
 
@@ -1351,9 +1349,7 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   GL_Cull(CT_FRONT_SIDED);
   GL_State(GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL); // Restore DepthFunc
 
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
-
-    GL_SelectTexture(1);
+  GL_SelectTexture(1);
   globalImages->BindNull();
 
   GL_UseProgram(NULL);
@@ -1874,7 +1870,6 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 
   // Setup Attributes
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // decal surfaces may enable polygon offset
@@ -1896,7 +1891,6 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   }
 
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
 
   GL_UseProgram(NULL);
 
@@ -2173,7 +2167,6 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
   GL_SelectTexture(0);
 
   // Enable the arrays that will be always activated
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // Setup projection matrix
@@ -2208,8 +2201,6 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
   GL_Cull(CT_FRONT_SIDED);
 
-  // Disable arrays
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // Disable program
@@ -2410,13 +2401,7 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
 
   qglStencilFunc(GL_ALWAYS, 1, 255);
 
-  // Setup Attributes
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
-
   RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow);
-
-  // Setup Attributes
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
 
   GL_Cull(CT_FRONT_SIDED);
 

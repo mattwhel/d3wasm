@@ -765,20 +765,7 @@ void idImage::Bind() {
 	tmu_t			*tmu = &backEnd.glState.tmu[backEnd.glState.currenttmu];
 
 	// enable or disable apropriate texture modes
-	if ( tmu->textureType != type ) {
-		if ( tmu->textureType == TT_CUBIC ) {
-			qglDisable( GL_TEXTURE_CUBE_MAP );
-		} else if ( tmu->textureType == TT_2D ) {
-			qglDisable( GL_TEXTURE_2D );
-		}
-
-		if ( type == TT_CUBIC ) {
-			qglEnable( GL_TEXTURE_CUBE_MAP );
-		} else if ( type == TT_2D ) {
-			qglEnable( GL_TEXTURE_2D );
-		}
-		tmu->textureType = type;
-	}
+	tmu->textureType = type;
 
 	// bind the texture
 	if ( type == TT_2D ) {
