@@ -114,8 +114,11 @@ void *idVertexCache::Position( vertCache_t *buffer ) {
 				common->Printf( "GL_ARRAY_BUFFER_ARB = %i (%i bytes)\n", buffer->vbo, buffer->size );
 			}
 		}
-		qglBindBuffer( GL_ARRAY_BUFFER, buffer->vbo );
-
+		if ( buffer->indexBuffer ) {
+			qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, buffer->vbo );
+		} else {
+			qglBindBuffer( GL_ARRAY_BUFFER, buffer->vbo );
+		}
 		return (void *)buffer->offset;
 }
 
@@ -189,7 +192,7 @@ void idVertexCache::Shutdown() {
 idVertexCache::Alloc
 ===========
 */
-void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer ) {
+void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool indexBuffer ) {
 	vertCache_t	*block;
 
 	if ( size <= 0 ) {
@@ -241,14 +244,27 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer ) {
 	// referenced by the GPU yet, and can be purged if needed.
 	block->frameUsed = currentFrame - NUM_VERTEX_FRAMES;
 
+	block->indexBuffer = indexBuffer;
+
 	// copy the data
+		if ( indexBuffer ) {
+			qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, block->vbo );
+			qglBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
+		} else {
 			qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
 			if ( allocatingTempBuffer ) {
 				qglBufferData( GL_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STREAM_DRAW );
 			} else {
 				qglBufferData( GL_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
 			}
+		}
 }
+
+
+void idVertexCache::UnbindIndex() {
+  qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0 );
+}
+
 
 /*
 ===========
@@ -359,6 +375,7 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size ) {
 
 	block->size = size;
 	block->tag = TAG_TEMP;
+	block->indexBuffer = false;
 	block->offset = dynamicAllocThisFrame;
 	dynamicAllocThisFrame += block->size;
 	dynamicCountThisFrame++;
@@ -409,7 +426,11 @@ void idVertexCache::EndFrame() {
 	}
 #endif
 
-  qglBindBuffer( GL_ARRAY_BUFFER, 0 );
+		// unbind vertex buffers so normal virtual memory will be used in case
+		// r_useVertexBuffers / r_useIndexBuffers
+		qglBindBuffer( GL_ARRAY_BUFFER, 0 );
+		qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
+
 
 	currentFrame = tr.frameCount;
 	listNum = currentFrame % NUM_VERTEX_FRAMES;

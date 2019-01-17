@@ -42,7 +42,8 @@ typedef enum {
 
 typedef struct vertCache_s {
 	GLuint			vbo;
-	intptr_t		offset;
+  bool			indexBuffer;		// holds indexes instead of vertexes
+  intptr_t		offset;
 	int				size;				// may be larger than the amount asked for, due
 										// to round up and minimum fragment sizes
 	int				tag;				// a tag of 0 is a free block
@@ -66,11 +67,15 @@ public:
 	// Alloc does NOT do a touch, which allows purging of things
 	// created at level load time even if a frame hasn't passed yet.
 	// These allocations can be purged, which will zero the pointer.
-	void			Alloc( void *data, int bytes, vertCache_t **buffer );
+	void			Alloc( void *data, int bytes, vertCache_t **buffer, bool indexBuffer = false );
 
 	// This will be a real pointer with virtual memory,
 	// but it will be an int offset cast to a pointer of ARB_vertex_buffer_object
 	void *			Position( vertCache_t *buffer );
+
+	// if r_useIndexBuffers is enabled, but you need to draw something without
+	// an indexCache, this must be called to reset GL_ELEMENT_ARRAY_BUFFER_ARB
+	void			UnbindIndex();
 
 	// automatically freed at the end of the next frame
 	// used for specular texture coordinates and gui drawing, which

@@ -1144,6 +1144,13 @@ void idInteraction::AddActiveInteraction( void ) {
 						vertexCache.Touch( lightTris->lightingCache );
 					}
 
+					if ( !lightTris->indexCache && r_useIndexBuffers.GetBool() ) {
+						vertexCache.Alloc( lightTris->indexes, lightTris->numIndexes * sizeof( lightTris->indexes[0] ), &lightTris->indexCache, true );
+					}
+					if ( lightTris->indexCache ) {
+						vertexCache.Touch( lightTris->indexCache );
+					}
+
 					// add the surface to the light list
 
 					const idMaterial *shader = sint->shader;

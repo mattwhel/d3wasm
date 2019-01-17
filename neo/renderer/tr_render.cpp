@@ -58,7 +58,21 @@ void RB_DrawElementsWithCounters( const srfTriangles_t *tri ) {
 		}
 	}
 
-	qglDrawElements( GL_TRIANGLES, tri->numIndexes, GL_INDEX_TYPE, tri->indexes );
+	if ( tri->indexCache && r_useIndexBuffers.GetBool() ) {
+		qglDrawElements( GL_TRIANGLES,
+						tri->numIndexes,
+						GL_INDEX_TYPE,
+						(int *)vertexCache.Position( tri->indexCache ) );
+		backEnd.pc.c_vboIndexes += tri->numIndexes;
+	} else {
+		if ( r_useIndexBuffers.GetBool() ) {
+			vertexCache.UnbindIndex();
+		}
+		qglDrawElements( GL_TRIANGLES,
+						tri->numIndexes,
+						GL_INDEX_TYPE,
+						tri->indexes );
+	}
 }
 
 /*
@@ -73,10 +87,21 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 	backEnd.pc.c_shadowIndexes += numIndexes;
 	backEnd.pc.c_shadowVertexes += tri->numVerts;
 
+	if ( tri->indexCache && r_useIndexBuffers.GetBool() ) {
 	qglDrawElements( GL_TRIANGLES,
-									 numIndexes,
-									 GL_INDEX_TYPE,
-									 tri->indexes );
+			numIndexes,
+						GL_INDEX_TYPE,
+						(int *)vertexCache.Position( tri->indexCache ) );
+		backEnd.pc.c_vboIndexes += numIndexes;
+	} else {
+		if (r_useIndexBuffers.GetBool()) {
+			vertexCache.UnbindIndex();
+		}
+		qglDrawElements(GL_TRIANGLES,
+										numIndexes,
+										GL_INDEX_TYPE,
+										tri->indexes);
+	}
 }
 
 /*
