@@ -151,11 +151,15 @@ void idVertexCache::Init() {
 	for ( int i = 0 ; i < NUM_VERTEX_FRAMES ; i++ ) {
 		allocatingTempBuffer = true;	// force the alloc to use GL_STREAM_DRAW_ARB
 		Alloc( junk, frameBytes, &tempBuffers[i] );
+		Alloc( junk, frameBytes, &tempIndexBuffers[i], true );
 		allocatingTempBuffer = false;
 		tempBuffers[i]->tag = TAG_FIXED;
+		tempIndexBuffers[i]->tag = TAG_FIXED;
 		// unlink these from the static list, so they won't ever get purged
 		tempBuffers[i]->next->prev = tempBuffers[i]->prev;
 		tempBuffers[i]->prev->next = tempBuffers[i]->next;
+		tempIndexBuffers[i]->next->prev = tempIndexBuffers[i]->prev;
+		tempIndexBuffers[i]->prev->next = tempIndexBuffers[i]->next;
 	}
 	Mem_Free( junk );
 
@@ -249,7 +253,11 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool inde
 	// copy the data
 		if ( indexBuffer ) {
 			qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, block->vbo );
-			qglBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
+			if ( allocatingTempBuffer ) {
+				qglBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STREAM_DRAW );
+			} else {
+				qglBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
+			}
 		} else {
 			qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
 			if ( allocatingTempBuffer ) {
@@ -334,7 +342,7 @@ We can't simply sync with the GPU and overwrite what we have, because
 there may still be future references to dynamically created surfaces.
 ===========
 */
-vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size ) {
+vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size, bool indexBuffer ) {
 	vertCache_t	*block;
 
 	if ( size <= 0 ) {
@@ -345,7 +353,7 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size ) {
 		// if we don't have enough room in the temp block, allocate a static block,
 		// but immediately free it so it will get freed at the next frame
 		tempOverflow = true;
-		Alloc( data, size, &block );
+		Alloc( data, size, &block, indexBuffer );
 		Free( block);
 		return block;
 	}
@@ -375,7 +383,7 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size ) {
 
 	block->size = size;
 	block->tag = TAG_TEMP;
-	block->indexBuffer = false;
+  block->indexBuffer = indexBuffer;
 	block->offset = dynamicAllocThisFrame;
 	dynamicAllocThisFrame += block->size;
 	dynamicCountThisFrame++;
@@ -383,10 +391,16 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size ) {
 	block->frameUsed = 0;
 
 	// copy the data
-	block->vbo = tempBuffers[listNum]->vbo;
 
+  if ( indexBuffer ) {
+		block->vbo = tempIndexBuffers[listNum]->vbo;
+		qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, block->vbo );
+    qglBufferSubData( GL_ELEMENT_ARRAY_BUFFER, block->offset, (GLsizeiptr)size, data );
+  } else {
+		block->vbo = tempBuffers[listNum]->vbo;
 		qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
-		qglBufferSubData( GL_ARRAY_BUFFER, block->offset, (GLsizeiptr)size, data );
+    qglBufferSubData( GL_ARRAY_BUFFER, block->offset, (GLsizeiptr)size, data );
+  }
 
 	return block;
 }
