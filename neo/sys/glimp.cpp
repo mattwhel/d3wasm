@@ -47,37 +47,36 @@ static SDL_Surface *window = NULL;
 #define SDL_WINDOW_FULLSCREEN SDL_FULLSCREEN
 #endif
 
-static void SetSDLIcon()
-{
-	Uint32 rmask, gmask, bmask, amask;
+static void SetSDLIcon() {
+  Uint32 rmask, gmask, bmask, amask;
 
-	// ok, the following is pretty stupid.. SDL_CreateRGBSurfaceFrom() pretends to use a void* for the data,
-	// but it's really treated as endian-specific Uint32* ...
+  // ok, the following is pretty stupid.. SDL_CreateRGBSurfaceFrom() pretends to use a void* for the data,
+  // but it's really treated as endian-specific Uint32* ...
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	rmask = 0xff000000;
-	gmask = 0x00ff0000;
-	bmask = 0x0000ff00;
-	amask = 0x000000ff;
+  rmask = 0xff000000;
+  gmask = 0x00ff0000;
+  bmask = 0x0000ff00;
+  amask = 0x000000ff;
 #else
-	rmask = 0x000000ff;
-	gmask = 0x0000ff00;
-	bmask = 0x00ff0000;
-	amask = 0xff000000;
+  rmask = 0x000000ff;
+  gmask = 0x0000ff00;
+  bmask = 0x00ff0000;
+  amask = 0xff000000;
 #endif
 
-	#include "doom_icon.h" // contains the struct d3_icon
+#include "doom_icon.h" // contains the struct d3_icon
 
-	SDL_Surface* icon = SDL_CreateRGBSurfaceFrom((void*)d3_icon.pixel_data, d3_icon.width, d3_icon.height,
-			d3_icon.bytes_per_pixel*8, d3_icon.bytes_per_pixel*d3_icon.width,
-			rmask, gmask, bmask, amask);
+  SDL_Surface *icon = SDL_CreateRGBSurfaceFrom((void *) d3_icon.pixel_data, d3_icon.width, d3_icon.height,
+                                               d3_icon.bytes_per_pixel * 8, d3_icon.bytes_per_pixel * d3_icon.width,
+                                               rmask, gmask, bmask, amask);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_SetWindowIcon(window, icon);
+  SDL_SetWindowIcon(window, icon);
 #else
-	SDL_WM_SetIcon(icon, NULL);
+  SDL_WM_SetIcon(icon, NULL);
 #endif
 
-	SDL_FreeSurface(icon);
+  SDL_FreeSurface(icon);
 }
 
 /*
@@ -86,158 +85,156 @@ GLimp_Init
 ===================
 */
 bool GLimp_Init(glimpParms_t parms) {
-	common->Printf("Initializing OpenGL subsystem\n");
+  common->Printf("Initializing OpenGL subsystem\n");
 
-	assert(SDL_WasInit(SDL_INIT_VIDEO));
+  assert(SDL_WasInit(SDL_INIT_VIDEO));
 
-	Uint32 flags = SDL_WINDOW_OPENGL;
+  Uint32 flags = SDL_WINDOW_OPENGL;
 
-	if (parms.fullScreen)
-		flags |= SDL_WINDOW_FULLSCREEN;
+  if (parms.fullScreen)
+    flags |= SDL_WINDOW_FULLSCREEN;
 
-	int colorbits = 24;
-	int depthbits = 24;
-	int stencilbits = 8;
+  int colorbits = 24;
+  int depthbits = 24;
+  int stencilbits = 8;
 
-	for (int i = 0; i < 16; i++) {
-		// 0 - default
-		// 1 - minus colorbits
-		// 2 - minus depthbits
-		// 3 - minus stencil
-		if ((i % 4) == 0 && i) {
-			// one pass, reduce
-			switch (i / 4) {
-			case 2 :
-				if (colorbits == 24)
-					colorbits = 16;
-				break;
-			case 1 :
-				if (depthbits == 24)
-					depthbits = 16;
-				else if (depthbits == 16)
-					depthbits = 8;
-			case 3 :
-				if (stencilbits == 24)
-					stencilbits = 16;
-				else if (stencilbits == 16)
-					stencilbits = 8;
-			}
-		}
+  for (int i = 0; i < 16; i++) {
+    // 0 - default
+    // 1 - minus colorbits
+    // 2 - minus depthbits
+    // 3 - minus stencil
+    if ((i % 4) == 0 && i) {
+      // one pass, reduce
+      switch (i / 4) {
+        case 2 :
+          if (colorbits == 24)
+            colorbits = 16;
+          break;
+        case 1 :
+          if (depthbits == 24)
+            depthbits = 16;
+          else if (depthbits == 16)
+            depthbits = 8;
+        case 3 :
+          if (stencilbits == 24)
+            stencilbits = 16;
+          else if (stencilbits == 16)
+            stencilbits = 8;
+      }
+    }
 
-		int tcolorbits = colorbits;
-		int tdepthbits = depthbits;
-		int tstencilbits = stencilbits;
+    int tcolorbits = colorbits;
+    int tdepthbits = depthbits;
+    int tstencilbits = stencilbits;
 
-		if ((i % 4) == 3) {
-			// reduce colorbits
-			if (tcolorbits == 24)
-				tcolorbits = 16;
-		}
+    if ((i % 4) == 3) {
+      // reduce colorbits
+      if (tcolorbits == 24)
+        tcolorbits = 16;
+    }
 
-		if ((i % 4) == 2) {
-			// reduce depthbits
-			if (tdepthbits == 24)
-				tdepthbits = 16;
-			else if (tdepthbits == 16)
-				tdepthbits = 8;
-		}
+    if ((i % 4) == 2) {
+      // reduce depthbits
+      if (tdepthbits == 24)
+        tdepthbits = 16;
+      else if (tdepthbits == 16)
+        tdepthbits = 8;
+    }
 
-		if ((i % 4) == 1) {
-			// reduce stencilbits
-			if (tstencilbits == 24)
-				tstencilbits = 16;
-			else if (tstencilbits == 16)
-				tstencilbits = 8;
-			else
-				tstencilbits = 0;
-		}
+    if ((i % 4) == 1) {
+      // reduce stencilbits
+      if (tstencilbits == 24)
+        tstencilbits = 16;
+      else if (tstencilbits == 16)
+        tstencilbits = 8;
+      else
+        tstencilbits = 0;
+    }
 
-		int channelcolorbits = 4;
-		if (tcolorbits == 24)
-			channelcolorbits = 8;
+    int channelcolorbits = 4;
+    if (tcolorbits == 24)
+      channelcolorbits = 8;
 
-		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, channelcolorbits);
-		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, channelcolorbits);
-		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, channelcolorbits);
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, tdepthbits);
-		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, tstencilbits);
-		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, channelcolorbits);
-		SDL_GL_SetAttribute(SDL_GL_STEREO, parms.stereo ? 1 : 0);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, parms.multiSamples ? 1 : 0);
-		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, parms.multiSamples);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, channelcolorbits);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, channelcolorbits);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, channelcolorbits);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, tdepthbits);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, tstencilbits);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, channelcolorbits);
+    SDL_GL_SetAttribute(SDL_GL_STEREO, parms.stereo ? 1 : 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, parms.multiSamples ? 1 : 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, parms.multiSamples);
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-		window = SDL_CreateWindow(ENGINE_VERSION,
-									SDL_WINDOWPOS_UNDEFINED,
-									SDL_WINDOWPOS_UNDEFINED,
-									parms.width, parms.height, flags);
+    window = SDL_CreateWindow(ENGINE_VERSION,
+                  SDL_WINDOWPOS_UNDEFINED,
+                  SDL_WINDOWPOS_UNDEFINED,
+                  parms.width, parms.height, flags);
 
-		if (!window) {
-			common->DPrintf("Couldn't set GL mode %d/%d/%d: %s",
-							channelcolorbits, tdepthbits, tstencilbits, SDL_GetError());
-			continue;
-		}
+    if (!window) {
+      common->DPrintf("Couldn't set GL mode %d/%d/%d: %s",
+              channelcolorbits, tdepthbits, tstencilbits, SDL_GetError());
+      continue;
+    }
 
-#ifdef USEREGAL
-	    // Initialize ES 2.0 context profile on emscripten, and do not set any other context flags (it does not work otherwise)
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#endif
+    // Initialize ES 2.0 context profile on emscripten, and do not set any other context flags (it does not work otherwise)
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 
-		context = SDL_GL_CreateContext(window);
+    context = SDL_GL_CreateContext(window);
 
 #ifdef USEREGAL
 #else
-		if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
-			common->Warning("SDL_GL_SWAP_CONTROL not supported");
+    if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
+      common->Warning("SDL_GL_SWAP_CONTROL not supported");
 #endif
 
-		SDL_GetWindowSize(window, &glConfig.vidWidth, &glConfig.vidHeight);
+    SDL_GetWindowSize(window, &glConfig.vidWidth, &glConfig.vidHeight);
 
-		SetSDLIcon(); // for SDL2  this must be done after creating the window
+    SetSDLIcon(); // for SDL2  this must be done after creating the window
 
-		glConfig.isFullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN;
+    glConfig.isFullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN;
 #else
-		SDL_WM_SetCaption(ENGINE_VERSION, ENGINE_VERSION);
+    SDL_WM_SetCaption(ENGINE_VERSION, ENGINE_VERSION);
 
-		SetSDLIcon(); // for SDL1.2  this must be done before creating the window
+    SetSDLIcon(); // for SDL1.2  this must be done before creating the window
 
-		if (SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, r_swapInterval.GetInteger()) < 0)
-			common->Warning("SDL_GL_SWAP_CONTROL not supported");
+    if (SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, r_swapInterval.GetInteger()) < 0)
+      common->Warning("SDL_GL_SWAP_CONTROL not supported");
 
-		window = SDL_SetVideoMode(parms.width, parms.height, colorbits, flags);
-		if (!window) {
-			common->DPrintf("Couldn't set GL mode %d/%d/%d: %s",
-							channelcolorbits, tdepthbits, tstencilbits, SDL_GetError());
-			continue;
-		}
+    window = SDL_SetVideoMode(parms.width, parms.height, colorbits, flags);
+    if (!window) {
+      common->DPrintf("Couldn't set GL mode %d/%d/%d: %s",
+                      channelcolorbits, tdepthbits, tstencilbits, SDL_GetError());
+      continue;
+    }
 
-		glConfig.vidWidth = window->w;
-		glConfig.vidHeight = window->h;
+    glConfig.vidWidth = window->w;
+    glConfig.vidHeight = window->h;
 
-		glConfig.isFullscreen = (window->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
+    glConfig.isFullscreen = (window->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 #endif
 
-		common->Printf("Using %d color bits, %d depth, %d stencil display\n",
-						channelcolorbits, tdepthbits, tstencilbits);
+    common->Printf("Using %d color bits, %d depth, %d stencil display\n",
+                   channelcolorbits, tdepthbits, tstencilbits);
 
-		glConfig.colorBits = tcolorbits;
-		glConfig.depthBits = tdepthbits;
-		glConfig.stencilBits = tstencilbits;
+    glConfig.colorBits = tcolorbits;
+    glConfig.depthBits = tdepthbits;
+    glConfig.stencilBits = tstencilbits;
 
-		glConfig.displayFrequency = 0;
+    glConfig.displayFrequency = 0;
 
-		break;
-	}
+    break;
+  }
 
-	if (!window) {
-		common->Warning("No usable GL mode found: %s", SDL_GetError());
-		return false;
-	}
+  if (!window) {
+    common->Warning("No usable GL mode found: %s", SDL_GetError());
+    return false;
+  }
 
-	return true;
+  return true;
 }
 
 /*
@@ -246,8 +243,8 @@ GLimp_SetScreenParms
 ===================
 */
 bool GLimp_SetScreenParms(glimpParms_t parms) {
-	common->DPrintf("TODO: GLimp_ActivateContext\n");
-	return true;
+  common->DPrintf("TODO: GLimp_ActivateContext\n");
+  return true;
 }
 
 /*
@@ -256,18 +253,18 @@ GLimp_Shutdown
 ===================
 */
 void GLimp_Shutdown() {
-	common->Printf("Shutting down OpenGL subsystem\n");
+  common->Printf("Shutting down OpenGL subsystem\n");
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	if (context) {
-		SDL_GL_DeleteContext(context);
-		context = NULL;
-	}
+  if (context) {
+    SDL_GL_DeleteContext(context);
+    context = NULL;
+  }
 
-	if (window) {
-		SDL_DestroyWindow(window);
-		window = NULL;
-	}
+  if (window) {
+    SDL_DestroyWindow(window);
+    window = NULL;
+  }
 #endif
 }
 
@@ -278,13 +275,13 @@ GLimp_SwapBuffers
 */
 void GLimp_SwapBuffers() {
 #ifdef USEREGAL
-	// GAB Note Jan 2018: Not needed on WebGL
-	return;
+  // GAB Note Jan 2018: Not needed on WebGL
+  return;
 #endif
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_GL_SwapWindow(window);
+  SDL_GL_SwapWindow(window);
 #else
-	SDL_GL_SwapBuffers();
+  SDL_GL_SwapBuffers();
 #endif
 }
 
@@ -294,17 +291,17 @@ GLimp_SetGamma
 =================
 */
 void GLimp_SetGamma(unsigned short red[256], unsigned short green[256], unsigned short blue[256]) {
-	if (!window) {
-		common->Warning("GLimp_SetGamma called without window");
-		return;
-	}
+  if (!window) {
+    common->Warning("GLimp_SetGamma called without window");
+    return;
+  }
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	if (SDL_SetWindowGammaRamp(window, red, green, blue))
+  if (SDL_SetWindowGammaRamp(window, red, green, blue))
 #else
-	if (SDL_SetGammaRamp(red, green, blue))
+  if (SDL_SetGammaRamp(red, green, blue))
 #endif
-		common->Warning("Couldn't set gamma ramp: %s", SDL_GetError());
+    common->Warning("Couldn't set gamma ramp: %s", SDL_GetError());
 }
 
 /*
@@ -313,7 +310,7 @@ GLimp_ActivateContext
 =================
 */
 void GLimp_ActivateContext() {
-	common->DPrintf("TODO: GLimp_ActivateContext\n");
+  common->DPrintf("TODO: GLimp_ActivateContext\n");
 }
 
 /*
@@ -322,7 +319,7 @@ GLimp_DeactivateContext
 =================
 */
 void GLimp_DeactivateContext() {
-	common->DPrintf("TODO: GLimp_DeactivateContext\n");
+  common->DPrintf("TODO: GLimp_DeactivateContext\n");
 }
 
 /*
@@ -331,34 +328,34 @@ GLimp_ExtensionPointer
 ===================
 */
 GLExtension_t GLimp_ExtensionPointer(const char *name) {
-	assert(SDL_WasInit(SDL_INIT_VIDEO));
+  assert(SDL_WasInit(SDL_INIT_VIDEO));
 
-	return (GLExtension_t)SDL_GL_GetProcAddress(name);
+  return (GLExtension_t) SDL_GL_GetProcAddress(name);
 }
 
 void GLimp_GrabInput(int flags) {
-	bool grab = flags & GRAB_ENABLE;
+  bool grab = flags & GRAB_ENABLE;
 
-	if (grab && (flags & GRAB_REENABLE))
-		grab = false;
+  if (grab && (flags & GRAB_REENABLE))
+    grab = false;
 
-	if (flags & GRAB_SETSTATE)
-		grabbed = grab;
+  if (flags & GRAB_SETSTATE)
+    grabbed = grab;
 
-	if (in_nograb.GetBool())
-		grab = false;
+  if (in_nograb.GetBool())
+    grab = false;
 
-	if (!window) {
-		common->Warning("GLimp_GrabInput called without window");
-		return;
-	}
+  if (!window) {
+    common->Warning("GLimp_GrabInput called without window");
+    return;
+  }
 
 #if SDL_VERSION_ATLEAST(2, 0, 0)
-	SDL_ShowCursor(flags & GRAB_HIDECURSOR ? SDL_DISABLE : SDL_ENABLE);
-	SDL_SetRelativeMouseMode((grab && (flags & GRAB_HIDECURSOR)) ? SDL_TRUE : SDL_FALSE);
-	SDL_SetWindowGrab(window, grab ? SDL_TRUE : SDL_FALSE);
+  SDL_ShowCursor(flags & GRAB_HIDECURSOR ? SDL_DISABLE : SDL_ENABLE);
+  SDL_SetRelativeMouseMode((grab && (flags & GRAB_HIDECURSOR)) ? SDL_TRUE : SDL_FALSE);
+  SDL_SetWindowGrab(window, grab ? SDL_TRUE : SDL_FALSE);
 #else
-	SDL_ShowCursor(flags & GRAB_HIDECURSOR ? SDL_DISABLE : SDL_ENABLE);
-	SDL_WM_GrabInput(grab ? SDL_GRAB_ON : SDL_GRAB_OFF);
+  SDL_ShowCursor(flags & GRAB_HIDECURSOR ? SDL_DISABLE : SDL_ENABLE);
+  SDL_WM_GrabInput(grab ? SDL_GRAB_ON : SDL_GRAB_OFF);
 #endif
 }
