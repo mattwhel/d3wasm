@@ -1233,12 +1233,7 @@ typedef struct shaderProgram_s {
 	GLint		alphaTest;
 	GLint		specularExponent;
 
-#ifdef USEREGAL
-	GLint		modelViewMatrix;
-  GLint		projectionMatrix;
-#else
 	GLint		modelViewProjectionMatrix;
-#endif
 	GLint		textureMatrix;
 
 	GLint		windowCoords;

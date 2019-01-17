@@ -6,8 +6,7 @@ attribute vec4 attr_TexCoord;
 attribute vec4 attr_Vertex;
 
 // Uniforms
-uniform mat4 u_modelViewMatrix;
-uniform mat4 u_projectionMatrix;
+uniform mat4 u_modelViewProjectionMatrix;
 uniform bool u_clip;
 uniform vec4 u_texGen0S;
 
@@ -24,5 +23,5 @@ void main(void)
 
     var_texDiffuse = attr_TexCoord.xy;
 
-	gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;
+	gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }

@@ -46,12 +46,7 @@ static const char *const interactionShaderVP =
     "attribute vec4 attr_Color;\n"
     "\n"
     "// Uniforms\n"
-    #ifdef USEREGAL
-    "uniform mat4 u_modelViewMatrix;\n"
-    "uniform mat4 u_projectionMatrix;\n"
-    #else
     "uniform mat4 u_modelViewProjectionMatrix;\n"
-    #endif
     "uniform vec4 u_lightProjectionS;\n"
     "uniform vec4 u_lightProjectionT;\n"
     "uniform vec4 u_lightFalloff;\n"
@@ -114,11 +109,7 @@ static const char *const interactionShaderVP =
     "\n"
     "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
     "\n"
-    #ifdef USEREGAL
-    "\tgl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
-    #else
     "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
-    #endif
     "}\n";
 
 static const char *const interactionShaderFP =
@@ -210,12 +201,7 @@ static const char *const fogShaderVP =
     "attribute vec4 attr_Vertex;      // input Vertex Coordinates\n"
     "\n"
     "// Uniforms\n"
-    #ifdef USEREGAL
-    "uniform mat4 u_modelViewMatrix;\n"
-    "uniform mat4 u_projectionMatrix;\n"
-    #else
     "uniform mat4 u_modelViewProjectionMatrix;\n"
-    #endif
     "uniform vec4 u_texGen0S;         // fogPlane 0\n"
     "uniform vec4 u_texGen0T;         // fogPlane 1\n"
     "uniform vec4 u_texGen1S;         // fogPlane 3 (not 2!)\n"
@@ -228,11 +214,7 @@ static const char *const fogShaderVP =
     "\n"
     "void main(void)\n"
     "{\n"
-    #ifdef USEREGAL
-    "  gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
-    #else
     "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
-    #endif
     "\n"
     "  var_texFog.x      = dot(u_texGen0S, attr_Vertex);\n"
     "  var_texFog.y      = dot(u_texGen0T, attr_Vertex);\n"
@@ -271,12 +253,7 @@ static const char *const zfillShaderVP =
     "attribute vec4 attr_Vertex;\n"
     "\n"
     "// Uniforms\n"
-    #ifdef USEREGAL
-    "uniform mat4 u_modelViewMatrix;\n"
-    "uniform mat4 u_projectionMatrix;\n"
-    #else
     "uniform mat4 u_modelViewProjectionMatrix;\n"
-    #endif
     "uniform bool u_clip;\n"
     "uniform vec4 u_texGen0S;\n"
     "\n"
@@ -293,11 +270,7 @@ static const char *const zfillShaderVP =
     "\n"
     "    var_texDiffuse = attr_TexCoord.xy;\n"
     "\n"
-    #ifdef USEREGAL
-    "  gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
-    #else
     "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
-    #endif
     "}\n";
 
 static const char *const zfillShaderFP =
@@ -345,12 +318,7 @@ static const char *const defaultShaderVP =
     "attribute vec4 attr_Vertex;\n"
     "\n"
     "// Uniforms\n"
-    #ifdef USEREGAL
-    "uniform mat4 u_modelViewMatrix;\n"
-    "uniform mat4 u_projectionMatrix;\n"
-    #else
     "uniform mat4 u_modelViewProjectionMatrix;\n"
-    #endif
     "uniform mat4 u_textureMatrix;\n"
     "uniform vec4 u_colorAdd;\n"
     "uniform vec4 u_colorModulate;\n"
@@ -366,11 +334,7 @@ static const char *const defaultShaderVP =
     "\n"
     "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
     "\n"
-    #ifdef USEREGAL
-    "  gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
-    #else
     "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
-    #endif
     "}\n";
 
 static const char *const defaultShaderFP =
@@ -396,12 +360,7 @@ static const char *const stencilShadowShaderVP =
     "attribute vec4 attr_Vertex;\n"
     "\n"
     "// Uniforms\n"
-    #ifdef USEREGAL
-    "uniform mat4 u_modelViewMatrix;\n"
-    "uniform mat4 u_projectionMatrix;\n"
-    #else
     "uniform mat4 u_modelViewProjectionMatrix;\n"
-    #endif
     "uniform vec4 u_glColor;\n"
     "\n"
     "// Out\n"
@@ -410,11 +369,7 @@ static const char *const stencilShadowShaderVP =
     "\n"
     "void main(void)\n"
     "{\n"
-    #ifdef USEREGAL
-    "\tgl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
-    #else
     "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
-    #endif
     "\n"
     "\tvar_Color = u_glColor;\n"
     "}\n";
@@ -641,13 +596,7 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->localEyeOrigin = qglGetUniformLocation(shader->program, "u_localEyeOrigin");
   shader->nonPowerOfTwo = qglGetUniformLocation(shader->program, "u_nonPowerOfTwo");
   shader->windowCoords = qglGetUniformLocation(shader->program, "u_windowCoords");
-
-#ifdef USEREGAL
-  shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
-  shader->projectionMatrix = qglGetUniformLocation(shader->program, "u_projectionMatrix");
-#else
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
-#endif
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
 
   shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
@@ -780,13 +729,9 @@ static void RB_GLSL_EnterWeaponDepthHack(const drawSurf_t *surf) {
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
   matrix[14] *= 0.25;
 
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
-#else
   float mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 }
 
 /*
@@ -801,13 +746,9 @@ static void RB_GLSL_EnterModelDepthHack(const drawSurf_t *surf) {
   memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
   matrix[14] -= surf->space->modelDepthHack;
 
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), matrix);
-#else
   float mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 }
 
 /*
@@ -818,13 +759,9 @@ RB_LeaveDepthHack
 static void RB_GLSL_LeaveDepthHack(const drawSurf_t *surf) {
   qglDepthRangef(0, 1);
 
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-#else
   float mat[16];
   myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 }
 
 /*
@@ -1104,25 +1041,16 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-#else
   float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 
   for (; surf; surf = surf->nextOnLight) {
     // perform setup here that will not change over multiple interaction passes
 
-#ifdef USEREGAL
-    // set the modelview matrix for the viewer
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
-#else
     float mat[16];
     myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 
     // set the vertex pointers
     idDrawVert *ac = (idDrawVert *) vertexCache.Position(surf->geo->ambientCache);
@@ -1294,13 +1222,9 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t *drawSurfs,
   for (drawSurf = drawSurfs; drawSurf; drawSurf = drawSurf->nextOnLight) {
     // change the matrix if needed
     if (drawSurf->space != backEnd.currentSpace) {
-#ifdef USEREGAL
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
-#else
       float mat[16];
       myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
     }
 
     if (drawSurf->space->weaponDepthHack) {
@@ -1370,14 +1294,10 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   backEnd.lightColor[3] = regs[stage->color.registers[3]];
 
   // Setup Uniforms
-  // Projection and ModelView matrices
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-#else
   float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
+
   // FogColor
   GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), backEnd.lightColor);
 
@@ -1464,13 +1384,9 @@ void RB_GLSL_RenderDrawSurfListWithFunction(drawSurf_t **drawSurfs, int numDrawS
 
     // change the matrix if needed
     if (drawSurf->space != backEnd.currentSpace) {
-#ifdef USEREGAL
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), drawSurf->space->modelViewMatrix);
-#else
       float mat[16];
       myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
     }
 
     if (drawSurf->space->weaponDepthHack) {
@@ -1953,14 +1869,9 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   GL_SelectTexture(0);
 
   // Setup Uniforms
-  // Projection and ModelView matrices
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-#else
   float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 
   // Setup Attributes
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
@@ -2032,13 +1943,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf) {
     GL_Uniform4fv(offsetof(shaderProgram_t, localEyeOrigin), parm);
 
     // set modelView matrix
-#ifdef USEREGAL
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
-#else
     float mat[16];
     myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
   }
 
   // change the scissor if needed
@@ -2270,13 +2177,9 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // Setup projection matrix
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-#else
   float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 
   // we don't use RB_GLSL_RenderDrawSurfListWithFunction()
   // because we want to defer the matrix load because many
@@ -2473,13 +2376,9 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
 
   GL_UseProgram(&stencilShadowShader);
 
-#ifdef USEREGAL
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
-#else
   float mat[16];
   myGlMultMatrix(mat4_identity.ToFloatPtr(), backEnd.viewDef->projectionMatrix, mat);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-#endif
 
   // for visualizing the shadows
   if (r_showShadows.GetInteger()) {

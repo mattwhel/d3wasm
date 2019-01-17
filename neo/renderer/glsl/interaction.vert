@@ -13,8 +13,7 @@ attribute vec4 attr_Vertex;
 attribute vec4 attr_Color;
 
 // Uniforms
-uniform mat4 u_modelViewMatrix;
-uniform mat4 u_projectionMatrix;
+uniform mat4 u_modelViewProjectionMatrix;
 uniform vec4 u_lightProjectionS;
 uniform vec4 u_lightProjectionT;
 uniform vec4 u_lightFalloff;
@@ -77,5 +76,5 @@ void main(void)
 
 	var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;
 
-	gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;
+	gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
