@@ -982,7 +982,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
           RB_SubmittInteraction(&inter, DrawInteraction);
           inter.diffuseImage = NULL;
           inter.specularImage = NULL;
-          R_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.bumpImage, inter.bumpMatrix, NULL);
+          RB_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.bumpImage, inter.bumpMatrix, NULL);
           break;
         }
         case SL_DIFFUSE: {
@@ -995,7 +995,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
             RB_SubmittInteraction(&inter, DrawInteraction);
           }
 
-          R_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.diffuseImage,
+          RB_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.diffuseImage,
                                inter.diffuseMatrix, inter.diffuseColor.ToFloatPtr());
           inter.diffuseColor[0] *= lightColor[0];
           inter.diffuseColor[1] *= lightColor[1];
@@ -1014,7 +1014,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
             RB_SubmittInteraction(&inter, DrawInteraction);
           }
 
-          R_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.specularImage,
+          RB_SetDrawInteraction(surfaceStage, surfaceRegs, &inter.specularImage,
                                inter.specularMatrix, inter.specularColor.ToFloatPtr());
           inter.specularColor[0] *= lightColor[0];
           inter.specularColor[1] *= lightColor[1];
@@ -1240,7 +1240,7 @@ static void RB_T_GLSL_BasicFog(const drawSurf_t *surf) {
     GL_Uniform4fv(offsetof(shaderProgram_t, texGen1S), local.ToFloatPtr());
   }
 
-  RB_T_RenderTriangleSurface(surf);
+  RB_DrawElementsWithCounters(surf->geo);
 }
 
 
@@ -1414,7 +1414,7 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
 
 /*
 ====================
-RB_RenderDrawSurfListWithFunction
+RB_GLSL_RenderDrawSurfListWithFunction
 
 The triangle functions can check backEnd.currentSpace != surf->space
 to see if they need to perform any new matrix setup.  The modelview
@@ -2239,7 +2239,7 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs)
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
 
-  // we don't use RB_RenderDrawSurfListWithFunction()
+  // we don't use RB_GLSL_RenderDrawSurfListWithFunction()
   // because we want to defer the matrix load because many
   // surfaces won't draw any ambient passes
   backEnd.currentSpace = NULL;

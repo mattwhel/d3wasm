@@ -82,37 +82,6 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 
 /*
 ===============
-RB_RenderTriangleSurface
-
-Sets texcoord and vertex pointers
-===============
-*/
-void RB_RenderTriangleSurface( const srfTriangles_t *tri ) {
-	if ( !tri->ambientCache ) {
-		// Weird, something gone wrong in the VBOs....
-		return;
-	}
-
-
-	idDrawVert *ac = (idDrawVert *)vertexCache.Position( tri->ambientCache );
-	qglVertexPointer( 3, GL_FLOAT, sizeof( idDrawVert ), ac->xyz.ToFloatPtr() );
-	qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ), ac->st.ToFloatPtr() );
-
-	RB_DrawElementsWithCounters( tri );
-}
-
-/*
-===============
-RB_T_RenderTriangleSurface
-
-===============
-*/
-void RB_T_RenderTriangleSurface( const drawSurf_t *surf ) {
-	RB_RenderTriangleSurface( surf->geo );
-}
-
-/*
-===============
 RB_EnterWeaponDepthHack
 ===============
 */
@@ -160,59 +129,6 @@ void RB_LeaveDepthHack() {
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadMatrixf( backEnd.viewDef->projectionMatrix );
 	qglMatrixMode(GL_MODELVIEW);
-}
-
-/*
-====================
-RB_RenderDrawSurfListWithFunction
-
-The triangle functions can check backEnd.currentSpace != surf->space
-to see if they need to perform any new matrix setup.  The modelview
-matrix will already have been loaded, and backEnd.currentSpace will
-be updated after the triangle function completes.
-====================
-*/
-void RB_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
-											  void (*triFunc_)( const drawSurf_t *) ) {
-	int				i;
-	const drawSurf_t		*drawSurf;
-
-	backEnd.currentSpace = NULL;
-
-	for (i = 0  ; i < numDrawSurfs ; i++ ) {
-		drawSurf = drawSurfs[i];
-
-		// change the matrix if needed
-		if ( drawSurf->space != backEnd.currentSpace ) {
-			qglLoadMatrixf( drawSurf->space->modelViewMatrix );
-		}
-
-		if ( drawSurf->space->weaponDepthHack ) {
-			RB_EnterWeaponDepthHack();
-		}
-
-		if ( drawSurf->space->modelDepthHack != 0.0f ) {
-			RB_EnterModelDepthHack( drawSurf->space->modelDepthHack );
-		}
-
-		// change the scissor if needed
-		if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
-			backEnd.currentScissor = drawSurf->scissorRect;
-			qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-				backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-				backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-				backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
-		}
-
-		// render it
-		triFunc_( drawSurf );
-
-		if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
-			RB_LeaveDepthHack();
-		}
-
-		backEnd.currentSpace = drawSurf->space;
-	}
 }
 
 /*
@@ -540,10 +456,10 @@ void RB_BeginDrawingView (void) {
 
 /*
 ==================
-R_SetDrawInteractions
+RB_SetDrawInteractions
 ==================
 */
-void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
+void RB_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
                            idImage **image, idVec4 matrix[2], float color[4] ) {
   *image = surfaceStage->texture.image;
   if ( surfaceStage->texture.hasMatrix ) {
@@ -663,7 +579,7 @@ void RB_DrawView( const void *data ) {
 	//RB_ShowOverdraw();
 
 	// render the scene, jumping to the hardware specific interaction renderers
-	RB_STD_DrawView();
+	RB_RenderView();
 
 	// restore the context for 2D drawing if we were stubbing it out
 	if ( r_skipRenderContext.GetBool() && backEnd.viewDef->viewEntitys ) {

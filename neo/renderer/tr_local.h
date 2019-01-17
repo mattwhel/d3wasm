@@ -1203,131 +1203,30 @@ srfTriangles_t *R_PolytopeSurface( int numPlanes, const idPlane *planes, idWindi
 /*
 ============================================================
 
-RENDER
+RENDER BACKEND
 
 ============================================================
 */
-
-void RB_EnterWeaponDepthHack();
-void RB_EnterModelDepthHack( float depth );
-void RB_LeaveDepthHack();
-void RB_RenderTriangleSurface( const srfTriangles_t *tri );
-void RB_T_RenderTriangleSurface( const drawSurf_t *surf );
-void RB_RenderDrawSurfListWithFunction( drawSurf_t **drawSurfs, int numDrawSurfs,
-					  void (*triFunc_)( const drawSurf_t *) );
-void RB_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
-										void (*triFunc_)( const drawSurf_t *) );
-void RB_DrawShaderPasses( drawSurf_t **drawSurfs, int numDrawSurfs );
-void RB_LoadShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture );
-void RB_GetShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture, float matrix[16] );
-
-const shaderStage_t *RB_SetLightTexture( const idRenderLightLocal *light );
 
 void RB_DrawView( const void *data );
 
-void RB_DetermineLightScale( void );
-void RB_STD_LightScale( void );
-void RB_BeginDrawingView (void);
-
-/*
-============================================================
-
-DRAW_STANDARD
-
-============================================================
-*/
-
+void RB_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs, void (*triFunc_)( const drawSurf_t *) );
 void RB_DrawElementsWithCounters( const srfTriangles_t *tri );
 void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexes );
-void RB_STD_FillDepthBuffer( drawSurf_t **drawSurfs, int numDrawSurfs );
-void RB_BindVariableStageImage( const textureStage_t *texture, const float *shaderRegisters );
-void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf );
-void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf );
-void RB_StencilShadowPass( const drawSurf_t *drawSurfs );
-void RB_STD_DrawView( void );
-void RB_STD_FogAllLights( void );
 void RB_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float textureMatrix[16] );
 void RB_SubmittInteraction( drawInteraction_t *din, void (*DrawInteraction)(const drawInteraction_t *) );
-void R_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs,
-                           idImage **image, idVec4 matrix[2], float color[4] );
+void RB_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs, idImage **image, idVec4 matrix[2], float color[4] );
+void RB_BindVariableStageImage( const textureStage_t *texture, const float *shaderRegisters );
 
-/*
-============================================================
+void RB_RenderView( void );
 
-DRAW_*
-
-============================================================
-*/
-int		R_FindARBProgram( GLenum target, const char *program );
-
-typedef enum {
-	PROG_INVALID,
-	VPROG_INTERACTION,
-	VPROG_ENVIRONMENT,
-	VPROG_BUMPY_ENVIRONMENT,
-	VPROG_STENCIL_SHADOW,
-	VPROG_TEST,
-	FPROG_INTERACTION,
-	FPROG_ENVIRONMENT,
-	FPROG_BUMPY_ENVIRONMENT,
-	FPROG_TEST,
-	VPROG_AMBIENT,
-	FPROG_AMBIENT,
-	VPROG_GLASSWARP,
-	FPROG_GLASSWARP,
-	PROG_USER
-} program_t;
-
-/*
-
-  All vertex programs use the same constant register layout:
-
-c[4]	localLightOrigin
-c[5]	localViewOrigin
-c[6]	lightProjection S
-c[7]	lightProjection T
-c[8]	lightProjection Q
-c[9]	lightFalloff	S
-c[10]	bumpMatrix S
-c[11]	bumpMatrix T
-c[12]	diffuseMatrix S
-c[13]	diffuseMatrix T
-c[14]	specularMatrix S
-c[15]	specularMatrix T
-
-
-c[20]	light falloff tq constant
-
-// texture 0 was cube map
-// texture 1 will be the per-surface bump map
-// texture 2 will be the light falloff texture
-// texture 3 will be the light projection texture
-// texture 4 is the per-surface diffuse map
-// texture 5 is the per-surface specular map
-// texture 6 is the specular half angle cube map
-
-*/
-
-typedef enum {
-	PP_LIGHT_ORIGIN = 4,
-	PP_VIEW_ORIGIN,
-	PP_LIGHT_PROJECT_S,
-	PP_LIGHT_PROJECT_T,
-	PP_LIGHT_PROJECT_Q,
-	PP_LIGHT_FALLOFF_S,
-	PP_BUMP_MATRIX_S,
-	PP_BUMP_MATRIX_T,
-	PP_DIFFUSE_MATRIX_S,
-	PP_DIFFUSE_MATRIX_T,
-	PP_SPECULAR_MATRIX_S,
-	PP_SPECULAR_MATRIX_T,
-	PP_COLOR_MODULATE,
-	PP_COLOR_ADD,
-
-	PP_LIGHT_FALLOFF_TQ = 20	// only for NV programs
-} programParameter_t;
-
-
+void RB_LoadShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture );
+void RB_GetShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture, float matrix[16] );
+void RB_DetermineLightScale( void );
+void RB_LightScale( void );
+void RB_BeginDrawingView (void);
+void RB_StencilShadowPass( const drawSurf_t *drawSurfs );
+void RB_FogAllLights( void );
 
 /*
 ============================================================
