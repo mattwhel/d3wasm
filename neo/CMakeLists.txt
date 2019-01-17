@@ -363,25 +363,6 @@ set(src_cm
 
 add_globbed_headers(src_cm "cm")
 
-set(src_dmap
-    tools/compilers/dmap/dmap.cpp
-    tools/compilers/dmap/facebsp.cpp
-    tools/compilers/dmap/gldraw.cpp
-    tools/compilers/dmap/glfile.cpp
-    tools/compilers/dmap/leakfile.cpp
-    tools/compilers/dmap/map.cpp
-    tools/compilers/dmap/optimize.cpp
-    tools/compilers/dmap/output.cpp
-    tools/compilers/dmap/portals.cpp
-    tools/compilers/dmap/shadowopt3.cpp
-    tools/compilers/dmap/tritjunction.cpp
-    tools/compilers/dmap/tritools.cpp
-    tools/compilers/dmap/ubrush.cpp
-    tools/compilers/dmap/usurface.cpp
-    )
-
-add_globbed_headers(src_dmap "tools/compilers/dmap")
-
 set(src_aas
     tools/compilers/aas/AASBuild.cpp
     tools/compilers/aas/AASBuild_file.cpp
@@ -579,7 +560,6 @@ set(src_core
     ${src_renderer}
     ${src_framework}
     ${src_cm}
-    ${src_dmap}
     ${src_aas}
     ${src_roq}
     ${src_renderbump}

@@ -1320,7 +1320,6 @@ void R_MakeShadowFrustums( idRenderLightLocal *def );
 typedef enum {
 	SG_DYNAMIC,		// use infinite projections
 	SG_STATIC,		// clip to bounds
-	SG_OFFLINE		// perform very time consuming optimizations
 } shadowGen_t;
 
 srfTriangles_t *R_CreateShadowVolume( const idRenderEntityLocal *ent,
@@ -1342,35 +1341,6 @@ calling this function may modify "facing" based on culling
 srfTriangles_t *R_CreateTurboShadowVolume( const idRenderEntityLocal *ent,
 									 const srfTriangles_t *tri, const idRenderLightLocal *light,
 									 srfCullInfo_t &cullInfo );
-
-/*
-============================================================
-
-util/shadowopt3
-
-dmap time optimization of shadow volumes, called from R_CreateShadowVolume
-
-============================================================
-*/
-
-
-typedef struct {
-	idVec3	*verts;			// includes both front and back projections, caller should free
-	int		numVerts;
-	glIndex_t	*indexes;	// caller should free
-
-	// indexes must be sorted frontCap, rearCap, silPlanes so the caps can be removed
-	// when the viewer is in a position that they don't need to see them
-	int		numFrontCapIndexes;
-	int		numRearCapIndexes;
-	int		numSilPlaneIndexes;
-	int		totalIndexes;
-} optimizedShadow_t;
-
-optimizedShadow_t SuperOptimizeOccluders( idVec4 *verts, glIndex_t *indexes, int numIndexes,
-										 idPlane projectionPlane, idVec3 projectionOrigin );
-
-void CleanupOptimizedShadowTris( srfTriangles_t *tri );
 
 /*
 ============================================================
