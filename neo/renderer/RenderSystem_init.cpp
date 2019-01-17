@@ -1504,7 +1504,7 @@ static void GfxInfo_f( const idCmdArgs &args ) {
 	common->Printf( "GL_EXTENSIONS: %s\n", glConfig.extensions_string );
 	common->Printf( "GL_MAX_TEXTURE_SIZE: %d\n", glConfig.maxTextureSize );
 	common->Printf( "GL_MAX_TEXTURE_UNITS: %d\n", glConfig.maxTextureUnits );
-	common->Printf( "\nPIXELFORMAT: RGBA(%d-bits per channel) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
+	common->Printf( "\nPIXELFORMAT: RGBA(%d-bits) Z(%d-bit) stencil(%d-bits)\n", glConfig.colorBits, glConfig.depthBits, glConfig.stencilBits );
 	common->Printf( "MODE: %d, %d x %d %s hz:", r_mode.GetInteger(), glConfig.vidWidth, glConfig.vidHeight, fsstrings[r_fullscreen.GetBool()] );
 
 	if ( glConfig.displayFrequency ) {

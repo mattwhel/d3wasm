@@ -217,7 +217,7 @@ bool GLimp_Init(glimpParms_t parms) {
     glConfig.isFullscreen = (window->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
 #endif
 
-    common->Printf("Using %d color bits per channel, %d depth, %d stencil display\n",
+    common->Printf("Using %d bits per color channel (RGBA), %d bits depth, %d bits stencil\n",
                    channelcolorbits, tdepthbits, tstencilbits);
 
     glConfig.colorBits = tcolorbits;
