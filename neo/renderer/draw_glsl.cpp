@@ -2004,6 +2004,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf)
     parm[3] = 1.0;
     GL_Uniform4fv(offsetof(shaderProgram_t, localEyeOrigin), parm);
 
+    // set modelView matrix
 #ifdef USEREGAL
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
 #else
@@ -2222,15 +2223,17 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs)
     backEnd.currentRenderCopied = true;
   }
 
+  // Use the default shader
   GL_UseProgram(&defaultShader);
 
-  GL_SelectTextureNoClient(1);
-  globalImages->BindNull();
-
+  // Activate texture 0 for next TextureBinds
   GL_SelectTexture(0);
+
+  // Enable the arrays that will be always activated
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
+  // Setup projection matrix
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
 #else
@@ -2266,14 +2269,16 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs)
 
   GL_Cull(CT_FRONT_SIDED);
 
+  // Disable arrays
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
+  // Disable program
   GL_UseProgram(NULL);
 
+  // Restore fixed function pipeline to an acceptable state
   GL_SelectTexture(0);
   globalImages->BindNull();
-  // Restore fixed function pipeline to an acceptable state
   qglEnableClientState(GL_VERTEX_ARRAY);
 
   return i;
