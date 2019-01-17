@@ -33,7 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 #define __QGL_H__
 
 #include <GLES2/gl2.h>
-//#include <GLES2/gl2ext.h>
+#include <GLES2/gl2ext.h>
 
 typedef void (*GLExtension_t)(void);
 

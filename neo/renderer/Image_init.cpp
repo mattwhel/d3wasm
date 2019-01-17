@@ -989,7 +989,7 @@ static const filterName_t textureFilters[] = {
 			qglTexParameterf(texEnum, GL_TEXTURE_MAG_FILTER, globalImages->textureMaxFilter );
 		}
 		if ( glConfig.anisotropicAvailable ) {
-			//qglTexParameterf(texEnum, GL_TEXTURE_MAX_ANISOTROPY_EXT, globalImages->textureAnisotropy );
+			qglTexParameterf(texEnum, GL_TEXTURE_MAX_ANISOTROPY_EXT, globalImages->textureAnisotropy );
 		}
 	}
 }

@@ -233,15 +233,13 @@ static void R_CheckPortableExtensions( void ) {
 	glConfig.glVersion = atof( glConfig.version_string );
 
 	// GL_EXT_texture_filter_anisotropic (extension only)
-	glConfig.anisotropicAvailable = false;
-
-	//R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
-	//if ( glConfig.anisotropicAvailable ) {
-	//	qglGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &glConfig.maxTextureAnisotropy );
-	//	common->Printf( "   maxTextureAnisotropy: %f\n", glConfig.maxTextureAnisotropy );
-	//} else {
+	glConfig.anisotropicAvailable = R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
+	if ( glConfig.anisotropicAvailable ) {
+		qglGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &glConfig.maxTextureAnisotropy);
+		common->Printf("   maxTextureAnisotropy: %f\n", glConfig.maxTextureAnisotropy);
+	} else {
 		glConfig.maxTextureAnisotropy = 1;
-	//}
+	}
 }
 
 
