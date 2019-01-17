@@ -403,7 +403,6 @@ static const char *const stencilShadowShaderVP =
     "uniform mat4 u_modelViewProjectionMatrix;\n"
     #endif
     "uniform vec4 u_glColor;\n"
-    "uniform vec4 u_lightOrigin;\n"
     "\n"
     "// Out\n"
     "// gl_Position\n"
@@ -412,9 +411,9 @@ static const char *const stencilShadowShaderVP =
     "void main(void)\n"
     "{\n"
     #ifdef USEREGAL
-    "\tgl_Position = (u_projectionMatrix * u_modelViewMatrix) * (attr_Vertex.w * u_lightOrigin + attr_Vertex - u_lightOrigin);\n"
+    "\tgl_Position = (u_projectionMatrix * u_modelViewMatrix) * attr_Vertex;\n"
     #else
-    "\tgl_Position = u_modelViewProjectionMatrix * (attr_Vertex.w * u_lightOrigin + attr_Vertex - u_lightOrigin);\n"
+    "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
     #endif
     "\n"
     "\tvar_Color = u_glColor;\n"
@@ -1248,9 +1247,9 @@ void RB_GLSL_DrawInteractions(void) {
       qglStencilFunc(GL_ALWAYS, 128, 255);
     }
 
-    RB_StencilShadowPass(vLight->globalShadows);                    // Caution: Fixed Function Pipeline
+    RB_GLSL_StencilShadowPass(vLight->globalShadows);
     RB_GLSL_CreateDrawInteractions(vLight->localInteractions);
-    RB_StencilShadowPass(vLight->localShadows);                      // Caution: Fixed Function Pipeline
+    RB_GLSL_StencilShadowPass(vLight->localShadows);
     RB_GLSL_CreateDrawInteractions(vLight->globalInteractions);
 
     // translucent surfaces never get stencil shadowed
@@ -1299,6 +1298,10 @@ static void RB_T_GLSL_BasicFog(const drawSurf_t *surf) {
     GL_Uniform4fv(offsetof(shaderProgram_t, texGen1S), local.ToFloatPtr());
   }
 
+  idDrawVert *ac = (idDrawVert *) vertexCache.Position(surf->geo->ambientCache);
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                         ac->xyz.ToFloatPtr());
+
   RB_DrawElementsWithCounters(surf->geo);
 }
 
@@ -1325,10 +1328,6 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t *drawSurfs,
       GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
 #endif
     }
-
-    idDrawVert *ac = (idDrawVert *) vertexCache.Position(drawSurf->geo->ambientCache);
-    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                           ac->xyz.ToFloatPtr());
 
     if (drawSurf->space->weaponDepthHack) {
       RB_GLSL_EnterWeaponDepthHack(drawSurf);
@@ -2349,4 +2348,193 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
   qglEnableClientState(GL_VERTEX_ARRAY);
 
   return i;
+}
+
+
+/*
+=====================
+RB_T_Shadow
+
+the shadow volumes face INSIDE
+=====================
+*/
+static void RB_T_GLSL_Shadow(const drawSurf_t *surf) {
+  const srfTriangles_t *tri;
+
+  tri = surf->geo;
+
+  if (!tri->shadowCache) {
+    return;
+  }
+
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 4, GL_FLOAT, false, sizeof(shadowCache_t),
+                         vertexCache.Position(tri->shadowCache));
+
+  // we always draw the sil planes, but we may not need to draw the front or rear caps
+  int numIndexes;
+  bool external = false;
+
+  if (!r_useExternalShadows.GetInteger()) {
+    numIndexes = tri->numIndexes;
+  } else if (r_useExternalShadows.GetInteger() == 2) {   // force to no caps for testing
+    numIndexes = tri->numShadowIndexesNoCaps;
+  } else if (!(surf->dsFlags & DSF_VIEW_INSIDE_SHADOW)) {
+    // if we aren't inside the shadow projection, no caps are ever needed needed
+    numIndexes = tri->numShadowIndexesNoCaps;
+    external = true;
+  } else if (!backEnd.vLight->viewInsideLight && !(surf->geo->shadowCapPlaneBits & SHADOW_CAP_INFINITE)) {
+    // if we are inside the shadow projection, but outside the light, and drawing
+    // a non-infinite shadow, we can skip some caps
+    if (backEnd.vLight->viewSeesShadowPlaneBits & surf->geo->shadowCapPlaneBits) {
+      // we can see through a rear cap, so we need to draw it, but we can skip the
+      // caps on the actual surface
+      numIndexes = tri->numShadowIndexesNoFrontCaps;
+    } else {
+      // we don't need to draw any caps
+      numIndexes = tri->numShadowIndexesNoCaps;
+    }
+
+    external = true;
+  } else {
+    // must draw everything
+    numIndexes = tri->numIndexes;
+  }
+
+  // debug visualization
+  if (r_showShadows.GetInteger()) {
+    float color[4];
+
+    if (r_showShadows.GetInteger() == 3) {
+      if (external) {
+        color[0] = 0.1;
+        color[1] = 1;
+        color[2] = 0.1;
+      } else {
+        // these are the surfaces that require the reverse
+        color[0] = 1;
+        color[1] = 0.1;
+        color[2] = 0.1;
+      }
+    } else {
+      // draw different color for turboshadows
+      if (surf->geo->shadowCapPlaneBits & SHADOW_CAP_INFINITE) {
+        if (numIndexes == tri->numIndexes) {
+          color[0] = 1;
+          color[1] = 0.1;
+          color[2] = 0.1;
+        } else {
+          color[0] = 1;
+          color[1] = 0.4;
+          color[2] = 0.1;
+        }
+      } else {
+        if (numIndexes == tri->numIndexes) {
+          color[0] = 0.1;
+          color[1] = 1;
+          color[2] = 0.1;
+        } else if (numIndexes == tri->numShadowIndexesNoFrontCaps) {
+          color[0] = 0.1;
+          color[1] = 1;
+          color[2] = 0.6;
+        } else {
+          color[0] = 0.6;
+          color[1] = 1;
+          color[2] = 0.1;
+        }
+      }
+    }
+
+    color[0] /= backEnd.overBright;
+    color[1] /= backEnd.overBright;
+    color[2] /= backEnd.overBright;
+    color[3] = 1;
+    GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
+
+    qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    qglDisable(GL_STENCIL_TEST);
+    GL_Cull(CT_TWO_SIDED);
+    RB_DrawShadowElementsWithCounters(tri, numIndexes);
+    GL_Cull(CT_FRONT_SIDED);
+    qglEnable(GL_STENCIL_TEST);
+    GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+
+    return;
+  }
+
+  // patent-free work around
+  if (!external) {
+    // "preload" the stencil buffer with the number of volumes
+    // that get clipped by the near or far clip plane
+    qglStencilOp(GL_KEEP, GL_DECR, GL_DECR);
+    GL_Cull(CT_FRONT_SIDED);
+    RB_DrawShadowElementsWithCounters(tri, numIndexes);
+    qglStencilOp(GL_KEEP, GL_INCR, GL_INCR);
+    GL_Cull(CT_BACK_SIDED);
+    RB_DrawShadowElementsWithCounters(tri, numIndexes);
+  }
+
+  // traditional depth-pass stencil shadows
+  qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+  GL_Cull(CT_FRONT_SIDED);
+  RB_DrawShadowElementsWithCounters(tri, numIndexes);
+
+  qglStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+  GL_Cull(CT_BACK_SIDED);
+  RB_DrawShadowElementsWithCounters(tri, numIndexes);
+}
+
+
+/*
+=====================
+RB_GLSL_StencilShadowPass
+
+Stencil test should already be enabled, and the stencil buffer should have
+been set to 128 on any surfaces that might receive shadows
+=====================
+*/
+void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
+  if (!r_shadows.GetBool()) {
+    return;
+  }
+
+  if (!drawSurfs) {
+    return;
+  }
+
+  GL_SelectTexture(0);
+  globalImages->BindNull();
+  GL_UseProgram(&stencilShadowShader);
+
+  // for visualizing the shadows
+  if (r_showShadows.GetInteger()) {
+    if (r_showShadows.GetInteger() == 2) {
+      // draw filled in
+      GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_LESS);
+    }
+  } else {
+    // don't write to the color buffer, just the stencil buffer
+    GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
+  }
+
+  if (r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
+    qglPolygonOffset(r_shadowPolygonFactor.GetFloat(), -r_shadowPolygonOffset.GetFloat());
+    qglEnable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  qglStencilFunc(GL_ALWAYS, 1, 255);
+
+  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow);
+
+  GL_Cull(CT_FRONT_SIDED);
+
+  if (r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
+    qglDisable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  qglStencilFunc(GL_GEQUAL, 128, 255);
+  qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+  GL_UseProgram(NULL);
 }

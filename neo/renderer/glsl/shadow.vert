@@ -8,7 +8,6 @@ attribute vec4 attr_Vertex;
 uniform mat4 u_modelViewMatrix;
 uniform mat4 u_projectionMatrix;
 uniform vec4 u_glColor;
-uniform vec4 u_lightOrigin;
 
 // Out
 // gl_Position
@@ -16,7 +15,7 @@ varying vec4 var_Color;
 
 void main(void)
 {
-	gl_Position = (u_projectionMatrix * u_modelViewMatrix) * (attr_Vertex.w * u_lightOrigin + attr_Vertex - u_lightOrigin);
+	gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;
 
 	var_Color = u_glColor;
 }
