@@ -381,21 +381,6 @@ set(src_aas
 
 add_globbed_headers(src_aas "tools/compilers/aas")
 
-set(src_roq
-    tools/compilers/roqvq/NSBitmapImageRep.cpp
-    tools/compilers/roqvq/codec.cpp
-    tools/compilers/roqvq/roq.cpp
-    tools/compilers/roqvq/roqParam.cpp
-    )
-
-add_globbed_headers(src_roq "tools/compilers/roqvq")
-
-set(src_renderbump
-    tools/compilers/renderbump/renderbump.cpp
-    )
-
-add_globbed_headers(src_renderbump "tools/compilers/renderbump")
-
 set(src_snd
     sound/snd_cache.cpp
     sound/snd_decoder.cpp
@@ -561,13 +546,9 @@ set(src_core
     ${src_framework}
     ${src_cm}
     ${src_aas}
-    ${src_roq}
     ${src_snd}
     ${src_ui}
     )
-
-set(src_stub_openal sys/stub/openal_stub.cpp)
-set(src_stub_gl sys/stub/stub_gl.cpp)
 
 set(src_sys_base
     sys/cpu.cpp

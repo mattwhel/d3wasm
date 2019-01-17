@@ -46,7 +46,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "renderer/Model.h"
 #include "renderer/ModelManager.h"
 #include "renderer/RenderSystem.h"
-#include "tools/compilers/compiler_public.h"
 #include "tools/compilers/aas/AASFileManager.h"
 
 #include "framework/Common.h"
@@ -2212,15 +2211,6 @@ void idCommonLocal::InitCommands(void) {
                         "detects system capabilities and sets com_machineSpec to appropriate value");
   cmdSystem->AddCommand("execMachineSpec", Com_ExecMachineSpec_f, CMD_FL_SYSTEM,
                         "execs the appropriate config files and sets cvars based on com_machineSpec");
-
-  // compilers
-  cmdSystem->AddCommand("runAAS", RunAAS_f, CMD_FL_TOOL, "compiles an AAS file for a map",
-                        idCmdSystem::ArgCompletion_MapName);
-  cmdSystem->AddCommand("runAASDir", RunAASDir_f, CMD_FL_TOOL, "compiles AAS files for all maps in a folder",
-                        idCmdSystem::ArgCompletion_MapName);
-  cmdSystem->AddCommand("runReach", RunReach_f, CMD_FL_TOOL, "calculates reachability for an AAS file",
-                        idCmdSystem::ArgCompletion_MapName);
-  cmdSystem->AddCommand("roq", RoQFileEncode_f, CMD_FL_TOOL, "encodes a roq file");
 
   cmdSystem->AddCommand("printMemInfo", PrintMemInfo_f, CMD_FL_SYSTEM, "prints memory debugging data");
 
