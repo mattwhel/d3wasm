@@ -1575,13 +1575,13 @@ void RB_STD_DrawView(void) {
   RB_STD_LightScale();
 
   // now draw any non-light dependent shading passes
-  const int processed = RB_STD_DrawShaderPasses(drawSurfs, numDrawSurfs);
+  const int processed = RB_GLSL_DrawShaderPasses(drawSurfs, numDrawSurfs);
 
   // fob and blend lights
   RB_STD_FogAllLights();
 
   // now draw any post-processing effects using _currentRender
   if (processed < numDrawSurfs) {
-    RB_STD_DrawShaderPasses(drawSurfs + processed, numDrawSurfs - processed);
+    RB_GLSL_DrawShaderPasses(drawSurfs + processed, numDrawSurfs - processed);
   }
 }
