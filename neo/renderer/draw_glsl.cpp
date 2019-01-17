@@ -2353,7 +2353,7 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
 /*
 =====================
-RB_T_Shadow
+RB_T_GLSL_Shadow
 
 the shadow volumes face INSIDE
 =====================

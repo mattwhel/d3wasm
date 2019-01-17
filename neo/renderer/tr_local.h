@@ -1218,7 +1218,6 @@ void RB_GetShaderTextureMatrix( const float *shaderRegisters, const textureStage
 void RB_DetermineLightScale( void );
 void RB_LightScale( void );
 void RB_BeginDrawingView (void);
-void RB_StencilShadowPass( const drawSurf_t *drawSurfs );
 void RB_FogAllLights( void );
 
 /*
