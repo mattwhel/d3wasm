@@ -1000,16 +1000,9 @@ const int GLS_BLUEMASK							= 0x00000800;
 const int GLS_ALPHAMASK							= 0x00001000;
 const int GLS_COLORMASK							= (GLS_REDMASK|GLS_GREENMASK|GLS_BLUEMASK);
 
-const int GLS_POLYMODE_LINE						= 0x00002000;
-
 const int GLS_DEPTHFUNC_ALWAYS					= 0x00010000;
 const int GLS_DEPTHFUNC_EQUAL					= 0x00020000;
 const int GLS_DEPTHFUNC_LESS					= 0x0;
-
-const int GLS_ATEST_EQ_255						= 0x10000000;
-const int GLS_ATEST_LT_128						= 0x20000000;
-const int GLS_ATEST_GE_128						= 0x40000000;
-const int GLS_ATEST_BITS						= 0x70000000;
 
 const int GLS_DEFAULT							= GLS_DEPTHFUNC_ALWAYS;
 
@@ -1310,7 +1303,7 @@ extern shaderProgram_t interactionShader;
 extern shaderProgram_t fogShader;
 extern shaderProgram_t zfillShader;
 extern shaderProgram_t defaultShader;
-//extern shaderProgram_t stencilShadowShader;
+extern shaderProgram_t stencilShadowShader;
 
 /*
 ============================================================

@@ -215,9 +215,6 @@ void RB_StencilShadowPass(const drawSurf_t *drawSurfs)
     if (r_showShadows.GetInteger() == 2) {
       // draw filled in
       GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_LESS);
-    } else {
-      // draw as lines, filling the depth buffer
-      GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ZERO | GLS_POLYMODE_LINE | GLS_DEPTHFUNC_ALWAYS);
     }
   } else {
     // don't write to the color buffer, just the stencil buffer

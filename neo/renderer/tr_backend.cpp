@@ -70,10 +70,6 @@ void RB_SetDefaultGLState( void ) {
 #endif
 	qglDisable( GL_STENCIL_TEST );
 
-#ifdef USEREGAL
-#else
-	qglPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-#endif
 	qglDepthMask( GL_TRUE );
 	qglDepthFunc( GL_ALWAYS );
 
@@ -339,46 +335,6 @@ void GL_State( int stateBits ) {
 		b = ( stateBits & GLS_BLUEMASK ) ? 0 : 1;
 		a = ( stateBits & GLS_ALPHAMASK ) ? 0 : 1;
 		qglColorMask( r, g, b, a );
-	}
-
-	//
-	// fill/line mode
-	//
-#ifdef USEREGAL
-#else
-	if ( diff & GLS_POLYMODE_LINE ) {
-		if ( stateBits & GLS_POLYMODE_LINE ) {
-			qglPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-		} else {
-			qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-		}
-	}
-#endif
-
-	//
-	// alpha test
-	//
-	if ( diff & GLS_ATEST_BITS ) {
-		switch ( stateBits & GLS_ATEST_BITS ) {
-		case 0:
-			qglDisable( GL_ALPHA_TEST );
-			break;
-		case GLS_ATEST_EQ_255:
-			qglEnable( GL_ALPHA_TEST );
-			qglAlphaFunc( GL_EQUAL, 1 );
-			break;
-		case GLS_ATEST_LT_128:
-			qglEnable( GL_ALPHA_TEST );
-			qglAlphaFunc( GL_LESS, 0.5 );
-			break;
-		case GLS_ATEST_GE_128:
-			qglEnable( GL_ALPHA_TEST );
-			qglAlphaFunc( GL_GEQUAL, 0.5 );
-			break;
-		default:
-			assert( 0 );
-			break;
-		}
 	}
 
 	backEnd.glState.glStateBits = stateBits;
