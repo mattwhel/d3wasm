@@ -826,7 +826,6 @@ extern idCVar r_brightness;				// changes gamma tables
 extern idCVar r_checkBounds;			// compare all surface bounds with precalculated ones
 
 extern idCVar r_useLightPortalFlow;		// 1 = do a more precise area reference determination
-extern idCVar r_useTripleTextureARB; 	// 1 = cards with 3+ texture units do a two pass instead of three pass
 extern idCVar r_useShadowSurfaceScissor;// 1 = scissor shadows by the scissor rect of the interaction surfaces
 extern idCVar r_useConstantMaterials;	// 1 = use pre-calculated material registers if possible
 extern idCVar r_useInteractionTable;	// create a full entityDefs * lightDefs table to make finding interactions faster
@@ -897,9 +896,7 @@ extern idCVar r_showDynamic;			// report stats on dynamic surface generation
 extern idCVar r_showLightScale;			// report the scale factor applied to drawing for overbrights
 extern idCVar r_showIntensity;			// draw the screen colors based on intensity, red = 0, green = 128, blue = 255
 extern idCVar r_showDefs;				// report the number of modeDefs and lightDefs in view
-extern idCVar r_showSmp;				// show which end (front or back) is blocking
 extern idCVar r_showDepth;				// display the contents of the depth buffer and the depth range
-extern idCVar r_showImages;				// draw all images to screen instead of rendering
 extern idCVar r_showTris;				// enables wireframe rendering of the world
 extern idCVar r_showSurfaceInfo;		// show surface material name under crosshair
 extern idCVar r_showNormals;			// draws wireframe normals
@@ -966,7 +963,6 @@ void	GL_SelectTexture( int unit );
 void	GL_CheckErrors( void );
 void	GL_ClearStateDelta( void );
 void	GL_State( int stateVector );
-void	GL_TexEnv( int env );
 void	GL_Cull( int cullType );
 
 const int GLS_SRCBLEND_ZERO						= 0x00000001;
@@ -1014,7 +1010,6 @@ void R_DoneFreeType( void );
 void R_SetColorMappings( void );
 
 void R_ScreenShot_f( const idCmdArgs &args );
-void R_StencilShot( void );
 
 bool R_CheckExtension( const char *name );
 
@@ -1467,10 +1462,6 @@ TR_BACKEND
 */
 
 void RB_SetDefaultGLState( void );
-void RB_SetGL2D( void );
-
-void RB_ShowImages( void );
-
 void RB_ExecuteBackEndCommands( const emptyCommand_t *cmds );
 
 

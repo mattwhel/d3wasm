@@ -43,17 +43,9 @@ may touch, including the editor.
 void RB_SetDefaultGLState( void ) {
 	int		i;
 
-	qglClearDepth(1.0f);
-#if 0
-	qglColor4f (1,1,1,1);
-#endif
+	qglClearDepthf(1.0f);
 
 	GL_SelectTexture( 0 );
-	// the vertex and texture arrays are always enabled
-#if 0
-	qglEnableClientState( GL_VERTEX_ARRAY );
-	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
-#endif
 
 	//
 	// make sure our GL state vector is set correctly
@@ -67,37 +59,22 @@ void RB_SetDefaultGLState( void ) {
 	qglEnable( GL_BLEND );
 	qglEnable( GL_SCISSOR_TEST );
 	qglEnable( GL_CULL_FACE );
-	qglDisable( GL_LIGHTING );
-#ifdef USEREGAL
-#else
-	qglDisable( GL_LINE_STIPPLE );
-#endif
 	qglDisable( GL_STENCIL_TEST );
 
 	qglDepthMask( GL_TRUE );
 	qglDepthFunc( GL_ALWAYS );
 
 	qglCullFace( GL_FRONT_AND_BACK );
-	qglShadeModel( GL_SMOOTH );
 
 	if ( r_useScissor.GetBool() ) {
 		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 	}
 
-	for ( i = glConfig.maxTextureUnits - 1 ; i >= 0 ; i-- ) {
+	for ( i = 8 - 1 ; i >= 0 ; i-- ) {
 		GL_SelectTexture( i );
 
-		// object linear texgen is our default
-		qglTexGenf( GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-		qglTexGenf( GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-		qglTexGenf( GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-		qglTexGenf( GL_Q, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-
-		GL_TexEnv( GL_MODULATE );
 		qglDisable( GL_TEXTURE_2D );
-		if ( glConfig.cubeMapAvailable ) {
-			qglDisable( GL_TEXTURE_CUBE_MAP_EXT );
-		}
+		qglDisable( GL_TEXTURE_CUBE_MAP );
 	}
 }
 
@@ -118,12 +95,7 @@ void GL_SelectTexture( int unit ) {
 		return;
 	}
 
-	if ( unit < 0 || (unit >= glConfig.maxTextureUnits && unit >= glConfig.maxTextureImageUnits) ) {
-		common->Warning( "GL_SelectTexture: unit = %i", unit );
-		return;
-	}
-
-	qglActiveTextureARB( GL_TEXTURE0_ARB + unit );
+	qglActiveTexture( GL_TEXTURE0 + unit );
 
 	backEnd.glState.currenttmu = unit;
 }
@@ -164,35 +136,6 @@ void GL_Cull( int cullType ) {
 	}
 
 	backEnd.glState.faceCulling = cullType;
-}
-
-/*
-====================
-GL_TexEnv
-====================
-*/
-void GL_TexEnv( int env ) {
-	tmu_t	*tmu;
-
-	tmu = &backEnd.glState.tmu[backEnd.glState.currenttmu];
-	if ( env == tmu->texEnv ) {
-		return;
-	}
-
-	tmu->texEnv = env;
-
-	switch ( env ) {
-	case GL_COMBINE_EXT:
-	case GL_MODULATE:
-	case GL_REPLACE:
-	case GL_DECAL:
-	case GL_ADD:
-		qglTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, env );
-		break;
-	default:
-		common->Error( "GL_TexEnv: invalid env '%d' passed\n", env );
-		break;
-	}
 }
 
 /*
@@ -343,9 +286,6 @@ void GL_State( int stateBits ) {
 	backEnd.glState.glStateBits = stateBits;
 }
 
-
-
-
 /*
 ============================================================================
 
@@ -353,37 +293,6 @@ RENDER BACK END THREAD FUNCTIONS
 
 ============================================================================
 */
-
-/*
-=============
-RB_SetGL2D
-
-This is not used by the normal game paths, just by some tools
-=============
-*/
-void RB_SetGL2D( void ) {
-	// set 2D virtual screen size
-	qglViewport( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	if ( r_useScissor.GetBool() ) {
-		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
-	}
-	qglMatrixMode( GL_PROJECTION );
-	qglLoadIdentity();
-	qglOrtho( 0, 640, 480, 0, 0, 1 );		// always assume 640x480 virtual coordinates
-	qglMatrixMode( GL_MODELVIEW );
-	qglLoadIdentity();
-
-	GL_State( GLS_DEPTHFUNC_ALWAYS |
-			  GLS_SRCBLEND_SRC_ALPHA |
-			  GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA );
-
-	GL_Cull( CT_TWO_SIDED );
-
-	qglDisable( GL_DEPTH_TEST );
-	qglDisable( GL_STENCIL_TEST );
-}
-
-
 
 /*
 =============
@@ -400,10 +309,8 @@ static void	RB_SetBuffer( const void *data ) {
 
 	backEnd.frameCount = cmd->frameCount;
 
-#ifdef USEREGAL
-#else
-	qglDrawBuffer( cmd->buffer );
-#endif
+	//Disabled for OES2
+	//qglDrawBuffer( cmd->buffer );
 
 	// clear screen for debugging
 	// automatically enable this with several other debug tools
@@ -424,80 +331,12 @@ static void	RB_SetBuffer( const void *data ) {
 }
 
 /*
-===============
-RB_ShowImages
-
-Draw all the images to the screen, on top of whatever
-was there.  This is used to test for texture thrashing.
-===============
-*/
-void RB_ShowImages( void ) {
-#if 0
-	int		i;
-	idImage	*image;
-	float	x, y, w, h;
-	int		start, end;
-
-	RB_SetGL2D();
-
-	//qglClearColor( 0.2, 0.2, 0.2, 1 );
-	//qglClear( GL_COLOR_BUFFER_BIT );
-
-	qglFinish();
-
-	start = Sys_Milliseconds();
-
-	for ( i = 0 ; i < globalImages->images.Num() ; i++ ) {
-		image = globalImages->images[i];
-
-		if ( image->texnum == idImage::TEXTURE_NOT_LOADED ) {
-			continue;
-		}
-
-		w = glConfig.vidWidth / 20;
-		h = glConfig.vidHeight / 15;
-		x = i % 20 * w;
-		y = i / 20 * h;
-
-		// show in proportional size in mode 2
-		if ( r_showImages.GetInteger() == 2 ) {
-			w *= image->uploadWidth / 512.0f;
-			h *= image->uploadHeight / 512.0f;
-		}
-
-		image->Bind();
-		qglBegin (GL_QUADS);
-		qglTexCoord2f( 0, 0 );
-		qglVertex2f( x, y );
-		qglTexCoord2f( 1, 0 );
-		qglVertex2f( x + w, y );
-		qglTexCoord2f( 1, 1 );
-		qglVertex2f( x + w, y + h );
-		qglTexCoord2f( 0, 1 );
-		qglVertex2f( x, y + h );
-		qglEnd();
-	}
-
-	qglFinish();
-
-	end = Sys_Milliseconds();
-	common->Printf( "%i msec to draw all images\n", end - start );
-#endif
-}
-
-
-/*
 =============
 RB_SwapBuffers
 
 =============
 */
 const void	RB_SwapBuffers( const void *data ) {
-	// texture swapping test
-	if ( r_showImages.GetInteger() != 0 ) {
-		RB_ShowImages();
-	}
-
 	// force a gl sync if requested
 	if ( r_finish.GetBool() ) {
 		qglFinish();

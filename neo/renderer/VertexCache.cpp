@@ -114,7 +114,7 @@ void *idVertexCache::Position( vertCache_t *buffer ) {
 				common->Printf( "GL_ARRAY_BUFFER_ARB = %i (%i bytes)\n", buffer->vbo, buffer->size );
 			}
 		}
-		qglBindBufferARB( GL_ARRAY_BUFFER_ARB, buffer->vbo );
+		qglBindBuffer( GL_ARRAY_BUFFER, buffer->vbo );
 
 		return (void *)buffer->offset;
 }
@@ -209,7 +209,7 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer ) {
 			block->next->prev = block;
 			block->prev->next = block;
 
-			qglGenBuffersARB( 1, & block->vbo );
+			qglGenBuffers( 1, & block->vbo );
 		}
 	}
 
@@ -242,11 +242,11 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer ) {
 	block->frameUsed = currentFrame - NUM_VERTEX_FRAMES;
 
 	// copy the data
-			qglBindBufferARB( GL_ARRAY_BUFFER_ARB, block->vbo );
+			qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
 			if ( allocatingTempBuffer ) {
-				qglBufferDataARB( GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)size, data, GL_STREAM_DRAW_ARB );
+				qglBufferData( GL_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STREAM_DRAW );
 			} else {
-				qglBufferDataARB( GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)size, data, GL_STATIC_DRAW_ARB );
+				qglBufferData( GL_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
 			}
 }
 
@@ -368,8 +368,8 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size ) {
 	// copy the data
 	block->vbo = tempBuffers[listNum]->vbo;
 
-		qglBindBufferARB( GL_ARRAY_BUFFER_ARB, block->vbo );
-		qglBufferSubDataARB( GL_ARRAY_BUFFER_ARB, block->offset, (GLsizeiptrARB)size, data );
+		qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
+		qglBufferSubData( GL_ARRAY_BUFFER, block->offset, (GLsizeiptr)size, data );
 
 	return block;
 }
@@ -409,7 +409,7 @@ void idVertexCache::EndFrame() {
 	}
 #endif
 
-  qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
+  qglBindBuffer( GL_ARRAY_BUFFER, 0 );
 
 	currentFrame = tr.frameCount;
 	listNum = currentFrame % NUM_VERTEX_FRAMES;

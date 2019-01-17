@@ -32,78 +32,23 @@ If you have questions concerning this license or the applicable additional terms
 #ifndef __QGL_H__
 #define __QGL_H__
 
-#ifdef USEREGAL
-#ifndef GLAPI
-#define GLAPI extern
-#endif
-
-#ifndef GLAPIENTRY
-#define GLAPIENTRY
-#endif
-
-#ifndef APIENTRY
-#define APIENTRY GLAPIENTRY
-#endif
-
-/* "P" suffix to be used for a pointer to a function */
-#ifndef APIENTRYP
-#define APIENTRYP APIENTRY *
-#endif
-
-#ifndef GLAPIENTRYP
-#define GLAPIENTRYP GLAPIENTRY *
-#endif
-#include <GL/Regal.h>
-
-#else
-#include <SDL_opengl.h>
-#endif
+#include <GLES2/gl2.h>
+//#include <GLES2/gl2ext.h>
 
 typedef void (*GLExtension_t)(void);
 
 #ifdef __cplusplus
-	extern "C" {
+extern "C" {
 #endif
 
 GLExtension_t GLimp_ExtensionPointer( const char *name );
 
 #ifdef __cplusplus
-	}
+}
 #endif
 
 // declare qgl functions
-#define QGLPROC(name, rettype, args) extern rettype (APIENTRYP q##name) args;
+#define QGLPROC(name, rettype, args) extern rettype (GL_APIENTRYP q##name) args;
 #include "renderer/qgl_proc.h"
-
-// multitexture
-extern	void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
-
-// ARB_vertex_buffer_object
-extern PFNGLBINDBUFFERARBPROC qglBindBufferARB;
-extern PFNGLGENBUFFERSARBPROC qglGenBuffersARB;
-extern PFNGLBUFFERDATAARBPROC qglBufferDataARB;
-extern PFNGLBUFFERSUBDATAARBPROC qglBufferSubDataARB;
-
-// GLSL Shaders
-extern PFNGLENABLEVERTEXATTRIBARRAYPROC    qglEnableVertexAttribArray;
-extern PFNGLDISABLEVERTEXATTRIBARRAYPROC   qglDisableVertexAttribArray;
-extern PFNGLVERTEXATTRIBPOINTERPROC        qglVertexAttribPointer;
-extern PFNGLUSEPROGRAMPROC                 qglUseProgram;
-extern PFNGLUNIFORM1FVPROC                 qglUniform1fv;
-extern PFNGLUNIFORM4FVPROC                 qglUniform4fv;
-extern PFNGLUNIFORMMATRIX4FVPROC           qglUniformMatrix4fv;
-extern PFNGLLINKPROGRAMPROC								 qglLinkProgram;
-extern PFNGLGETPROGRAMIVPROC							 qglGetProgramiv;
-extern PFNGLGETPROGRAMINFOLOGPROC					 qglGetShaderInfoLog;
-extern PFNGLBINDATTRIBLOCATIONPROC         qglBindAttribLocation;
-extern PFNGLATTACHSHADERPROC               qglAttachShader;
-extern PFNGLCREATESHADERPROC               qglCreateShader;
-extern PFNGLSHADERSOURCEPROC               qglShaderSource;
-extern PFNGLCOMPILESHADERPROC              qglCompileShader;
-extern PFNGLGETUNIFORMLOCATIONPROC         qglGetUniformLocation;
-extern PFNGLCREATEPROGRAMPROC              qglCreateProgram;
-extern PFNGLVALIDATEPROGRAMPROC            qglValidateProgram;
-extern PFNGLGETATTRIBLOCATIONPROC          qglGetAttribLocation;
-extern PFNGLUNIFORM1IPROC                  qglUniform1i;
 
 #endif

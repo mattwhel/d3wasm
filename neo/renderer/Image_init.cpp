@@ -227,34 +227,6 @@ static void R_Specular2DTableImage( idImage *image ) {
 	image->GenerateImage( (byte *)data, 256, 256, TF_LINEAR, false, TR_CLAMP, TD_HIGH_QUALITY );
 }
 
-
-
-/*
-================
-R_AlphaRampImage
-
-Creates a 0-255 ramp image
-================
-*/
-#if 0
-static void R_AlphaRampImage( idImage *image ) {
-	int		x;
-	byte	data[256][4];
-
-	for (x=0 ; x<256 ; x++) {
-		data[x][0] =
-		data[x][1] =
-		data[x][2] = 255;
-		data[x][3] = x;
-	}
-
-	image->GenerateImage( (byte *)data, 256, 1,
-		TF_NEAREST, false, TR_CLAMP, TD_HIGH_QUALITY );
-}
-#endif
-
-
-
 /*
 ==================
 R_CreateDefaultImage
@@ -378,13 +350,12 @@ static void R_BorderClampImage( idImage *image ) {
 		// can't call qglTexParameterfv yet
 		return;
 	}
-#ifdef USEREGAL
-#else
+
+	// Disabled for OES2
 	// explicit zero border
-	float	color[4];
-	color[0] = color[1] = color[2] = color[3] = 0;
-	qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color );
-#endif
+	//float	color[4];
+	//color[0] = color[1] = color[2] = color[3] = 0;
+	//qglTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color );
 }
 
 static void R_RGBA8Image( idImage *image ) {
@@ -1004,7 +975,7 @@ static const filterName_t textureFilters[] = {
 			texEnum = GL_TEXTURE_2D;
 			break;
 		case TT_CUBIC:
-			texEnum = GL_TEXTURE_CUBE_MAP_EXT;
+			texEnum = GL_TEXTURE_CUBE_MAP;
 			break;
 		}
 
@@ -1018,10 +989,7 @@ static const filterName_t textureFilters[] = {
 			qglTexParameterf(texEnum, GL_TEXTURE_MAG_FILTER, globalImages->textureMaxFilter );
 		}
 		if ( glConfig.anisotropicAvailable ) {
-			qglTexParameterf(texEnum, GL_TEXTURE_MAX_ANISOTROPY_EXT, globalImages->textureAnisotropy );
-		}
-		if ( glConfig.textureLODBiasAvailable ) {
-			qglTexParameterf(texEnum, GL_TEXTURE_LOD_BIAS_EXT, globalImages->textureLODBias );
+			//qglTexParameterf(texEnum, GL_TEXTURE_MAX_ANISOTROPY_EXT, globalImages->textureAnisotropy );
 		}
 	}
 }
@@ -1143,7 +1111,6 @@ void R_ListImages_f( const idCmdArgs &args ) {
 	int		totalSize;
 	int		count = 0;
 	int		matchTag = 0;
-	bool	uncompressedOnly = false;
 	bool	unloaded = false;
 	bool	cached = false;
 	bool	uncached = false;
@@ -1157,9 +1124,7 @@ void R_ListImages_f( const idCmdArgs &args ) {
 	if ( args.Argc() == 1 ) {
 
 	} else if ( args.Argc() == 2 ) {
-		if ( idStr::Icmp( args.Argv( 1 ), "uncompressed" ) == 0 ) {
-			uncompressedOnly = true;
-		} else if ( idStr::Icmp( args.Argv( 1 ), "sorted" ) == 0 ) {
+		if ( idStr::Icmp( args.Argv( 1 ), "sorted" ) == 0 ) {
 			sorted = true;
 		} else if ( idStr::Icmp( args.Argv( 1 ), "unloaded" ) == 0 ) {
 			unloaded = true;
@@ -1201,13 +1166,6 @@ void R_ListImages_f( const idCmdArgs &args ) {
 
 	for ( i = 0 ; i < globalImages->images.Num() ; i++ ) {
 		image = globalImages->images[ i ];
-
-		if ( uncompressedOnly ) {
-			if ( ( image->internalFormat >= GL_COMPRESSED_RGB_S3TC_DXT1_EXT && image->internalFormat <= GL_COMPRESSED_RGBA_S3TC_DXT5_EXT )
-				|| image->internalFormat == GL_COLOR_INDEX8_EXT ) {
-				continue;
-			}
-		}
 
 		if ( matchTag && image->classification != matchTag ) {
 			continue;
@@ -1777,7 +1735,7 @@ void idImageManager::BindNull() {
 	tmu = &backEnd.glState.tmu[backEnd.glState.currenttmu];
 
 	if ( tmu->textureType == TT_CUBIC ) {
-		qglDisable( GL_TEXTURE_CUBE_MAP_EXT );
+		qglDisable( GL_TEXTURE_CUBE_MAP );
 	} else if ( tmu->textureType == TT_2D ) {
 		qglDisable( GL_TEXTURE_2D );
 	}

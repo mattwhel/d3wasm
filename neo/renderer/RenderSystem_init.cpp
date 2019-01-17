@@ -57,7 +57,6 @@ idCVar r_customHeight( "r_customHeight", "486", CVAR_RENDERER | CVAR_ARCHIVE | C
 idCVar r_checkBounds( "r_checkBounds", "0", CVAR_RENDERER | CVAR_BOOL, "compare all surface bounds with precalculated ones" );
 
 idCVar r_useConstantMaterials( "r_useConstantMaterials", "1", CVAR_RENDERER | CVAR_BOOL, "use pre-calculated material registers if possible" );
-idCVar r_useTripleTextureARB( "r_useTripleTextureARB", "1", CVAR_RENDERER | CVAR_BOOL, "cards with 3+ texture units do a two pass instead of three pass" );
 idCVar r_useSilRemap( "r_useSilRemap", "1", CVAR_RENDERER | CVAR_BOOL, "consider verts with the same XYZ, but different ST the same for shadows" );
 idCVar r_useNodeCommonChildren( "r_useNodeCommonChildren", "1", CVAR_RENDERER | CVAR_BOOL, "stop pushing reference bounds early when possible" );
 idCVar r_useShadowProjectedCull( "r_useShadowProjectedCull", "1", CVAR_RENDERER | CVAR_BOOL, "discard triangles outside light volume before shadowing" );
@@ -160,8 +159,6 @@ idCVar r_showDynamic( "r_showDynamic", "0", CVAR_RENDERER | CVAR_BOOL, "report s
 idCVar r_showLightScale( "r_showLightScale", "0", CVAR_RENDERER | CVAR_BOOL, "report the scale factor applied to drawing for overbrights" );
 idCVar r_showDefs( "r_showDefs", "0", CVAR_RENDERER | CVAR_BOOL, "report the number of modeDefs and lightDefs in view" );
 idCVar r_showIntensity( "r_showIntensity", "0", CVAR_RENDERER | CVAR_BOOL, "draw the screen colors based on intensity, red = 0, green = 128, blue = 255" );
-idCVar r_showImages( "r_showImages", "0", CVAR_RENDERER | CVAR_INTEGER, "1 = show all images instead of rendering, 2 = show in proportional size", 0, 2, idCmdSystem::ArgCompletion_Integer<0,2> );
-idCVar r_showSmp( "r_showSmp", "0", CVAR_RENDERER | CVAR_BOOL, "show which end (front or back) is blocking" );
 idCVar r_showLights( "r_showLights", "0", CVAR_RENDERER | CVAR_INTEGER, "1 = just print volumes numbers, highlighting ones covering the view, 2 = also draw planes of each volume, 3 = also draw edges of each volume", 0, 3, idCmdSystem::ArgCompletion_Integer<0,3> );
 idCVar r_showShadows( "r_showShadows", "0", CVAR_RENDERER | CVAR_INTEGER, "1 = visualize the stencil shadow volumes, 2 = draw filled in", 0, 3, idCmdSystem::ArgCompletion_Integer<0,3> );
 idCVar r_showShadowCount( "r_showShadowCount", "0", CVAR_RENDERER | CVAR_INTEGER, "colors screen based on shadow volume depth complexity, >= 2 = print overdraw count based on stencil index values, 3 = only show turboshadows, 4 = only show static shadows", 0, 4, idCmdSystem::ArgCompletion_Integer<0,4> );
@@ -208,39 +205,8 @@ idCVar r_debugRenderToTexture( "r_debugRenderToTexture", "0", CVAR_RENDERER | CV
 idCVar r_scaleMenusTo43( "r_scaleMenusTo43", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "Scale menus, fullscreen videos and PDA to 4:3 aspect ratio" );
 
 // define qgl functions
-#define QGLPROC(name, rettype, args) rettype (APIENTRYP q##name) args;
+#define QGLPROC(name, rettype, args) rettype (GL_APIENTRYP q##name) args;
 #include "renderer/qgl_proc.h"
-
-// ARB_multitexture                                               // OpenGL_1.3
-void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
-
-// ARB_vertex_buffer_object                                       // OpenGL 1.5
-PFNGLBINDBUFFERARBPROC					qglBindBufferARB;
-PFNGLGENBUFFERSARBPROC					qglGenBuffersARB;
-PFNGLBUFFERDATAARBPROC					qglBufferDataARB;
-PFNGLBUFFERSUBDATAARBPROC				qglBufferSubDataARB;
-
-// GLSL Shaders                                                     // OpenGL 2.0
-PFNGLENABLEVERTEXATTRIBARRAYPROC    qglEnableVertexAttribArray;
-PFNGLDISABLEVERTEXATTRIBARRAYPROC   qglDisableVertexAttribArray;
-PFNGLVERTEXATTRIBPOINTERPROC        qglVertexAttribPointer;
-PFNGLUSEPROGRAMPROC                 qglUseProgram;
-PFNGLUNIFORM1FVPROC                 qglUniform1fv;
-PFNGLUNIFORM4FVPROC                 qglUniform4fv;
-PFNGLUNIFORMMATRIX4FVPROC           qglUniformMatrix4fv;
-PFNGLLINKPROGRAMPROC								qglLinkProgram;
-PFNGLGETPROGRAMIVPROC								qglGetProgramiv;
-PFNGLGETPROGRAMINFOLOGPROC					qglGetShaderInfoLog;
-PFNGLBINDATTRIBLOCATIONPROC         qglBindAttribLocation;
-PFNGLATTACHSHADERPROC               qglAttachShader;
-PFNGLCREATESHADERPROC               qglCreateShader;
-PFNGLSHADERSOURCEPROC               qglShaderSource;
-PFNGLCOMPILESHADERPROC              qglCompileShader;
-PFNGLGETUNIFORMLOCATIONPROC         qglGetUniformLocation;
-PFNGLCREATEPROGRAMPROC              qglCreateProgram;
-PFNGLVALIDATEPROGRAMPROC            qglValidateProgram;
-PFNGLGETATTRIBLOCATIONPROC          qglGetAttribLocation;
-PFNGLUNIFORM1IPROC                  qglUniform1i;
 
 /*
 =================
@@ -248,11 +214,7 @@ R_CheckExtension
 =================
 */
 bool R_CheckExtension( const char *name ) {
-#ifdef USEREGAL
-    if (!glIsSupportedREGAL(name)) {
-#else
 	if ( !strstr( glConfig.extensions_string, name ) ) {
-#endif
 		common->Printf( "X..%s not found\n", name );
 		return false;
 	}
@@ -270,111 +232,15 @@ R_CheckPortableExtensions
 static void R_CheckPortableExtensions( void ) {
 	glConfig.glVersion = atof( glConfig.version_string );
 
-	// GL_ARB_multitexture  / OpenGL 1.3
-#ifdef USEREGAL
-	glConfig.multitextureAvailable = true;
-	common->Printf( "...using %s\n", "OpenGL 1.3 Multitexture" );
-	qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTexture" );
-	qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
-	if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
-		glConfig.maxTextureUnits = MAX_MULTITEXTURE_UNITS;
-	}
-	if ( glConfig.maxTextureUnits < 2 ) {
-		glConfig.multitextureAvailable = false;	// shouldn't ever happen
-	}
-	qglGetIntegerv( GL_MAX_TEXTURE_COORDS_ARB, (GLint *)&glConfig.maxTextureCoords );
-	qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
-#else
-	glConfig.multitextureAvailable = R_CheckExtension( "GL_ARB_multitexture" );
-	if ( glConfig.multitextureAvailable ) {
-	  qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTextureARB" );
-		qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
-		if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
-			glConfig.maxTextureUnits = MAX_MULTITEXTURE_UNITS;
-		}
-		if ( glConfig.maxTextureUnits < 2 ) {
-			glConfig.multitextureAvailable = false;	// shouldn't ever happen
-		}
-		qglGetIntegerv( GL_MAX_TEXTURE_COORDS_ARB, (GLint *)&glConfig.maxTextureCoords );
-		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
-	}
-#endif
-
 	// GL_EXT_texture_filter_anisotropic (extension only)
-	glConfig.anisotropicAvailable = R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
-	if ( glConfig.anisotropicAvailable ) {
-		qglGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &glConfig.maxTextureAnisotropy );
-		common->Printf( "   maxTextureAnisotropy: %f\n", glConfig.maxTextureAnisotropy );
-	} else {
+	glConfig.anisotropicAvailable = false;
+
+	//R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
+	//if ( glConfig.anisotropicAvailable ) {
+	//	qglGetFloatv( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &glConfig.maxTextureAnisotropy );
+	//	common->Printf( "   maxTextureAnisotropy: %f\n", glConfig.maxTextureAnisotropy );
+	//} else {
 		glConfig.maxTextureAnisotropy = 1;
-	}
-
-	// GL_EXT_texture_lod_bias / OpenGL 1.4
-	// The actual extension is broken as specified, storing the state in the texture unit instead
-	// of the texture object.  The behavior in GL 1.4 is the behavior we use.
-	if ( glConfig.glVersion >= 1.4 || R_CheckExtension( "GL_EXT_texture_lod" ) ) {
-		common->Printf( "...using %s\n", "GL_1.4_texture_lod_bias" );
-		glConfig.textureLODBiasAvailable = true;
-	} else {
-		common->Printf( "X..%s not found\n", "GL_1.4_texture_lod_bias" );
-		glConfig.textureLODBiasAvailable = false;
-	}
-
-	// ARB_vertex_buffer_object / OpenGL 1.5
-#ifdef USEREGAL
-    glConfig.ARBVertexBufferObjectAvailable = true;
-    common->Printf( "...using %s\n", "OpenGL 1.5 Vertex Buffer Objects" );
-    qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBuffer");
-		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)GLimp_ExtensionPointer( "glGenBuffers");
-		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)GLimp_ExtensionPointer( "glBufferData");
-		qglBufferSubDataARB = (PFNGLBUFFERSUBDATAARBPROC)GLimp_ExtensionPointer( "glBufferSubData");
-#else
-		glConfig.ARBVertexBufferObjectAvailable = R_CheckExtension( "GL_ARB_vertex_buffer_object" );
-
-	if(glConfig.ARBVertexBufferObjectAvailable) {
-		qglBindBufferARB = (PFNGLBINDBUFFERARBPROC)GLimp_ExtensionPointer( "glBindBufferARB");
-		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)GLimp_ExtensionPointer( "glGenBuffersARB");
-		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)GLimp_ExtensionPointer( "glBufferDataARB");
-		qglBufferSubDataARB = (PFNGLBUFFERSUBDATAARBPROC)GLimp_ExtensionPointer( "glBufferSubDataARB");
-	}
-#endif
-
-	// GL_ARB_shading_language_100 / OpenGL 2.0
-#ifdef USEREGAL
-	glConfig.GLSLAvailable = true;
-	common->Printf( "...using %s\n", "OpenGL 2.0 Shaders" );
-#else
-  glConfig.GLSLAvailable = R_CheckExtension("GL_ARB_shading_language_100");
-	if (glConfig.GLSLAvailable)
-#endif
-	{
-		qglEnableVertexAttribArray = (PFNGLENABLEVERTEXATTRIBARRAYPROC) GLimp_ExtensionPointer("glEnableVertexAttribArray");
-		qglDisableVertexAttribArray = (PFNGLDISABLEVERTEXATTRIBARRAYPROC) GLimp_ExtensionPointer(
-				"glDisableVertexAttribArray");
-		qglVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC) GLimp_ExtensionPointer("glVertexAttribPointer");
-		qglUseProgram = (PFNGLUSEPROGRAMPROC) GLimp_ExtensionPointer("glUseProgram");
-		qglUniform1fv = (PFNGLUNIFORM1FVPROC) GLimp_ExtensionPointer("glUniform1fv");
-		qglUniform4fv = (PFNGLUNIFORM4FVPROC) GLimp_ExtensionPointer("glUniform4fv");
-		qglUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC) GLimp_ExtensionPointer("glUniformMatrix4fv");
-		qglLinkProgram = (PFNGLLINKPROGRAMPROC) GLimp_ExtensionPointer("glLinkProgram");
-		qglGetProgramiv = (PFNGLGETPROGRAMIVPROC) GLimp_ExtensionPointer("glGetProgramiv");
-		qglGetShaderInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) GLimp_ExtensionPointer("glGetShaderInfoLog");
-		qglBindAttribLocation = (PFNGLBINDATTRIBLOCATIONPROC) GLimp_ExtensionPointer("glBindAttribLocation");
-		qglAttachShader = (PFNGLATTACHSHADERPROC) GLimp_ExtensionPointer("glAttachShader");
-		qglCreateShader = (PFNGLCREATESHADERPROC) GLimp_ExtensionPointer("glCreateShader");
-		qglShaderSource = (PFNGLSHADERSOURCEPROC) GLimp_ExtensionPointer("glShaderSource");
-		qglCompileShader = (PFNGLCOMPILESHADERPROC) GLimp_ExtensionPointer("glCompileShader");
-		qglGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) GLimp_ExtensionPointer("glGetUniformLocation");
-		qglCreateProgram = (PFNGLCREATEPROGRAMPROC) GLimp_ExtensionPointer("glCreateProgram");
-		qglValidateProgram = (PFNGLVALIDATEPROGRAMPROC) GLimp_ExtensionPointer("glValidateProgram");
-		qglGetAttribLocation = (PFNGLGETATTRIBLOCATIONPROC) GLimp_ExtensionPointer("glGetAttribLocation");
-		qglUniform1i = (PFNGLUNIFORM1IPROC) GLimp_ExtensionPointer("glUniform1i");
-	}
-
-	// check for minimum set
-	//if ( !glConfig.multitextureAvailable || !glConfig.textureEnvCombineAvailable || !glConfig.cubeMapAvailable
-	//		 || !glConfig.ARBVertexBufferObjectAvailable ||!glConfig.GLSLAvailable ) {
-	//	common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
 	//}
 }
 
@@ -596,23 +462,29 @@ void R_InitOpenGL( void ) {
 
 // load qgl function pointers
 #define QGLPROC(name, rettype, args) \
-	q##name = (rettype(APIENTRYP)args)GLimp_ExtensionPointer(#name); \
+	q##name = (rettype(GL_APIENTRYP)args)GLimp_ExtensionPointer(#name); \
 	if (!q##name) \
 		common->FatalError("Unable to initialize OpenGL (%s)", #name);
 
 #include "renderer/qgl_proc.h"
 
+  common->Printf("ici\n");
+
 	// input and sound systems need to be tied to the new window
 	Sys_InitInput();
 	soundSystem->InitHW();
 
-	// get our config strings
+  common->Printf("la\n");
+
+  // get our config strings
 	glConfig.vendor_string = (const char *)qglGetString(GL_VENDOR);
 	glConfig.renderer_string = (const char *)qglGetString(GL_RENDERER);
 	glConfig.version_string = (const char *)qglGetString(GL_VERSION);
 	glConfig.extensions_string = (const char *)qglGetString(GL_EXTENSIONS);
 
-	// OpenGL driver constants
+  common->Printf("blob\n");
+
+  // OpenGL driver constants
 	qglGetIntegerv( GL_MAX_TEXTURE_SIZE, &temp );
 	glConfig.maxTextureSize = temp;
 
@@ -644,6 +516,7 @@ void R_InitOpenGL( void ) {
 	// Reset our gamma
 	R_SetColorMappings();
 
+	common->Printf( "----- OpenGL Initialization complete-----\n" );
 }
 
 /*
@@ -671,12 +544,6 @@ void GL_CheckErrors( void ) {
 				break;
 			case GL_INVALID_OPERATION:
 				strcpy( s, "GL_INVALID_OPERATION" );
-				break;
-			case GL_STACK_OVERFLOW:
-				strcpy( s, "GL_STACK_OVERFLOW" );
-				break;
-			case GL_STACK_UNDERFLOW:
-				strcpy( s, "GL_STACK_UNDERFLOW" );
 				break;
 			case GL_OUT_OF_MEMORY:
 				strcpy( s, "GL_OUT_OF_MEMORY" );
@@ -1088,10 +955,8 @@ void R_ReadTiledPixels( int width, int height, byte *buffer, renderView_t *ref =
 				h = height - yo;
 			}
 
-#ifdef USEREGAL
-#else
-			qglReadBuffer( GL_FRONT );
-#endif
+			// Disabled for OES2
+			//qglReadBuffer( GL_FRONT );
 
 			qglReadPixels( 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, temp );
 
@@ -1303,50 +1168,6 @@ void R_ScreenShot_f( const idCmdArgs &args ) {
 	tr.TakeScreenshot( width, height, checkname, blends, NULL );
 
 	common->Printf( "Wrote %s\n", checkname.c_str() );
-}
-
-/*
-===============
-R_StencilShot
-Save out a screenshot showing the stencil buffer expanded by 16x range
-===============
-*/
-void R_StencilShot( void ) {
-	byte		*buffer;
-	int			i, c;
-
-	int	width = tr.GetScreenWidth();
-	int	height = tr.GetScreenHeight();
-
-	int	pix = width * height;
-
-	c = pix * 3 + 18;
-	buffer = (byte *)Mem_Alloc(c);
-	memset (buffer, 0, 18);
-
-	byte *byteBuffer = (byte *)Mem_Alloc(pix);
-
-	qglReadPixels( 0, 0, width, height, GL_STENCIL_INDEX , GL_UNSIGNED_BYTE, byteBuffer );
-
-	for ( i = 0 ; i < pix ; i++ ) {
-		buffer[18+i*3] =
-		buffer[18+i*3+1] =
-			//		buffer[18+i*3+2] = ( byteBuffer[i] & 15 ) * 16;
-		buffer[18+i*3+2] = byteBuffer[i];
-	}
-
-	// fill in the header (this is vertically flipped, which qglReadPixels emits)
-	buffer[2] = 2;		// uncompressed type
-	buffer[12] = width & 255;
-	buffer[13] = width >> 8;
-	buffer[14] = height & 255;
-	buffer[15] = height >> 8;
-	buffer[16] = 24;	// pixel size
-
-	fileSystem->WriteFile( "screenshots/stencilShot.tga", buffer, c, "fs_savepath" );
-
-	Mem_Free( buffer );
-	Mem_Free( byteBuffer );
 }
 
 /*
@@ -2051,9 +1872,6 @@ idRenderSystemLocal::EndLevelLoad
 void idRenderSystemLocal::EndLevelLoad( void ) {
 	renderModelManager->EndLevelLoad();
 	globalImages->EndLevelLoad();
-	if ( r_forceLoadImages.GetBool() ) {
-		RB_ShowImages();
-	}
 }
 
 /*
@@ -2126,17 +1944,4 @@ idRenderSystemLocal::GetScreenHeight
 */
 int idRenderSystemLocal::GetScreenHeight( void ) const {
 	return glConfig.vidHeight;
-}
-
-
-/*
-==================
-R_FindARBProgram
-
-Returns a GL identifier that can be bound to the given target, parsing
-a text file if it hasn't already been loaded.
-==================
-*/
-int R_FindARBProgram( GLenum target, const char *program ) {
-	return 1;
 }

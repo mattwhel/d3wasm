@@ -61,11 +61,7 @@ typedef struct glconfig_s {
 
 	int					colorBits, depthBits, stencilBits;
 
-	bool				multitextureAvailable;
 	bool				anisotropicAvailable;
-	bool				textureLODBiasAvailable;
-	bool				ARBVertexBufferObjectAvailable;
-	bool				GLSLAvailable;
 
 	int					vidWidth, vidHeight;	// passed to R_BeginFrame
 

@@ -875,10 +875,8 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	guiModel->Clear();
 	R_IssueRenderCommands();
 
-#ifdef USEREGAL
-#else
-	qglReadBuffer( GL_BACK );
-#endif
+	// Disabled for OES2
+	//qglReadBuffer( GL_BACK );
 
 	// include extra space for OpenGL padding to word boundaries
 	int	c = ( rc->width + 4 ) * rc->height;

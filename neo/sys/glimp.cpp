@@ -35,7 +35,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "renderer/tr_local.h"
 
 idCVar in_nograb("in_nograb", "0", CVAR_SYSTEM | CVAR_NOCHEAT, "prevents input grabbing");
-idCVar r_waylandcompat("r_waylandcompat", "0", CVAR_SYSTEM | CVAR_NOCHEAT | CVAR_ARCHIVE, "wayland compatible framebuffer");
 
 static bool grabbed = false;
 
@@ -163,14 +162,8 @@ bool GLimp_Init(glimpParms_t parms) {
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, tdepthbits);
 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, tstencilbits);
-
-		if (r_waylandcompat.GetBool())
-			SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-		else
-			SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, channelcolorbits);
-
+		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, channelcolorbits);
 		SDL_GL_SetAttribute(SDL_GL_STEREO, parms.stereo ? 1 : 0);
-
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, parms.multiSamples ? 1 : 0);
 		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, parms.multiSamples);
 
@@ -195,9 +188,6 @@ bool GLimp_Init(glimpParms_t parms) {
 
 		context = SDL_GL_CreateContext(window);
 
-#ifdef USEREGAL
-        RegalMakeCurrent((void*)1);
-#endif
 #ifdef USEREGAL
 #else
 		if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
@@ -343,11 +333,7 @@ GLimp_ExtensionPointer
 GLExtension_t GLimp_ExtensionPointer(const char *name) {
 	assert(SDL_WasInit(SDL_INIT_VIDEO));
 
-#ifdef USEREGAL
-	return (GLExtension_t)glGetProcAddressREGAL(name);
-#else
 	return (GLExtension_t)SDL_GL_GetProcAddress(name);
-#endif
 }
 
 void GLimp_GrabInput(int flags) {

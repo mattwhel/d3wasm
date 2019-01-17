@@ -59,7 +59,7 @@ endif()
 
 if (USEREGAL)
   if (EMSCRIPTEN)
-    set(REGAL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
+    #set(REGAL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
   else ()
     # todo
   endif ()
