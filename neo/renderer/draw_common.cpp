@@ -268,6 +268,7 @@ void RB_LightScale(void) {
     backEnd.currentScissor = backEnd.viewDef->scissor;
   }
 
+#if 0
   // full screen blends
   qglLoadIdentity();
   qglMatrixMode(GL_PROJECTION);
@@ -304,6 +305,8 @@ void RB_LightScale(void) {
   qglEnable(GL_DEPTH_TEST);
   qglMatrixMode(GL_MODELVIEW);
   GL_Cull(CT_FRONT_SIDED);
+#endif
+
 }
 
 //=========================================================================================

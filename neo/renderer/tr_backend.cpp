@@ -44,12 +44,16 @@ void RB_SetDefaultGLState( void ) {
 	int		i;
 
 	qglClearDepth(1.0f);
+#if 0
 	qglColor4f (1,1,1,1);
+#endif
 
 	GL_SelectTexture( 0 );
 	// the vertex and texture arrays are always enabled
+#if 0
 	qglEnableClientState( GL_VERTEX_ARRAY );
 	qglEnableClientState( GL_TEXTURE_COORD_ARRAY );
+#endif
 
 	//
 	// make sure our GL state vector is set correctly
@@ -120,7 +124,6 @@ void GL_SelectTexture( int unit ) {
 	}
 
 	qglActiveTextureARB( GL_TEXTURE0_ARB + unit );
-	qglClientActiveTextureARB( GL_TEXTURE0_ARB + unit );
 
 	backEnd.glState.currenttmu = unit;
 }
@@ -429,6 +432,7 @@ was there.  This is used to test for texture thrashing.
 ===============
 */
 void RB_ShowImages( void ) {
+#if 0
 	int		i;
 	idImage	*image;
 	float	x, y, w, h;
@@ -478,6 +482,7 @@ void RB_ShowImages( void ) {
 
 	end = Sys_Milliseconds();
 	common->Printf( "%i msec to draw all images\n", end - start );
+#endif
 }
 
 

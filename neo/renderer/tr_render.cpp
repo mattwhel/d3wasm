@@ -79,103 +79,6 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 									 tri->indexes );
 }
 
-
-/*
-===============
-RB_EnterWeaponDepthHack
-===============
-*/
-void RB_EnterWeaponDepthHack() {
-	qglDepthRange( 0, 0.5 );
-
-	float	matrix[16];
-
-	memcpy( matrix, backEnd.viewDef->projectionMatrix, sizeof( matrix ) );
-
-	matrix[14] *= 0.25;
-
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadMatrixf( matrix );
-	qglMatrixMode(GL_MODELVIEW);
-}
-
-/*
-===============
-RB_EnterModelDepthHack
-===============
-*/
-void RB_EnterModelDepthHack( float depth ) {
-	qglDepthRange( 0.0f, 1.0f );
-
-	float	matrix[16];
-
-	memcpy( matrix, backEnd.viewDef->projectionMatrix, sizeof( matrix ) );
-
-	matrix[14] -= depth;
-
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadMatrixf( matrix );
-	qglMatrixMode(GL_MODELVIEW);
-}
-
-/*
-===============
-RB_LeaveDepthHack
-===============
-*/
-void RB_LeaveDepthHack() {
-	qglDepthRange( 0, 1 );
-
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadMatrixf( backEnd.viewDef->projectionMatrix );
-	qglMatrixMode(GL_MODELVIEW);
-}
-
-/*
-======================
-RB_RenderDrawSurfChainWithFunction
-======================
-*/
-void RB_RenderDrawSurfChainWithFunction( const drawSurf_t *drawSurfs,
-										void (*triFunc_)( const drawSurf_t *) ) {
-	const drawSurf_t		*drawSurf;
-
-	backEnd.currentSpace = NULL;
-
-	for ( drawSurf = drawSurfs ; drawSurf ; drawSurf = drawSurf->nextOnLight ) {
-		// change the matrix if needed
-		if ( drawSurf->space != backEnd.currentSpace ) {
-			qglLoadMatrixf( drawSurf->space->modelViewMatrix );
-		}
-
-		if ( drawSurf->space->weaponDepthHack ) {
-			RB_EnterWeaponDepthHack();
-		}
-
-		if ( drawSurf->space->modelDepthHack ) {
-			RB_EnterModelDepthHack( drawSurf->space->modelDepthHack );
-		}
-
-		// change the scissor if needed
-		if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals( drawSurf->scissorRect ) ) {
-			backEnd.currentScissor = drawSurf->scissorRect;
-			qglScissor( backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-				backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-				backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-				backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 );
-		}
-
-		// render it
-		triFunc_( drawSurf );
-
-		if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
-			RB_LeaveDepthHack();
-		}
-
-		backEnd.currentSpace = drawSurf->space;
-	}
-}
-
 /*
 ======================
 RB_GetShaderTextureMatrix
@@ -211,20 +114,6 @@ void RB_GetShaderTextureMatrix( const float *shaderRegisters,
 	matrix[7] = 0;
 	matrix[11] = 0;
 	matrix[15] = 1;
-}
-
-/*
-======================
-RB_LoadShaderTextureMatrix
-======================
-*/
-void RB_LoadShaderTextureMatrix( const float *shaderRegisters, const textureStage_t *texture ) {
-	float	matrix[16];
-
-	RB_GetShaderTextureMatrix( shaderRegisters, texture, matrix );
-	qglMatrixMode( GL_TEXTURE );
-	qglLoadMatrixf( matrix );
-	qglMatrixMode( GL_MODELVIEW );
 }
 
 /*
@@ -416,9 +305,11 @@ to actually render the visible surfaces for this view
 */
 void RB_BeginDrawingView (void) {
 	// set the modelview matrix for the viewer
+#if 0
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadMatrixf( backEnd.viewDef->projectionMatrix );
 	qglMatrixMode(GL_MODELVIEW);
+#endif
 
 	// set the window clipping
 	qglViewport( tr.viewportOffset[0] + backEnd.viewDef->viewport.x1,

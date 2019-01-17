@@ -213,7 +213,6 @@ idCVar r_scaleMenusTo43( "r_scaleMenusTo43", "1", CVAR_RENDERER | CVAR_ARCHIVE |
 
 // ARB_multitexture                                               // OpenGL_1.3
 void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
-void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
 
 // ARB_vertex_buffer_object                                       // OpenGL 1.5
 PFNGLBINDBUFFERARBPROC					qglBindBufferARB;
@@ -276,7 +275,6 @@ static void R_CheckPortableExtensions( void ) {
 	glConfig.multitextureAvailable = true;
 	common->Printf( "...using %s\n", "OpenGL 1.3 Multitexture" );
 	qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTexture" );
-	qglClientActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glClientActiveTexture" );
 	qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
 	if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
 		glConfig.maxTextureUnits = MAX_MULTITEXTURE_UNITS;
@@ -290,7 +288,6 @@ static void R_CheckPortableExtensions( void ) {
 	glConfig.multitextureAvailable = R_CheckExtension( "GL_ARB_multitexture" );
 	if ( glConfig.multitextureAvailable ) {
 	  qglActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glActiveTextureARB" );
-		qglClientActiveTextureARB = (void(APIENTRY *)(GLenum))GLimp_ExtensionPointer( "glClientActiveTextureARB" );
 		qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, (GLint *)&glConfig.maxTextureUnits );
 		if ( glConfig.maxTextureUnits > MAX_MULTITEXTURE_UNITS ) {
 			glConfig.maxTextureUnits = MAX_MULTITEXTURE_UNITS;
@@ -302,12 +299,6 @@ static void R_CheckPortableExtensions( void ) {
 		qglGetIntegerv( GL_MAX_TEXTURE_IMAGE_UNITS_ARB, (GLint *)&glConfig.maxTextureImageUnits );
 	}
 #endif
-
-	// GL_ARB_texture_env_combine / OpenGL 1.3
-	glConfig.textureEnvCombineAvailable = R_CheckExtension( "GL_ARB_texture_env_combine" );
-
-	// GL_ARB_texture_cube_map / OpenGL 1.3
-	glConfig.cubeMapAvailable = R_CheckExtension( "GL_ARB_texture_cube_map" );
 
 	// GL_EXT_texture_filter_anisotropic (extension only)
 	glConfig.anisotropicAvailable = R_CheckExtension( "GL_EXT_texture_filter_anisotropic" );
@@ -381,10 +372,10 @@ static void R_CheckPortableExtensions( void ) {
 	}
 
 	// check for minimum set
-	if ( !glConfig.multitextureAvailable || !glConfig.textureEnvCombineAvailable || !glConfig.cubeMapAvailable
-			 || !glConfig.ARBVertexBufferObjectAvailable ||!glConfig.GLSLAvailable ) {
-		common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
-	}
+	//if ( !glConfig.multitextureAvailable || !glConfig.textureEnvCombineAvailable || !glConfig.cubeMapAvailable
+	//		 || !glConfig.ARBVertexBufferObjectAvailable ||!glConfig.GLSLAvailable ) {
+	//	common->Error( common->GetLanguageDict()->GetString( "#str_06780" ) );
+	//}
 }
 
 

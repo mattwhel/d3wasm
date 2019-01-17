@@ -828,21 +828,6 @@ static void RB_GLSL_LeaveDepthHack(const drawSurf_t *surf) {
 }
 
 /*
-====================
-GL_SelectTextureNoClient
-====================
-*/
-static void GL_SelectTextureNoClient(int unit) {
-  if (backEnd.glState.currenttmu == unit) {
-    return;
-  }
-
-  qglActiveTextureARB(GL_TEXTURE0 + unit);
-
-  backEnd.glState.currenttmu = unit;
-}
-
-/*
 ==================
 RB_GLSL_DrawInteraction
 ==================
@@ -910,23 +895,23 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t *din) {
   // set the textures
 
   // texture 0 will be the per-surface bump map
-  GL_SelectTextureNoClient(0);
+  GL_SelectTexture(0);
   din->bumpImage->Bind();
 
   // texture 1 will be the light falloff texture
-  GL_SelectTextureNoClient(1);
+    GL_SelectTexture(1);
   din->lightFalloffImage->Bind();
 
   // texture 2 will be the light projection texture
-  GL_SelectTextureNoClient(2);
+    GL_SelectTexture(2);
   din->lightImage->Bind();
 
   // texture 3 is the per-surface diffuse map
-  GL_SelectTextureNoClient(3);
+    GL_SelectTexture(3);
   din->diffuseImage->Bind();
 
   // texture 4 is the per-surface specular map
-  GL_SelectTextureNoClient(4);
+    GL_SelectTexture(4);
   din->specularImage->Bind();
 
   // draw it
@@ -1119,11 +1104,6 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
-  // texture 5 is the specular lookup table
-  // GAB Note: Not used by the shader
-  //GL_SelectTextureNoClient(5);
-  //globalImages->specularTableImage->Bind();
-
 #ifdef USEREGAL
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, projectionMatrix), backEnd.viewDef->projectionMatrix);
 #else
@@ -1173,28 +1153,22 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
 
-  // disable features
-  //GL_SelectTextureNoClient(5);
-  //globalImages->BindNull();
-
-  GL_SelectTextureNoClient(4);
+    GL_SelectTexture(4);
   globalImages->BindNull();
 
-  GL_SelectTextureNoClient(3);
+    GL_SelectTexture(3);
   globalImages->BindNull();
 
-  GL_SelectTextureNoClient(2);
+    GL_SelectTexture(2);
   globalImages->BindNull();
 
-  GL_SelectTextureNoClient(1);
+    GL_SelectTexture(1);
   globalImages->BindNull();
 
   GL_UseProgram(NULL);
 
-  GL_SelectTexture(0);
+    GL_SelectTexture(0);
   globalImages->BindNull();
-  // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState(GL_VERTEX_ARRAY);
 }
 
 /*
@@ -1414,7 +1388,7 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   const float a = (backEnd.lightColor[3] <= 1.0) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / backEnd.lightColor[3];
 
   // texture 0 is the falloff image
-  GL_SelectTextureNoClient(0);
+    GL_SelectTexture(0);
   globalImages->fogImage->Bind();
 
   fogPlanes[0][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[2];
@@ -1428,7 +1402,7 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
   fogPlanes[1][3] = a * backEnd.viewDef->worldSpace.modelViewMatrix[12];
 
   // texture 1 is the entering plane fade correction
-  GL_SelectTextureNoClient(1);
+    GL_SelectTexture(1);
   globalImages->fogEnterImage->Bind();
 
   // T will get a texgen for the fade plane, which is always the "top" plane on unrotated lights
@@ -1459,15 +1433,13 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2) 
 
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));  // gl_Vertex
 
-  GL_SelectTextureNoClient(1);
+    GL_SelectTexture(1);
   globalImages->BindNull();
 
   GL_UseProgram(NULL);
 
   GL_SelectTexture(0);
   globalImages->BindNull();
-  // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState(GL_VERTEX_ARRAY);
 }
 
 /*
@@ -1969,7 +1941,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   // enable the second texture for mirror plane clipping if needed
   if (backEnd.viewDef->numClipPlanes) {
     static const GLfloat ftrue = 1.f;
-    GL_SelectTextureNoClient(1);
+      GL_SelectTexture(1);
     globalImages->alphaNotchImage->Bind();
     GL_Uniform1fv(offsetof(shaderProgram_t, clip), &ftrue);
   } else {
@@ -2008,7 +1980,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   RB_GLSL_RenderDrawSurfListWithFunction(drawSurfs, numDrawSurfs, RB_T_GLSL_FillDepthBuffer);
 
   if (backEnd.viewDef->numClipPlanes) {
-    GL_SelectTextureNoClient(1);
+      GL_SelectTexture(1);
     globalImages->BindNull();
   }
 
@@ -2019,8 +1991,6 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
   GL_SelectTexture(0);
   globalImages->BindNull();
-  // Restore fixed function pipeline to an acceptable state
-  qglEnableClientState(GL_VERTEX_ARRAY);
 }
 
 /*
@@ -2345,8 +2315,6 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
   // Restore fixed function pipeline to an acceptable state
   GL_SelectTexture(0);
   globalImages->BindNull();
-  qglEnableClientState(GL_VERTEX_ARRAY);
-
   return i;
 }
 

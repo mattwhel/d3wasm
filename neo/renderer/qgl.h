@@ -77,7 +77,6 @@ GLExtension_t GLimp_ExtensionPointer( const char *name );
 
 // multitexture
 extern	void ( APIENTRY * qglActiveTextureARB )( GLenum texture );
-extern	void ( APIENTRY * qglClientActiveTextureARB )( GLenum texture );
 
 // ARB_vertex_buffer_object
 extern PFNGLBINDBUFFERARBPROC qglBindBufferARB;

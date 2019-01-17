@@ -1039,6 +1039,7 @@ Debugging tool, won't work correctly with SMP or when mirrors are present
 =====================
 */
 void idRenderWorldLocal::ShowPortals() {
+#if 0
 	int			i, j;
 	portalArea_t	*area;
 	portal_t	*p;
@@ -1071,4 +1072,5 @@ void idRenderWorldLocal::ShowPortals() {
 			qglEnd();
 		}
 	}
+#endif
 }
