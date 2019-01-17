@@ -39,10 +39,6 @@ If you have questions concerning this license or the applicable additional terms
 ===============================================================================
 */
 
-// bump map generation
-void RenderBump_f( const idCmdArgs &args );
-void RenderBumpFlat_f( const idCmdArgs &args );
-
 // AAS file compiler
 void RunAAS_f( const idCmdArgs &args );
 void RunAASDir_f( const idCmdArgs &args );

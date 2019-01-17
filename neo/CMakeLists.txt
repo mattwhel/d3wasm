@@ -562,7 +562,6 @@ set(src_core
     ${src_cm}
     ${src_aas}
     ${src_roq}
-    ${src_renderbump}
     ${src_snd}
     ${src_ui}
     )

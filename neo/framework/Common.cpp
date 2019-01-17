@@ -2214,10 +2214,6 @@ void idCommonLocal::InitCommands(void) {
                         "execs the appropriate config files and sets cvars based on com_machineSpec");
 
   // compilers
-  cmdSystem->AddCommand("renderbump", RenderBump_f, CMD_FL_TOOL, "renders a bump map",
-                        idCmdSystem::ArgCompletion_ModelName);
-  cmdSystem->AddCommand("renderbumpFlat", RenderBumpFlat_f, CMD_FL_TOOL, "renders a flat bump map",
-                        idCmdSystem::ArgCompletion_ModelName);
   cmdSystem->AddCommand("runAAS", RunAAS_f, CMD_FL_TOOL, "compiles an AAS file for a map",
                         idCmdSystem::ArgCompletion_MapName);
   cmdSystem->AddCommand("runAASDir", RunAASDir_f, CMD_FL_TOOL, "compiles AAS files for all maps in a folder",
