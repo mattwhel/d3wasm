@@ -1409,8 +1409,8 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t fogShader;
 extern shaderProgram_t zfillShader;
+extern shaderProgram_t defaultShader;
 //extern shaderProgram_t stencilShadowShader;
-//extern shaderProgram_t defaultShader;
 
 /*
 ============================================================

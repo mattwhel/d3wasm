@@ -335,11 +335,64 @@ static const char *const zfillShaderFP =
     "\tgl_FragColor = u_glColor;\n"
     "}\n";
 
+static const char *const defaultShaderVP =
+    "#version 100\n"
+    "precision highp float;\n"
+    "\n"
+    "// In\n"
+    "attribute vec4 attr_Color;\n"
+    "attribute vec4 attr_TexCoord;\n"
+    "attribute vec4 attr_Vertex;\n"
+    "\n"
+    "// Uniforms\n"
+    #ifdef USEREGAL
+    "uniform mat4 u_modelViewMatrix;\n"
+    "uniform mat4 u_projectionMatrix;\n"
+    #else
+    "uniform mat4 u_modelViewProjectionMatrix;\n"
+    #endif
+    "uniform mat4 u_textureMatrix;\n"
+    "uniform vec4 u_colorAdd;\n"
+    "uniform vec4 u_colorModulate;\n"
+    "\n"
+    "// Out\n"
+    "// gl_Position\n"
+    "varying vec2 var_TexDiffuse;\n"
+    "varying vec4 var_Color;\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "\tvar_TexDiffuse = (attr_TexCoord * u_textureMatrix).xy;\n"
+    "\n"
+    "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
+    "\n"
+    #ifdef USEREGAL
+    "  gl_Position = u_projectionMatrix * u_modelViewMatrix * attr_Vertex;\n"
+    #else
+    "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+    #endif
+    "}\n";
+
+static const char *const defaultShaderFP =
+    "#version 100\n"
+    "precision highp float;\n"
+    "\n"
+    "uniform sampler2D u_fragmentMap0;\n"
+    "uniform vec4 u_glColor;\n"
+    "\n"
+    "varying vec2 var_TexDiffuse;\n"
+    "varying vec4 var_Color;\n"
+    "\n"
+    "void main(void)\n"
+    "{\n"
+    "\tgl_FragColor = texture2D(u_fragmentMap0, var_TexDiffuse) * u_glColor * var_Color;\n"
+    "}\n";
+
 shaderProgram_t interactionShader;
 shaderProgram_t fogShader;
 shaderProgram_t zfillShader;
+shaderProgram_t defaultShader;
 //shaderProgram_t stencilShadowShader;
-//shaderProgram_t defaultShader;
 
 /*
 ====================
@@ -599,6 +652,18 @@ static bool RB_GLSL_InitShaders(void) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&interactionShader);
+  }
+
+  memset(&defaultShader, 0, sizeof(shaderProgram_t));
+
+  // load interation shaders
+  R_LoadGLSLShader(defaultShaderVP, &defaultShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(defaultShaderFP, &defaultShader, GL_FRAGMENT_SHADER);
+
+  if (!R_LinkGLSLShader(&defaultShader, true) && !R_ValidateGLSLProgram(&defaultShader)) {
+    return false;
+  } else {
+    RB_GLSL_GetUniformLocations(&defaultShader);
   }
 
   memset(&zfillShader, 0, sizeof(shaderProgram_t));

@@ -10,8 +10,8 @@ attribute vec4 attr_Vertex;
 uniform mat4 u_modelViewMatrix;
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_textureMatrix;
-uniform mediump vec4 u_colorAdd;
-uniform mediump vec4 u_colorModulate;
+uniform vec4 u_colorAdd;
+uniform vec4 u_colorModulate;
 
 // Out
 // gl_Position
