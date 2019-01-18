@@ -154,7 +154,8 @@ void idVertexCache::Init() {
 
 	// set up the dynamic frame memory
 	frameBytes = FRAME_MEMORY_BYTES;
-	staticAllocTotal = 0;
+  staticAllocTotal = 0;
+  staticCountTotal = 0;
 
 	byte	*junk = (byte *)Mem_Alloc( frameBytes );
 	for ( int i = 0 ; i < NUM_VERTEX_FRAMES ; i++ ) {
