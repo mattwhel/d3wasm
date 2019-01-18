@@ -58,16 +58,22 @@ void RB_DrawElementsWithCounters( const srfTriangles_t *tri ) {
 		}
 	}
 
-	if ( tri->indexCache && r_useIndexBuffers.GetBool() ) {
+	if ( tri->indexCache ) {
 		qglDrawElements( GL_TRIANGLES,
 						tri->numIndexes,
 						GL_INDEX_TYPE,
 						(int *)vertexCache.Position( tri->indexCache ) );
 		backEnd.pc.c_vboIndexes += tri->numIndexes;
 	} else {
-		if ( r_useIndexBuffers.GetBool() ) {
-			vertexCache.UnbindIndex();
+		static bool b = true;
+		if (b)
+		{
+			common->Printf("Not Index Cached!!");
+			b = false;
 		}
+
+			vertexCache.UnbindIndex();
+
 		qglDrawElements( GL_TRIANGLES,
 						tri->numIndexes,
 						GL_INDEX_TYPE,
@@ -87,16 +93,21 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 	backEnd.pc.c_shadowIndexes += numIndexes;
 	backEnd.pc.c_shadowVertexes += tri->numVerts;
 
-	if ( tri->indexCache && r_useIndexBuffers.GetBool() ) {
+	if ( tri->indexCache ) {
 	qglDrawElements( GL_TRIANGLES,
 			numIndexes,
 						GL_INDEX_TYPE,
 						(int *)vertexCache.Position( tri->indexCache ) );
 		backEnd.pc.c_vboIndexes += numIndexes;
 	} else {
-		if (r_useIndexBuffers.GetBool()) {
-			vertexCache.UnbindIndex();
+		static bool b = true;
+		if (b)
+		{
+			common->Printf("Not Index Cached!!");
+			b = false;
 		}
+		vertexCache.UnbindIndex();
+
 		qglDrawElements(GL_TRIANGLES,
 										numIndexes,
 										GL_INDEX_TYPE,
