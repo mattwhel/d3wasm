@@ -316,14 +316,12 @@ static void	RB_SetBuffer( const void *data ) {
 	// clear screen for debugging
 	// automatically enable this with several other debug tools
 	// that might leave unrendered portions of the screen
-	if ( r_clear.GetFloat() || idStr::Length( r_clear.GetString() ) != 1 || r_lockSurfaces.GetBool() || r_singleArea.GetBool() || r_showOverDraw.GetBool() ) {
+	if ( r_clear.GetFloat() || idStr::Length( r_clear.GetString() ) != 1 || r_lockSurfaces.GetBool() || r_singleArea.GetBool() ) {
 		float c[3];
 		if ( sscanf( r_clear.GetString(), "%f %f %f", &c[0], &c[1], &c[2] ) == 3 ) {
 			qglClearColor( c[0], c[1], c[2], 1 );
 		} else if ( r_clear.GetInteger() == 2 ) {
 			qglClearColor( 0.0f, 0.0f,  0.0f, 1.0f );
-		} else if ( r_showOverDraw.GetBool() ) {
-			qglClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
 		} else {
 			qglClearColor( 0.4f, 0.0f, 0.25f, 1.0f );
 		}

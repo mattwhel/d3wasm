@@ -212,9 +212,7 @@ RB_FogAllLights
 void RB_FogAllLights(void) {
   viewLight_t *vLight;
 
-  if (r_skipFogLights.GetBool() || r_showOverDraw.GetInteger() != 0
-      || backEnd.viewDef->isXraySubview /* dont fog in xray mode*/
-      ) {
+  if (r_skipFogLights.GetBool() || backEnd.viewDef->isXraySubview /* dont fog in xray mode*/ ) {
     return;
   }
 

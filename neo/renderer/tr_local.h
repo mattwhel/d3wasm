@@ -922,7 +922,6 @@ extern idCVar r_showPrimitives;			// report vertex/index/draw counts
 extern idCVar r_showPortals;			// draw portal outlines in color based on passed / not passed
 extern idCVar r_showAlloc;				// report alloc/free counts
 extern idCVar r_showSkel;				// draw the skeleton when model animates
-extern idCVar r_showOverDraw;			// show overdraw
 extern idCVar r_jointNameScale;			// size of joint names when r_showskel is set to 1
 extern idCVar r_jointNameOffset;		// offset of joint names when r_showskel is set to 1
 
