@@ -349,7 +349,6 @@ public:
 	static idCVar		image_downSize;				// controls texture downsampling
 	static idCVar		image_filter;				// changes texture filtering on mipmapped images
 	static idCVar		image_anisotropy;			// set the maximum texture anisotropy if available
-	static idCVar		image_lodbias;				// change lod bias on mipmapped images
 	static idCVar		image_writeNormalTGA;		// debug tool to write out .tgas of the final normal maps
 	static idCVar		image_writeNormalTGAPalletized;		// debug tool to write out palletized versions of the final normal maps
 	static idCVar		image_writeTGA;				// debug tool to write out .tgas of the non normal maps
@@ -405,7 +404,6 @@ public:
 	GLenum				textureMinFilter;
 	GLenum				textureMaxFilter;
 	float				textureAnisotropy;
-	float				textureLODBias;
 
 	idImage *			imageHashTable[FILE_HASH_SIZE];
 

@@ -55,7 +55,6 @@ idCVar idImageManager::image_colorMipLevels( "image_colorMipLevels", "0", CVAR_R
 idCVar idImageManager::image_preload( "image_preload", "1", CVAR_RENDERER | CVAR_BOOL | CVAR_ARCHIVE, "if 0, dynamically load all images" );
 idCVar idImageManager::image_showBackgroundLoads( "image_showBackgroundLoads", "0", CVAR_RENDERER | CVAR_BOOL, "1 = print number of outstanding background loads" );
 #if 1
-idCVar idImageManager::image_lodbias( "image_lodbias", "0", CVAR_RENDERER | CVAR_ROM, "change lod bias on mipmapped images" );
 idCVar idImageManager::image_downSize( "image_downSize", "0", CVAR_RENDERER | CVAR_ROM, "controls texture downsampling" );
 idCVar idImageManager::image_forceDownSize( "image_forceDownSize", "0", CVAR_RENDERER | CVAR_ROM | CVAR_BOOL, "" );
 idCVar idImageManager::image_roundDown( "image_roundDown", "0", CVAR_RENDERER | CVAR_ROM | CVAR_BOOL, "round bad sizes down to nearest power of two" );
@@ -68,7 +67,6 @@ idCVar idImageManager::image_downSizeSpecularLimit( "image_downSizeSpecularLimit
 idCVar idImageManager::image_downSizeBumpLimit( "image_downSizeBumpLimit", "128", CVAR_RENDERER | CVAR_ROM, "controls normal map downsample limit" );
 idCVar idImageManager::image_downSizeLimit( "image_downSizeLimit", "256", CVAR_RENDERER | CVAR_ROM, "controls diffuse map downsample limit" );
 #else
-idCVar idImageManager::image_lodbias( "image_lodbias", "0", CVAR_RENDERER | CVAR_ARCHIVE, "change lod bias on mipmapped images" );
 idCVar idImageManager::image_downSize( "image_downSize", "0", CVAR_RENDERER | CVAR_ARCHIVE, "controls texture downsampling" );
 idCVar idImageManager::image_forceDownSize( "image_forceDownSize", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "" );
 idCVar idImageManager::image_roundDown( "image_roundDown", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "round bad sizes down to nearest power of two" );
@@ -937,7 +935,6 @@ static const filterName_t textureFilters[] = {
 	// if these are changed dynamically, it will force another ChangeTextureFilter
 	image_filter.ClearModified();
 	image_anisotropy.ClearModified();
-	image_lodbias.ClearModified();
 
 	string = image_filter.GetString();
 	for ( i = 0; i < 6; i++ ) {
@@ -961,7 +958,6 @@ static const filterName_t textureFilters[] = {
 	} else if ( textureAnisotropy > glConfig.maxTextureAnisotropy ) {
 		textureAnisotropy = glConfig.maxTextureAnisotropy;
 	}
-	textureLODBias = image_lodbias.GetFloat();
 
 	// change all the existing mipmap texture objects with default filtering
 
@@ -1695,11 +1691,10 @@ CheckCvars
 */
 void idImageManager::CheckCvars() {
 	// textureFilter stuff
-	if ( image_filter.IsModified() || image_anisotropy.IsModified() || image_lodbias.IsModified() ) {
+	if ( image_filter.IsModified() || image_anisotropy.IsModified() ) {
 		ChangeTextureFilter();
 		image_filter.ClearModified();
 		image_anisotropy.ClearModified();
-		image_lodbias.ClearModified();
 	}
 }
 

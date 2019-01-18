@@ -1331,7 +1331,6 @@ cvarSystem->SetCVarInteger( "image_preload", 1, CVAR_ARCHIVE );
 cvarSystem->SetCVarString(  "image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE );
 cvarSystem->SetCVarInteger( "r_mode", 4, CVAR_ARCHIVE );
 // These CVAR are read only
-cvarSystem->SetCVarInteger( "image_lodbias", 0, CVAR_ROM ); // Not supported by Regal
 cvarSystem->SetCVarInteger( "image_forceDownSize", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_roundDown", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeSpecular", 0, CVAR_ROM );
@@ -1339,14 +1338,13 @@ cvarSystem->SetCVarInteger( "image_downSizeBump", 0, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeSpecularLimit", 64, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeBumpLimit", 256, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downsize", 0			, CVAR_ROM );
-cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ROM );    // Not supported by Regal
+cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ROM );
 
 }
 else
 #else
   if (com_machineSpec.GetInteger() == 3) {
     cvarSystem->SetCVarInteger("image_anisotropy", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_lodbias", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
@@ -1363,7 +1361,6 @@ else
   } else if (com_machineSpec.GetInteger() == 2) {
     cvarSystem->SetCVarString("image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_anisotropy", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_lodbias", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
@@ -1379,7 +1376,6 @@ else
   } else if (com_machineSpec.GetInteger() == 1) {
     cvarSystem->SetCVarString("image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_anisotropy", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_lodbias", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
@@ -1393,7 +1389,6 @@ else
   } else {
     cvarSystem->SetCVarString("image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_anisotropy", 1, CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("image_lodbias", 0, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_roundDown", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_downSize", 1, CVAR_ARCHIVE);
