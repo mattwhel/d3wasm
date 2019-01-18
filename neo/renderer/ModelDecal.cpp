@@ -519,6 +519,7 @@ void idRenderModelDecal::AddDecalDrawSurf( viewEntity_t *space ) {
 		return;
 	}
 
+	// GAB: Generate an IndexCache for the ambient surface
 	if ( !newTri->indexCache ) {
 		newTri->indexCache = vertexCache.AllocFrameTemp( tri.indexes, tri.numIndexes * sizeof( tri.indexes[0] ), true );
 	}

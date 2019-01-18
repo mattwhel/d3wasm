@@ -188,6 +188,7 @@ void idGuiModel::EmitSurface( guiModelSurface_t *surf, float modelMatrix[16], fl
 		return;
 	}
 
+	// GAB: Generate an IndexCache for the ambient surface
 	if ( !tri->indexCache ) {
 		tri->indexCache = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), true );
 	}

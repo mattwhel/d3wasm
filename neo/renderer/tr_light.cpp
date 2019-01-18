@@ -53,26 +53,36 @@ Create it if needed
 ==================
 */
 bool R_CreateAmbientCache(srfTriangles_t *tri, bool needsLighting) {
+  // Do nothing if there is no vertexes. This is a pathological case
+  if( !tri->verts ) {
+    return false;
+  }
+
+  // If there is already an ambient cache, we will build the index cache if it have not been already built, and return OK
   if (tri->ambientCache) {
     if (!tri->indexCache) {
       vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
     }
     return true;
   }
+
+  // Ambient cache needs to be computed, so proceed
+
   // we are going to use it for drawing, so make sure we have the tangents and normals
   if (needsLighting && !tri->tangentsCalculated) {
     R_DeriveTangents(tri);
   }
 
+  // Build the ambient cache
   vertexCache.Alloc(tri->verts, tri->numVerts * sizeof(tri->verts[0]), &tri->ambientCache, false);
 
+  // If it have been successfully build, build the index cache too and return OK
   if (tri->ambientCache) {
-    if (!tri->indexCache) {
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
-    }
+    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true); // Possible override of index cache??
     return true;
   }
 
+  // Something gone wrong, skip the surface
   return false;
 }
 
@@ -84,15 +94,24 @@ This is used only for a specific light
 ==================
 */
 void R_CreatePrivateShadowCache(srfTriangles_t *tri) {
+  // Do nothing if there is no shadow vertexes
   if (!tri->shadowVertexes) {
     return;
   }
 
-  vertexCache.Alloc(tri->shadowVertexes, tri->numVerts * sizeof(*tri->shadowVertexes), &tri->shadowCache, false);
+  // Shadow cache needs to be computed, so proceed
 
-  if (!tri->indexCache) {
-    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+  // Build the shadow cache
+  vertexCache.Alloc(tri->shadowVertexes, tri->numVerts * sizeof(*tri->shadowVertexes), &tri->shadowCache, false);   // Possible override of shadow cache??
+
+  // If it have been successfully build, build the index cache too and return OK
+  if (tri->shadowCache) {
+    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);             // Possible override of index cache??
+    return;
   }
+
+  // Something gone wrong
+  return;
 }
 
 /*
@@ -911,13 +930,10 @@ void R_AddLightSurfaces(void) {
           continue;
         }
       }
+
       // touch the surface so it won't get purged
       vertexCache.Touch(light->frustumTris->ambientCache);
-
-      if ( !light->frustumTris->indexCache ) {
-        vertexCache.Alloc( light->frustumTris->indexes, light->frustumTris->numIndexes * sizeof( light->frustumTris->indexes[0] ), &light->frustumTris->indexCache, true );
-        vertexCache.Touch( light->frustumTris->indexCache );
-      }
+      vertexCache.Touch(light->frustumTris->indexCache );
     }
 
     // add the prelight shadows for the static world geometry
@@ -949,12 +965,8 @@ void R_AddLightSurfaces(void) {
       }
 
       // touch the shadow surface so it won't get purged
-      vertexCache.Touch(tri->shadowCache);
-
-			if ( !tri->indexCache ) {
-				vertexCache.Alloc( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), &tri->indexCache, true );
-        vertexCache.Touch( tri->indexCache );
-			}
+      vertexCache.Touch( tri->shadowCache );
+      vertexCache.Touch( tri->indexCache );
 
       R_LinkLightSurf(&vLight->globalShadows, tri, NULL, light, NULL, vLight->scissorRect, true /* FIXME? */ );
     }
@@ -1322,13 +1334,10 @@ static void R_AddAmbientDrawsurfs(viewEntity_t *vEntity) {
         // don't add anything if the vertex cache was too full to give us an ambient cache
         return;
       }
+
       // touch it so it won't get purged
       vertexCache.Touch(tri->ambientCache);
-
-      if (!tri->indexCache) {
-        vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
-        vertexCache.Touch(tri->indexCache);
-      }
+      vertexCache.Touch(tri->indexCache);
 
       // add the surface for drawing
       R_AddDrawSurf(tri, vEntity, &vEntity->entityDef->parms, shader, vEntity->scissorRect);

@@ -2140,6 +2140,7 @@ void idRenderModelStatic::FreeVertexCache( void ) {
 			vertexCache.Free( tri->ambientCache );
 			tri->ambientCache = NULL;
 		}
+		// GAB: cleanup the Index Cache too
 		if ( tri->indexCache ) {
 			vertexCache.Free( tri->indexCache );
 			tri->indexCache = NULL;
