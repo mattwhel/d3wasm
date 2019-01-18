@@ -281,8 +281,15 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool inde
 	block->tag = TAG_USED;
 
 	// save data for debugging
-	staticAllocThisFrame += block->size;
-	staticCountThisFrame++;
+	if ( indexBuffer )
+	{
+		staticAllocThisFrame_Index += block->size;
+		staticCountThisFrame_Index++;
+	}
+	else {
+		staticAllocThisFrame += block->size;
+		staticCountThisFrame++;
+	}
 	staticCountTotal++;
 	staticAllocTotal += block->size;
 
@@ -314,12 +321,6 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool inde
 			}
 		}
 }
-
-
-void idVertexCache::UnbindIndex() {
-  qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0 );
-}
-
 
 /*
 ===========
@@ -406,13 +407,27 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size, bool indexBuff
 		common->Error( "idVertexCache::AllocFrameTemp: size = %i\n", size );
 	}
 
-	if ( dynamicAllocThisFrame + size > frameBytes ) {
-		// if we don't have enough room in the temp block, allocate a static block,
-		// but immediately free it so it will get freed at the next frame
-		tempOverflow = true;
-		Alloc( data, size, &block, indexBuffer );
-		Free( block);
-		return block;
+	if (indexBuffer)
+	{
+		if (dynamicAllocThisFrame_Index + size > frameBytes) {
+			// if we don't have enough room in the temp block, allocate a static block,
+			// but immediately free it so it will get freed at the next frame
+			tempOverflow = true;
+			Alloc(data, size, &block, indexBuffer);
+			Free(block);
+			return block;
+		}
+	}
+	else
+	{
+		if (dynamicAllocThisFrame + size > frameBytes) {
+			// if we don't have enough room in the temp block, allocate a static block,
+			// but immediately free it so it will get freed at the next frame
+			tempOverflow = true;
+			Alloc(data, size, &block, indexBuffer);
+			Free(block);
+			return block;
+		}
 	}
 
 	// this data is just going on the shared dynamic list
@@ -473,9 +488,18 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size, bool indexBuff
 	block->size = size;
 	block->tag = TAG_TEMP;
   block->indexBuffer = indexBuffer;
-	block->offset = dynamicAllocThisFrame;
-	dynamicAllocThisFrame += block->size;
-	dynamicCountThisFrame++;
+  if (indexBuffer)
+	{
+		block->offset = dynamicAllocThisFrame_Index;
+		dynamicAllocThisFrame_Index += block->size;
+		dynamicCountThisFrame_Index++;
+	}
+  else {
+		block->offset = dynamicAllocThisFrame;
+		dynamicAllocThisFrame += block->size;
+		dynamicCountThisFrame++;
+
+	}
 	block->user = NULL;
 	block->frameUsed = 0;
 
@@ -522,14 +546,18 @@ void idVertexCache::EndFrame() {
 		const char *frameOverflow = tempOverflow ? "(OVERFLOW)" : "";
 
 		common->Printf( "vertex dynamic:%i=%ik%s, static alloc:%i=%ik used:%i=%ik total:%i=%ik\n",
-			dynamicCountThisFrame, dynamicAllocThisFrame/1024, frameOverflow,
-			staticCountThisFrame, staticAllocThisFrame/1024,
+			dynamicCountThisFrame + dynamicCountThisFrame_Index, (dynamicAllocThisFrame + dynamicAllocThisFrame_Index)/1024, frameOverflow,
+			staticCountThisFrame + staticCountThisFrame_Index, (staticAllocThisFrame + staticAllocThisFrame_Index)/1024,
 			staticUseCount, staticUseSize/1024,
 			staticCountTotal, staticAllocTotal/1024 );
 	}
 
-  if ( staticAllocTotal > r_vertexBufferMegs.GetInteger() * 2 * 1024 * 1024 ) {
-    common->Printf("Cache overflow!!\n");
+  if ( staticAllocTotal > r_vertexBufferMegs.GetInteger() * 1024 * 1024 ) {
+    static bool bOnce = true;
+    if (bOnce) {
+      common->Printf("VBO size exceeds %dMB. Consider updating r_vertexBufferMegs.\n", r_vertexBufferMegs.GetInteger());
+      bOnce = false;
+    }
   }
 
 #if 0
@@ -540,16 +568,14 @@ void idVertexCache::EndFrame() {
 	}
 #endif
 
-		// unbind vertex buffers so normal virtual memory will be used in case
-		// r_useVertexBuffers / r_useIndexBuffers
-		qglBindBuffer( GL_ARRAY_BUFFER, 0 );
-		qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, 0 );
-
-
 	currentFrame = tr.frameCount;
 	listNum = currentFrame % NUM_VERTEX_FRAMES;
 	staticAllocThisFrame = 0;
 	staticCountThisFrame = 0;
+	staticAllocThisFrame_Index  = 0;
+	staticCountThisFrame_Index  = 0;
+	dynamicAllocThisFrame_Index = 0;
+	dynamicCountThisFrame_Index = 0;
 	dynamicAllocThisFrame = 0;
 	dynamicCountThisFrame = 0;
 	tempOverflow = false;

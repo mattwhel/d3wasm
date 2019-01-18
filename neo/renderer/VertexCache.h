@@ -73,10 +73,6 @@ public:
 	// but it will be an int offset cast to a pointer of ARB_vertex_buffer_object
 	void *			Position( vertCache_t *buffer );
 
-	// if r_useIndexBuffers is enabled, but you need to draw something without
-	// an indexCache, this must be called to reset GL_ELEMENT_ARRAY_BUFFER_ARB
-	void			UnbindIndex();
-
 	// automatically freed at the end of the next frame
 	// used for specular texture coordinates and gui drawing, which
 	// will change every frame.
@@ -115,6 +111,10 @@ private:
 	int				staticCountThisFrame;
 	int				dynamicAllocThisFrame;
 	int				dynamicCountThisFrame;
+	int				staticAllocThisFrame_Index;	// debug counter
+	int				staticCountThisFrame_Index;
+	int				dynamicAllocThisFrame_Index;
+	int				dynamicCountThisFrame_Index;
 
 	int				currentFrame;			// for purgable block tracking
 	int				listNum;				// currentFrame % NUM_VERTEX_FRAMES, determines which tempBuffers to use
