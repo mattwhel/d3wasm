@@ -40,30 +40,25 @@ option(CORE     "Build the core" ON)
 option(BASE     "Build the base game code" ON)
 option(NODLL    "Build core and base game code, embedded inside one binary" ON)
 option(NOMT     "Do not use multithreading" ON)
-option(USEREGAL "Use Regal GL emulation layer library" OFF)
+option(WEBGL    "We are in a WebGL environment" OFF)
 option(NOEFX    "Do not use OpenAL EFX" OFF)
 
 # Enforce some options for emscripten
 if (EMSCRIPTEN)
   set(NOEFX ON)
   set(NOMT  ON)
-  set(NODLL ON)      # only one single binary with core+base game
-  set(USEREGAL ON)   # Regal GL emulation library is used
+  set(NODLL ON)
+  set(WEBGL ON)
   SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
 else()
   set(NOEFX OFF)
   set(NOMT  ON)
   set(NODLL ON)      # only one single binary with core+base game
-  set(USEREGAL OFF)   # Regal GL emulation library is used
+  set(WEBGL OFF)
 endif()
 
-if (USEREGAL)
-  if (EMSCRIPTEN)
-    #set(REGAL_LIBRARY $ENV{EMSCRIPTEN}/system/local/lib/libRegallib.a)
-  else ()
-    # todo
-  endif ()
-  add_compile_options("-DUSEREGAL")
+if (WEBGL)
+  add_compile_options("-DWEBGL")
 endif ()
 
 if (NOEFX)
@@ -184,9 +179,6 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
   endif ()
   if (os STREQUAL "linux")
     set(sys_libs ${sys_libs} dl)
-  endif ()
-  if (USEREGAL)
-    set(sys_libs ${sys_libs} ${REGAL_LIBRARY})
   endif ()
 else ()
   message(FATAL_ERROR "Unsupported compiler")

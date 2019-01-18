@@ -185,7 +185,8 @@ bool GLimp_Init(glimpParms_t parms) {
 
     context = SDL_GL_CreateContext(window);
 
-#ifdef USEREGAL
+#ifdef WEBGL
+    // SwapInterval is not supported on WebGL. Swaps occurs when the code yields to the browser
 #else
     if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
       common->Warning("SDL_GL_SWAP_CONTROL not supported");
@@ -274,8 +275,8 @@ GLimp_SwapBuffers
 ===================
 */
 void GLimp_SwapBuffers() {
-#ifdef USEREGAL
-  // GAB Note Jan 2018: Not needed on WebGL
+#ifdef WEBGL
+  // SwapBuffer is not supported on WebGL. Swaps occurs when the code yields to the browser
   return;
 #endif
 #if SDL_VERSION_ATLEAST(2, 0, 0)
