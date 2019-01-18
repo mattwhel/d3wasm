@@ -65,19 +65,11 @@ void RB_DrawElementsWithCounters( const srfTriangles_t *tri ) {
 						(int *)vertexCache.Position( tri->indexCache ) );
 		backEnd.pc.c_vboIndexes += tri->numIndexes;
 	} else {
-		static bool b = true;
-		if (b)
-		{
-			common->Printf("Not Index Cached!!");
-			b = false;
+		static bool bOnce = true;
+		if (bOnce) {
+			common->Printf("Attempting to draw without index caching\n");
+      bOnce = false;
 		}
-
-			vertexCache.UnbindIndex();
-
-		qglDrawElements( GL_TRIANGLES,
-						tri->numIndexes,
-						GL_INDEX_TYPE,
-						tri->indexes );
 	}
 }
 
@@ -100,18 +92,11 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 						(int *)vertexCache.Position( tri->indexCache ) );
 		backEnd.pc.c_vboIndexes += numIndexes;
 	} else {
-		static bool b = true;
-		if (b)
-		{
-			common->Printf("Not Index Cached!!");
-			b = false;
-		}
-		vertexCache.UnbindIndex();
-
-		qglDrawElements(GL_TRIANGLES,
-										numIndexes,
-										GL_INDEX_TYPE,
-										tri->indexes);
+    static bool bOnce = true;
+    if (bOnce) {
+      common->Printf("Attempting to draw without index caching\n");
+      bOnce = false;
+    }
 	}
 }
 
