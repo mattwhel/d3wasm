@@ -222,7 +222,7 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool inde
 
 	if (indexBuffer)
   {
-// if we don't have any remaining unused headers, allocate some more
+    // if we don't have any remaining unused headers, allocate some more
     if ( freeStaticIndexHeaders.next == &freeStaticIndexHeaders ) {
 
       for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
