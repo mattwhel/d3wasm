@@ -520,9 +520,7 @@ void idRenderModelDecal::AddDecalDrawSurf( viewEntity_t *space ) {
 	}
 
 	// GAB: Generate an IndexCache for the ambient surface
-	if ( !newTri->indexCache ) {
-		newTri->indexCache = vertexCache.AllocFrameTemp( tri.indexes, tri.numIndexes * sizeof( tri.indexes[0] ), true );
-	}
+	newTri->indexCache = vertexCache.AllocFrameTemp( tri.indexes, tri.numIndexes * sizeof( tri.indexes[0] ), true );
 
 	// create the drawsurf
 	R_AddDrawSurf( newTri, space, &space->entityDef->parms, material, space->scissorRect );

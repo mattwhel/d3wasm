@@ -65,9 +65,7 @@ static void R_FinishDeform( drawSurf_t *drawSurf, srfTriangles_t *newTri, idDraw
 		return;
 	}
 
-	if ( !newTri->indexCache ) {
-		newTri->indexCache = vertexCache.AllocFrameTemp( newTri->indexes, newTri->numIndexes * sizeof( newTri->indexes[0] ), true );
-	}
+	newTri->indexCache = vertexCache.AllocFrameTemp( newTri->indexes, newTri->numIndexes * sizeof( newTri->indexes[0] ), true );
 
 	drawSurf->geo = newTri;
 }
@@ -1224,9 +1222,7 @@ static void R_ParticleDeform( drawSurf_t *surf, bool useArea ) {
 				  return;
 				}
 
-				if ( !tri->indexCache ) {
-				  tri->indexCache = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), true );
-				}
+				tri->indexCache = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), true );
 
 				// add the drawsurf
 				R_AddDrawSurf( tri, surf->space, renderEntity, stage->material, surf->scissorRect );
