@@ -76,15 +76,18 @@ void idVertexCache::ActuallyFree( vertCache_t *block ) {
 	block->next->prev = block->prev;
 	block->prev->next = block->next;
 
-#if 1
-	// stick it on the front of the free list so it will be reused immediately
-	block->next = freeStaticHeaders.next;
-	block->prev = &freeStaticHeaders;
-#else
-	// stick it on the back of the free list so it won't be reused soon (just for debugging)
-	block->next = &freeStaticHeaders;
-	block->prev = freeStaticHeaders.prev;
-#endif
+  if (block->indexBuffer)
+  {
+    // stick it on the front of the free list so it will be reused immediately
+    block->next = freeStaticIndexHeaders.next;
+    block->prev = &freeStaticIndexHeaders;
+  }
+	else
+  {
+    // stick it on the front of the free list so it will be reused immediately
+    block->next = freeStaticHeaders.next;
+    block->prev = &freeStaticHeaders;
+  }
 
 	block->next->prev = block;
 	block->prev->next = block;
@@ -139,8 +142,14 @@ void idVertexCache::Init() {
 	// initialize the cache memory blocks
 	freeStaticHeaders.next = freeStaticHeaders.prev = &freeStaticHeaders;
 	staticHeaders.next = staticHeaders.prev = &staticHeaders;
+  freeStaticIndexHeaders.next = freeStaticIndexHeaders.prev = &freeStaticIndexHeaders;
+  staticIndexHeaders.next = staticIndexHeaders.prev = &staticIndexHeaders;
+
 	freeDynamicHeaders.next = freeDynamicHeaders.prev = &freeDynamicHeaders;
 	dynamicHeaders.next = dynamicHeaders.prev = &dynamicHeaders;
+	freeDynamicIndexHeaders.next = freeDynamicIndexHeaders.prev = &freeDynamicIndexHeaders;
+	dynamicIndexHeaders.next = dynamicIndexHeaders.prev = &dynamicIndexHeaders;
+
 	deferredFreeList.next = deferredFreeList.prev = &deferredFreeList;
 
 	// set up the dynamic frame memory
@@ -178,6 +187,9 @@ void idVertexCache::PurgeAll() {
 	while( staticHeaders.next != &staticHeaders ) {
 		ActuallyFree( staticHeaders.next );
 	}
+  while( staticIndexHeaders.next != &staticIndexHeaders ) {
+    ActuallyFree( staticIndexHeaders.next );
+  }
 }
 
 /*
@@ -206,28 +218,63 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool inde
 	// if we can't find anything, it will be NULL
 	*buffer = NULL;
 
-	// if we don't have any remaining unused headers, allocate some more
-	if ( freeStaticHeaders.next == &freeStaticHeaders ) {
 
-		for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
-			block = headerAllocator.Alloc();
-			block->next = freeStaticHeaders.next;
-			block->prev = &freeStaticHeaders;
-			block->next->prev = block;
-			block->prev->next = block;
+	if (indexBuffer)
+  {
+// if we don't have any remaining unused headers, allocate some more
+    if ( freeStaticIndexHeaders.next == &freeStaticIndexHeaders ) {
 
-			qglGenBuffers( 1, & block->vbo );
-		}
-	}
+      for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
+        block = headerAllocator.Alloc();
+        block->next = freeStaticIndexHeaders.next;
+        block->prev = &freeStaticIndexHeaders;
+        block->next->prev = block;
+        block->prev->next = block;
 
-	// move it from the freeStaticHeaders list to the staticHeaders list
-	block = freeStaticHeaders.next;
-	block->next->prev = block->prev;
-	block->prev->next = block->next;
-	block->next = staticHeaders.next;
-	block->prev = &staticHeaders;
-	block->next->prev = block;
-	block->prev->next = block;
+        qglGenBuffers( 1, & block->vbo );
+      }
+    }
+  }
+	else
+  {
+    // if we don't have any remaining unused headers, allocate some more
+    if ( freeStaticHeaders.next == &freeStaticHeaders ) {
+
+      for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
+        block = headerAllocator.Alloc();
+        block->next = freeStaticHeaders.next;
+        block->prev = &freeStaticHeaders;
+        block->next->prev = block;
+        block->prev->next = block;
+
+        qglGenBuffers( 1, & block->vbo );
+      }
+    }
+
+  }
+
+	if (indexBuffer)
+  {
+    // move it from the freeStaticIndexHeaders list to the staticIndexHeaders list
+    block = freeStaticIndexHeaders.next;
+    block->next->prev = block->prev;
+    block->prev->next = block->next;
+    block->next = staticIndexHeaders.next;
+    block->prev = &staticIndexHeaders;
+    block->next->prev = block;
+    block->prev->next = block;
+  }
+	else
+  {
+    // move it from the freeStaticHeaders list to the staticHeaders list
+    block = freeStaticHeaders.next;
+    block->next->prev = block->prev;
+    block->prev->next = block->next;
+    block->next = staticHeaders.next;
+    block->prev = &staticHeaders;
+    block->next->prev = block;
+    block->prev->next = block;
+  }
 
 	block->size = size;
 	block->offset = 0;
@@ -297,10 +344,20 @@ void idVertexCache::Touch( vertCache_t *block ) {
 	block->next->prev = block->prev;
 	block->prev->next = block->next;
 
-	block->next = staticHeaders.next;
-	block->prev = &staticHeaders;
-	staticHeaders.next->prev = block;
-	staticHeaders.next = block;
+	if (block->indexBuffer)
+  {
+    block->next = staticIndexHeaders.next;
+    block->prev = &staticIndexHeaders;
+    staticIndexHeaders.next->prev = block;
+    staticIndexHeaders.next = block;
+  }
+	else
+  {
+    block->next = staticHeaders.next;
+    block->prev = &staticHeaders;
+    staticHeaders.next->prev = block;
+    staticHeaders.next = block;
+  }
 }
 
 /*
@@ -360,26 +417,58 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size, bool indexBuff
 
 	// this data is just going on the shared dynamic list
 
-	// if we don't have any remaining unused headers, allocate some more
-	if ( freeDynamicHeaders.next == &freeDynamicHeaders ) {
+	if (indexBuffer)
+	{
+		// if we don't have any remaining unused headers, allocate some more
+		if ( freeDynamicIndexHeaders.next == &freeDynamicIndexHeaders ) {
 
-		for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
-			block = headerAllocator.Alloc();
-			block->next = freeDynamicHeaders.next;
-			block->prev = &freeDynamicHeaders;
-			block->next->prev = block;
-			block->prev->next = block;
+			for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
+				block = headerAllocator.Alloc();
+				block->next = freeDynamicIndexHeaders.next;
+				block->prev = &freeDynamicIndexHeaders;
+				block->next->prev = block;
+				block->prev->next = block;
+			}
+		}
+	}
+	else
+	{
+		// if we don't have any remaining unused headers, allocate some more
+		if ( freeDynamicHeaders.next == &freeDynamicHeaders ) {
+
+			for ( int i = 0; i < EXPAND_HEADERS; i++ ) {
+				block = headerAllocator.Alloc();
+				block->next = freeDynamicHeaders.next;
+				block->prev = &freeDynamicHeaders;
+				block->next->prev = block;
+				block->prev->next = block;
+			}
 		}
 	}
 
-	// move it from the freeDynamicHeaders list to the dynamicHeaders list
-	block = freeDynamicHeaders.next;
-	block->next->prev = block->prev;
-	block->prev->next = block->next;
-	block->next = dynamicHeaders.next;
-	block->prev = &dynamicHeaders;
-	block->next->prev = block;
-	block->prev->next = block;
+	if (indexBuffer)
+	{
+		// move it from the freeIndexDynamicHeaders list to the dynamicIndexHeaders list
+		block = freeDynamicIndexHeaders.next;
+		block->next->prev = block->prev;
+		block->prev->next = block->next;
+		block->next = dynamicIndexHeaders.next;
+		block->prev = &dynamicIndexHeaders;
+		block->next->prev = block;
+		block->prev->next = block;
+
+	}
+	else
+	{
+		// move it from the freeDynamicHeaders list to the dynamicHeaders list
+		block = freeDynamicHeaders.next;
+		block->next->prev = block->prev;
+		block->prev->next = block->next;
+		block->next = dynamicHeaders.next;
+		block->prev = &dynamicHeaders;
+		block->next->prev = block;
+		block->prev->next = block;
+	}
 
 	block->size = size;
 	block->tag = TAG_TEMP;
@@ -423,6 +512,13 @@ void idVertexCache::EndFrame() {
 			}
 		}
 
+    for ( vertCache_t *block = staticIndexHeaders.next ; block != &staticIndexHeaders ; block = block->next ) {
+      if ( block->frameUsed == currentFrame ) {
+        staticUseCount++;
+        staticUseSize += block->size;
+      }
+    }
+
 		const char *frameOverflow = tempOverflow ? "(OVERFLOW)" : "";
 
 		common->Printf( "vertex dynamic:%i=%ik%s, static alloc:%i=%ik used:%i=%ik total:%i=%ik\n",
@@ -431,6 +527,10 @@ void idVertexCache::EndFrame() {
 			staticUseCount, staticUseSize/1024,
 			staticCountTotal, staticAllocTotal/1024 );
 	}
+
+  if ( staticAllocTotal > r_vertexBufferMegs.GetInteger() * 2 * 1024 * 1024 ) {
+    common->Printf("Cache overflow!!\n");
+  }
 
 #if 0
 	// if our total static count is above our working memory limit, start purging things
@@ -469,6 +569,16 @@ void idVertexCache::EndFrame() {
 
 		dynamicHeaders.next = dynamicHeaders.prev = &dynamicHeaders;
 	}
+
+	block = dynamicIndexHeaders.next;
+	if ( block != &dynamicIndexHeaders ) {
+		block->prev = &freeDynamicIndexHeaders;
+		dynamicIndexHeaders.prev->next = freeDynamicIndexHeaders.next;
+		freeDynamicIndexHeaders.next->prev = dynamicIndexHeaders.prev;
+		freeDynamicIndexHeaders.next = block;
+
+		dynamicIndexHeaders.next = dynamicIndexHeaders.prev = &dynamicIndexHeaders;
+	}
 }
 
 /*
@@ -491,20 +601,41 @@ void idVertexCache::List( void ) {
 		}
 	}
 
+
+  for ( block = staticIndexHeaders.next ; block != &staticIndexHeaders; block = block->next) {
+    numActive++;
+
+    totalStatic += block->size;
+    if ( block->frameUsed == currentFrame ) {
+      frameStatic += block->size;
+    }
+  }
+
 	int	numFreeStaticHeaders = 0;
 	for ( block = freeStaticHeaders.next ; block != &freeStaticHeaders ; block = block->next ) {
 		numFreeStaticHeaders++;
 	}
+
+
+  int	numFreeStaticIndexHeaders = 0;
+  for ( block = freeStaticIndexHeaders.next ; block != &freeStaticIndexHeaders; block = block->next ) {
+    numFreeStaticIndexHeaders++;
+  }
 
 	int	numFreeDynamicHeaders = 0;
 	for ( block = freeDynamicHeaders.next ; block != &freeDynamicHeaders ; block = block->next ) {
 		numFreeDynamicHeaders++;
 	}
 
+	int	numFreeDynamicIndexHeaders = 0;
+	for ( block = freeDynamicIndexHeaders.next ; block != &freeDynamicIndexHeaders ; block = block->next ) {
+		numFreeDynamicIndexHeaders++;
+	}
+
 	common->Printf( "%i megs working set\n", r_vertexBufferMegs.GetInteger() );
 	common->Printf( "%i dynamic temp buffers of %ik\n", NUM_VERTEX_FRAMES, frameBytes / 1024 );
 	common->Printf( "%5i active static headers\n", numActive );
-	common->Printf( "%5i free static headers\n", numFreeStaticHeaders );
-	common->Printf( "%5i free dynamic headers\n", numFreeDynamicHeaders );
+	common->Printf( "%5i free static headers\n", numFreeStaticHeaders + numFreeStaticIndexHeaders);
+	common->Printf( "%5i free dynamic headers\n", numFreeDynamicHeaders + numFreeDynamicIndexHeaders );
 }
 
