@@ -1,11 +1,11 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 uniform sampler2D u_fragmentMap0;
-uniform vec4 u_glColor;
+uniform lowp vec4 u_glColor;
 
 varying vec2 var_TexDiffuse;
-varying vec4 var_Color;
+varying lowp vec4 var_Color;
 
 void main(void)
 {

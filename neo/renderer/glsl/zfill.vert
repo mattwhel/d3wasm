@@ -1,12 +1,12 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 // In
 attribute vec4 attr_TexCoord;
-attribute vec4 attr_Vertex;
+attribute highp vec4 attr_Vertex;
 
 // Uniforms
-uniform mat4 u_modelViewProjectionMatrix;
+uniform highp mat4 u_modelViewProjectionMatrix;
 uniform bool u_clip;
 uniform vec4 u_texGen0S;
 

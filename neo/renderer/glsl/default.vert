@@ -1,21 +1,21 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 // In
-attribute vec4 attr_Color;
+attribute lowp vec4 attr_Color;
 attribute vec4 attr_TexCoord;
-attribute vec4 attr_Vertex;
+attribute highp vec4 attr_Vertex;
 
 // Uniforms
-uniform mat4 u_modelViewProjectionMatrix;
+uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_textureMatrix;
-uniform vec4 u_colorAdd;
-uniform vec4 u_colorModulate;
+uniform lowp vec4 u_colorAdd;
+uniform lowp vec4 u_colorModulate;
 
 // Out
 // gl_Position
 varying vec2 var_TexDiffuse;
-varying vec4 var_Color;
+varying lowp vec4 var_Color;
 
 void main(void)
 {

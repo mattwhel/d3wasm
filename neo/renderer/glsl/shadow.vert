@@ -1,16 +1,16 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 // In
-attribute vec4 attr_Vertex;
+attribute highp vec4 attr_Vertex;
 
 // Uniforms
-uniform mat4 u_modelViewProjectionMatrix;
-uniform vec4 u_glColor;
+uniform highp mat4 u_modelViewProjectionMatrix;
+uniform lowp vec4 u_glColor;
 
 // Out
 // gl_Position
-varying vec4 var_Color;
+varying lowp vec4 var_Color;
 
 void main(void)
 {

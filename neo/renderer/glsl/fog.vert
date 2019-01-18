@@ -1,11 +1,11 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 // In
-attribute vec4 attr_Vertex;      // input Vertex Coordinates
+attribute highp vec4 attr_Vertex;      // input Vertex Coordinates
 
 // Uniforms
-uniform mat4 u_modelViewProjectionMatrix;  // ModelViewProjection Matrix
+uniform highp mat4 u_modelViewProjectionMatrix;  // ModelViewProjection Matrix
 uniform vec4 u_texGen0S;         // fogPlane 0
 uniform vec4 u_texGen0T;         // fogPlane 1
 uniform vec4 u_texGen1S;         // fogPlane 3 (not 2!)

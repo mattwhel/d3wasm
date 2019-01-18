@@ -1,5 +1,5 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 // Option to use Half Lambert for shading
 //#define HALF_LAMBERT
@@ -12,7 +12,7 @@ varying vec2 var_TexDiffuse;
 varying vec2 var_TexNormal;
 varying vec2 var_TexSpecular;
 varying vec4 var_TexLight;
-varying vec4 var_Color;
+varying lowp vec4 var_Color;
 varying vec3 var_L;
 #if defined(BLINN_PHONG)
 varying vec3 var_H;
@@ -21,8 +21,8 @@ varying vec3 var_V;
 #endif
 
 // Uniforms
-uniform vec4 u_diffuseColor;
-uniform vec4 u_specularColor;
+uniform lowp vec4 u_diffuseColor;
+uniform lowp vec4 u_specularColor;
 //uniform float u_specularExponent;
 uniform sampler2D u_fragmentMap0;	/* u_bumpTexture */
 uniform sampler2D u_fragmentMap1;	/* u_lightFalloffTexture */

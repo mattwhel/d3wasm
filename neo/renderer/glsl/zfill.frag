@@ -1,5 +1,5 @@
 #version 100
-precision highp float;
+precision mediump float;
 
 // In
 varying vec2 var_texDiffuse;
@@ -8,8 +8,8 @@ varying vec2 var_texClip;
 // Uniforms
 uniform sampler2D u_fragmentMap0;
 uniform sampler2D u_fragmentMap1;
-uniform float u_alphaTest;
-uniform vec4 u_glColor;
+uniform lowp float u_alphaTest;
+uniform lowp vec4 u_glColor;
 uniform bool u_clip;
 
 // Out
