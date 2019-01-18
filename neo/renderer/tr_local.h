@@ -1293,6 +1293,7 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs);
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t fogShader;
 extern shaderProgram_t zfillShader;
+extern shaderProgram_t zfillShaderClip;
 extern shaderProgram_t defaultShader;
 extern shaderProgram_t stencilShadowShader;
 
