@@ -327,9 +327,9 @@ void RB_RenderView(void) {
   RB_DetermineLightScale();
 
   //
-  // DepthFill, Ambient Surface, Interactions and Fog pass there is now ONLY the GLSL path (no more ARB and ARB2 paths)
+  // Shadow, DepthFill, Ambient Surface, Interactions and Fog pass there is now ONLY the GLSL path (no more ARB and ARB2 paths)
   //
-  // However Shadow, and BlendLight are still using standard ARB path
+  // However BlendLight are still using standard ARB path
   //
 
   // fill the depth buffer and clear color buffer to black except on

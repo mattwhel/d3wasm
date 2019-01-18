@@ -43,7 +43,7 @@ may touch, including the editor.
 void RB_SetDefaultGLState( void ) {
 	int		i;
 
-	// Clear the Depth buffer
+	// Clear value for the Depth buffer
 	qglClearDepthf(1.0f);
 
 	// No shaders set by default
@@ -55,7 +55,7 @@ void RB_SetDefaultGLState( void ) {
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
 	backEnd.glState.forceGlState = true;
 
-	// All channels are used
+	// All color channels are used
 	qglColorMask( 1, 1, 1, 1 );
 
 	qglEnable( GL_DEPTH_TEST );
