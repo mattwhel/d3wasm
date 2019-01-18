@@ -78,7 +78,11 @@ bool R_CreateAmbientCache(srfTriangles_t *tri, bool needsLighting) {
 
   // If it have been successfully build, build the index cache too and return OK
   if (tri->ambientCache) {
-    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true); // Possible override of index cache??
+    if (tri->indexCache) {
+      vertexCache.Free( tri->indexCache );
+      tri->indexCache = NULL;
+    }
+    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
     return true;
   }
 
@@ -102,10 +106,19 @@ void R_CreatePrivateShadowCache(srfTriangles_t *tri) {
   // Shadow cache needs to be computed, so proceed
 
   // Build the shadow cache
-  vertexCache.Alloc(tri->shadowVertexes, tri->numVerts * sizeof(*tri->shadowVertexes), &tri->shadowCache, false);   // Possible override of shadow cache??
+
+  if (tri->shadowCache) {
+    vertexCache.Free( tri->shadowCache );
+    tri->shadowCache = NULL;
+  }
+  vertexCache.Alloc(tri->shadowVertexes, tri->numVerts * sizeof(*tri->shadowVertexes), &tri->shadowCache, false);
 
   // If it have been successfully build, build the index cache too and return OK
   if (tri->shadowCache) {
+    if (tri->indexCache) {
+      vertexCache.Free( tri->indexCache );
+      tri->indexCache = NULL;
+    }
     vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);             // Possible override of index cache??
     return;
   }
