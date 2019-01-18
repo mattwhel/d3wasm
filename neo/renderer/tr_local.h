@@ -1139,6 +1139,7 @@ void R_LinkLightSurf( const drawSurf_t **link, const srfTriangles_t *tri, const 
 
 bool R_CreateAmbientCache( srfTriangles_t *tri, bool needsLighting );
 void R_CreatePrivateShadowCache( srfTriangles_t *tri );
+void R_CreateVertexProgramShadowCache(srfTriangles_t *tri);
 
 /*
 ============================================================
@@ -1329,9 +1330,13 @@ calling this function may modify "facing" based on culling
 
 ============================================================
 */
-srfTriangles_t *R_CreateTurboShadowVolume( const idRenderEntityLocal *ent,
+srfTriangles_t *R_CreateVertexProgramTurboShadowVolume(const idRenderEntityLocal *ent,
+                                                       const srfTriangles_t *tri, const idRenderLightLocal *light,
+                                                       srfCullInfo_t &cullInfo);
+
+/*srfTriangles_t *R_CreateTurboShadowVolume( const idRenderEntityLocal *ent,
 									 const srfTriangles_t *tri, const idRenderLightLocal *light,
-									 srfCullInfo_t &cullInfo );
+									 srfCullInfo_t &cullInfo );*/
 
 /*
 ============================================================

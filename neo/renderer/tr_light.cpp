@@ -127,6 +127,63 @@ void R_CreatePrivateShadowCache(srfTriangles_t *tri) {
   return;
 }
 
+
+/*
+==================
+R_CreateVertexProgramShadowCache
+
+This is constant for any number of lights, the vertex program
+takes care of projecting the verts to infinity.
+==================
+*/
+void R_CreateVertexProgramShadowCache(srfTriangles_t *tri)
+{
+  if (tri->verts == NULL) {
+    return;
+  }
+
+  shadowCache_t *temp = (shadowCache_t *)_alloca16(tri->numVerts * 2 * sizeof(shadowCache_t));
+
+#if 1
+
+  SIMDProcessor->CreateVertexProgramShadowCache(&temp->xyz, tri->verts, tri->numVerts);
+
+#else
+
+  int numVerts = tri->numVerts;
+	const idDrawVert *verts = tri->verts;
+
+	for (int i = 0; i < numVerts; i++) {
+		const float *v = verts[i].xyz.ToFloatPtr();
+		temp[i*2+0].xyz[0] = v[0];
+		temp[i*2+1].xyz[0] = v[0];
+		temp[i*2+0].xyz[1] = v[1];
+		temp[i*2+1].xyz[1] = v[1];
+		temp[i*2+0].xyz[2] = v[2];
+		temp[i*2+1].xyz[2] = v[2];
+		temp[i*2+0].xyz[3] = 1.0f;		// on the model surface
+		temp[i*2+1].xyz[3] = 0.0f;		// will be projected to infinity
+	}
+
+#endif
+
+  if (tri->shadowCache) {
+    vertexCache.Free( tri->shadowCache );
+    tri->shadowCache = NULL;
+  }
+  vertexCache.Alloc(temp, tri->numVerts * 2 * sizeof(shadowCache_t), &tri->shadowCache, false);
+
+  // If it have been successfully build, build the index cache too and return OK
+  if (tri->shadowCache) {
+    if (tri->indexCache) {
+      vertexCache.Free( tri->indexCache );
+      tri->indexCache = NULL;
+    }
+    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+    return;
+  }
+}
+
 /*
 ==================
 R_SkyboxTexGen
