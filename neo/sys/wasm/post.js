@@ -1,7 +1,7 @@
 (function(d, script) {
   script = d.createElement('script');
   script.type = 'text/javascript';
-  script.async = true;
+  script.async = false;
   script.onload = function(){
     // remote script has loaded
   };
