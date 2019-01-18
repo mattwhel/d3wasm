@@ -362,6 +362,7 @@ static const char *const stencilShadowShaderVP =
     "// Uniforms\n"
     "uniform highp mat4 u_modelViewProjectionMatrix;\n"
     "uniform lowp vec4 u_glColor;\n"
+    "uniform vec4 u_lightOrigin;\n"
     "\n"
     "// Out\n"
     "// gl_Position\n"
@@ -369,14 +370,16 @@ static const char *const stencilShadowShaderVP =
     "\n"
     "void main(void)\n"
     "{\n"
-    "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+    "\tgl_Position =\n"
+    "    \t    u_modelViewProjectionMatrix * (attr_Vertex.w * u_lightOrigin +\n"
+    "    \t\t\t\t\t   attr_Vertex - u_lightOrigin);\n"
     "\n"
     "\tvar_Color = u_glColor;\n"
     "}\n";
 
 static const char *const stencilShadowShaderFP =
     "#version 100\n"
-    "precision mediump float;\n"
+    "precision lowp float;\n"
     "\n"
     "// In\n"
     "varying lowp vec4 var_Color;\n"
@@ -2222,6 +2225,15 @@ the shadow volumes face INSIDE
 */
 static void RB_T_GLSL_Shadow(const drawSurf_t *surf) {
   const srfTriangles_t *tri;
+
+  // set the light position for the vertex program to project the rear surfaces
+  if (surf->space != backEnd.currentSpace) {
+    idVec4 localLight;
+
+    R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.vLight->globalLightOrigin, localLight.ToVec3());
+    localLight.w = 0.0f;
+    GL_Uniform4fv(offsetof(shaderProgram_t, localLightOrigin), localLight.ToFloatPtr());
+  }
 
   tri = surf->geo;
 

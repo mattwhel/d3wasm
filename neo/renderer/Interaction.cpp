@@ -1199,6 +1199,9 @@ void idInteraction::AddActiveInteraction( void ) {
 				if ( shadowTris->shadowVertexes ) {
 					// each interaction has unique vertexes
 					R_CreatePrivateShadowCache( shadowTris );
+				} else {
+					R_CreateVertexProgramShadowCache(sint->ambientTris);
+					shadowTris->shadowCache = sint->ambientTris->shadowCache;
 				}
 				// if we are out of vertex cache space, skip the interaction
 				if ( !shadowTris->shadowCache ) {

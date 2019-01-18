@@ -1,5 +1,5 @@
 #version 100
-precision mediump float;
+precision lowp float;
 
 // In
 varying lowp vec4 var_Color;
