@@ -67,7 +67,7 @@ public:
 	// Alloc does NOT do a touch, which allows purging of things
 	// created at level load time even if a frame hasn't passed yet.
 	// These allocations can be purged, which will zero the pointer.
-	void			Alloc( void *data, int bytes, vertCache_t **buffer, bool indexBuffer = false );
+	void			Alloc( void *data, int bytes, vertCache_t **buffer, bool indexBuffer );
 
 	// This will be a real pointer with virtual memory,
 	// but it will be an int offset cast to a pointer of ARB_vertex_buffer_object
@@ -82,7 +82,7 @@ public:
 	// will change every frame.
 	// will return NULL if the vertex cache is completely full
 	// As with Position(), this may not actually be a pointer you can access.
-	vertCache_t	*	AllocFrameTemp( void *data, int bytes, bool indexBuffer = false );
+	vertCache_t	*	AllocFrameTemp( void *data, int bytes, bool indexBuffer );
 
 	// notes that a buffer is used this frame, so it can't be purged
 	// out from under the GPU

@@ -159,7 +159,7 @@ void idVertexCache::Init() {
 	byte	*junk = (byte *)Mem_Alloc( frameBytes );
 	for ( int i = 0 ; i < NUM_VERTEX_FRAMES ; i++ ) {
 		allocatingTempBuffer = true;	// force the alloc to use GL_STREAM_DRAW_ARB
-		Alloc( junk, frameBytes, &tempBuffers[i] );
+		Alloc( junk, frameBytes, &tempBuffers[i], false );
 		Alloc( junk, frameBytes, &tempIndexBuffers[i], true );
 		allocatingTempBuffer = false;
 		tempBuffers[i]->tag = TAG_FIXED;
