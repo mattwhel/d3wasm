@@ -57,9 +57,6 @@ bool R_CreateAmbientCache(srfTriangles_t *tri, bool needsLighting) {
     if (!tri->indexCache) {
       vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
     }
-    if (tri->indexCache) {
-      vertexCache.Touch(tri->indexCache);
-    }
     return true;
   }
   // we are going to use it for drawing, so make sure we have the tangents and normals
@@ -68,13 +65,12 @@ bool R_CreateAmbientCache(srfTriangles_t *tri, bool needsLighting) {
   }
 
   vertexCache.Alloc(tri->verts, tri->numVerts * sizeof(tri->verts[0]), &tri->ambientCache, false);
+
   if (tri->ambientCache) {
     if (!tri->indexCache) {
       vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
     }
-    if (tri->indexCache) {
-      vertexCache.Touch(tri->indexCache);
-    }
+    return true;
   }
 
   return false;
@@ -93,11 +89,9 @@ void R_CreatePrivateShadowCache(srfTriangles_t *tri) {
   }
 
   vertexCache.Alloc(tri->shadowVertexes, tri->numVerts * sizeof(*tri->shadowVertexes), &tri->shadowCache, false);
+
   if (!tri->indexCache) {
     vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
-  }
-  if (tri->indexCache) {
-    vertexCache.Touch(tri->indexCache);
   }
 }
 
@@ -1333,8 +1327,6 @@ static void R_AddAmbientDrawsurfs(viewEntity_t *vEntity) {
 
       if (!tri->indexCache) {
         vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
-      }
-      if (tri->indexCache) {
         vertexCache.Touch(tri->indexCache);
       }
 

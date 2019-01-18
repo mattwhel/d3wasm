@@ -515,6 +515,10 @@ void idRenderModelDecal::AddDecalDrawSurf( viewEntity_t *space ) {
 	// copy the current vertexes to temp vertex cache
 	newTri->ambientCache = vertexCache.AllocFrameTemp( tri.verts, tri.numVerts * sizeof( idDrawVert ) , false);
 
+	if ( !newTri->ambientCache ) {
+		return;
+	}
+
 	if ( !newTri->indexCache ) {
 		newTri->indexCache = vertexCache.AllocFrameTemp( tri.indexes, tri.numIndexes * sizeof( tri.indexes[0] ), true );
 	}
