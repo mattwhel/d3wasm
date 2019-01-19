@@ -397,12 +397,10 @@ static const char *const stencilShadowShaderVP =
   "\n"
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
-  "uniform lowp vec4 u_glColor;\n"
   "uniform vec4 u_lightOrigin;\n"
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
@@ -410,22 +408,18 @@ static const char *const stencilShadowShaderVP =
   "    \t    u_modelViewProjectionMatrix * (attr_Vertex.w * u_lightOrigin +\n"
   "    \t\t\t\t\t   attr_Vertex - u_lightOrigin);\n"
   "\n"
-  "\tvar_Color = u_glColor;\n"
   "}\n";
 
 static const char *const stencilShadowShaderFP =
   "#version 100\n"
   "precision lowp float;\n"
   "\n"
-  "// In\n"
-  "varying lowp vec4 var_Color;\n"
-  "\n"
   "// Out\n"
   "// gl_FragColor\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tgl_FragColor = var_Color;\n"
+  "\tgl_FragColor = vec4(0,0,0,1.0);\n"
   "}\n";
 
 shaderProgram_t interactionShader;
@@ -626,6 +620,7 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->specularMatrixT = qglGetUniformLocation(shader->program, "u_specularMatrixT");
   shader->colorModulate = qglGetUniformLocation(shader->program, "u_colorModulate");
   shader->colorAdd = qglGetUniformLocation(shader->program, "u_colorAdd");
+  shader->fogColor = qglGetUniformLocation(shader->program, "u_fogColor");
   shader->diffuseColor = qglGetUniformLocation(shader->program, "u_diffuseColor");
   shader->specularColor = qglGetUniformLocation(shader->program, "u_specularColor");
   shader->glColor = qglGetUniformLocation(shader->program, "u_glColor");
@@ -638,18 +633,10 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->windowCoords = qglGetUniformLocation(shader->program, "u_windowCoords");
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
-
-  shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
-  shader->attr_Tangent = qglGetAttribLocation(shader->program, "attr_Tangent");
-  shader->attr_Bitangent = qglGetAttribLocation(shader->program, "attr_Bitangent");
-  shader->attr_Normal = qglGetAttribLocation(shader->program, "attr_Normal");
-  shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
-  shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
-
-  for (i = 0; i < MAX_VERTEX_PARMS; i++) {
-    idStr::snPrintf(buffer, sizeof(buffer), "u_vertexParm%d", i);
-    shader->u_vertexParm[i] = qglGetAttribLocation(shader->program, buffer);
-  }
+  shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
+  shader->texGen0T = qglGetUniformLocation(shader->program, "u_texGen0T");
+  shader->texGen1S = qglGetUniformLocation(shader->program, "u_texGen1S");
+  shader->texGen1T = qglGetUniformLocation(shader->program, "u_texGen1T");
 
   for (i = 0; i < MAX_FRAGMENT_IMAGES; i++) {
     idStr::snPrintf(buffer, sizeof(buffer), "u_fragmentMap%d", i);
@@ -657,11 +644,12 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
     qglUniform1i(shader->u_fragmentMap[i], i);
   }
 
-  shader->fogColor = qglGetUniformLocation(shader->program, "u_fogColor");
-  shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
-  shader->texGen0T = qglGetUniformLocation(shader->program, "u_texGen0T");
-  shader->texGen1S = qglGetUniformLocation(shader->program, "u_texGen1S");
-  shader->texGen1T = qglGetUniformLocation(shader->program, "u_texGen1T");
+  shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
+  shader->attr_Tangent = qglGetAttribLocation(shader->program, "attr_Tangent");
+  shader->attr_Bitangent = qglGetAttribLocation(shader->program, "attr_Bitangent");
+  shader->attr_Normal = qglGetAttribLocation(shader->program, "attr_Normal");
+  shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
+  shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
 
   // Vertex Attribute is always enabled for all programs
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
@@ -2007,12 +1995,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf) {
 
     const struct viewEntity_s *space = backEnd.currentSpace;
 
-    // set eye position in local space
-    float parm[4];
-    R_GlobalPointToLocal(space->modelMatrix, backEnd.viewDef->renderView.vieworg, *(idVec3 *) parm);
-    parm[3] = 1.0;
-    GL_Uniform4fv(offsetof(shaderProgram_t, localEyeOrigin), parm);
-
     // set modelView matrix
     float mat[16];
     myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
@@ -2341,66 +2323,6 @@ static void RB_T_GLSL_Shadow(const drawSurf_t *surf) {
     numIndexes = tri->numIndexes;
   }
 
-  // debug visualization
-  if (r_showShadows.GetInteger()) {
-    float color[4];
-
-    if (r_showShadows.GetInteger() == 3) {
-      if (external) {
-        color[0] = 0.1;
-        color[1] = 1;
-        color[2] = 0.1;
-      } else {
-        // these are the surfaces that require the reverse
-        color[0] = 1;
-        color[1] = 0.1;
-        color[2] = 0.1;
-      }
-    } else {
-      // draw different color for turboshadows
-      if (surf->geo->shadowCapPlaneBits & SHADOW_CAP_INFINITE) {
-        if (numIndexes == tri->numIndexes) {
-          color[0] = 1;
-          color[1] = 0.1;
-          color[2] = 0.1;
-        } else {
-          color[0] = 1;
-          color[1] = 0.4;
-          color[2] = 0.1;
-        }
-      } else {
-        if (numIndexes == tri->numIndexes) {
-          color[0] = 0.1;
-          color[1] = 1;
-          color[2] = 0.1;
-        } else if (numIndexes == tri->numShadowIndexesNoFrontCaps) {
-          color[0] = 0.1;
-          color[1] = 1;
-          color[2] = 0.6;
-        } else {
-          color[0] = 0.6;
-          color[1] = 1;
-          color[2] = 0.1;
-        }
-      }
-    }
-
-    color[0] /= backEnd.overBright;
-    color[1] /= backEnd.overBright;
-    color[2] /= backEnd.overBright;
-    color[3] = 1;
-    GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
-
-    qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-    qglDisable(GL_STENCIL_TEST);
-    GL_Cull(CT_TWO_SIDED);
-    RB_DrawShadowElementsWithCounters(tri, numIndexes);
-    GL_Cull(CT_FRONT_SIDED);
-    qglEnable(GL_STENCIL_TEST);
-
-    return;
-  }
-
   // depth-fail stencil shadows
   if (!external) {
     qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_FRONT : GL_BACK, GL_KEEP, GL_DECR, GL_KEEP);
@@ -2463,16 +2385,8 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
   // Let's use the stencil shadow shader
   GL_UseProgram(&stencilShadowShader);
 
-  // for visualizing the shadows
-  if (r_showShadows.GetInteger()) {
-    if (r_showShadows.GetInteger() == 2) {
-      // draw filled in
-      GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHFUNC_LESS);
-    }
-  } else {
-    // don't write to the color buffer, just the stencil buffer
-    GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
-  }
+  // don't write to the color buffer, just the stencil buffer
+  GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
 
   if (r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
     qglPolygonOffset(r_shadowPolygonFactor.GetFloat(), -r_shadowPolygonOffset.GetFloat());
@@ -2480,10 +2394,6 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
   }
 
   qglStencilFunc(GL_ALWAYS, 1, 255);
-
-  // Assume black color by default
-  static const GLfloat color[4] = { 0, 0, 0, 1 };
-  GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
 
   RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow);
 
