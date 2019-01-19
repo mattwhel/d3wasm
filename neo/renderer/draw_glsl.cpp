@@ -891,6 +891,88 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t *din) {
   RB_DrawElementsWithCounters(din->surf->geo);
 }
 
+
+/*
+======================
+RB_GetShaderTextureMatrix
+======================
+*/
+void RB_GLSL_GetShaderTextureMatrix( const float *shaderRegisters,
+                                const textureStage_t *texture, float matrix[16] ) {
+  matrix[0] = shaderRegisters[ texture->matrix[0][0] ];
+  matrix[1] = shaderRegisters[ texture->matrix[0][1] ];
+  matrix[2] = 0;
+  matrix[3] = shaderRegisters[ texture->matrix[0][2] ];
+
+  // we attempt to keep scrolls from generating incredibly large texture values, but
+  // center rotations and center scales can still generate offsets that need to be > 1
+  if (matrix[3] < -40 || matrix[3] > 40) {
+    matrix[3] -= (int)matrix[3];
+  }
+
+  matrix[4] = shaderRegisters[ texture->matrix[1][0] ];
+  matrix[5] = shaderRegisters[ texture->matrix[1][1] ];
+  matrix[6] = 0;
+  matrix[7] = shaderRegisters[ texture->matrix[1][2] ];
+
+  if (matrix[7] < -40 || matrix[7] > 40) {
+    matrix[7] -= (int)matrix[7];
+  }
+
+  matrix[8] = 0;
+  matrix[9] = 0;
+  matrix[10] = 1;
+  matrix[11] = 0;
+
+  matrix[12] = 0;
+  matrix[13] = 0;
+  matrix[14] = 0;
+  matrix[15] = 1;
+}
+
+
+/*
+=====================
+RB_BakeTextureMatrixIntoTexgen
+=====================
+*/
+void RB_GLSL_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float *textureMatrix ) {
+  float	genMatrix[16];
+  float	final[16];
+
+  genMatrix[0] = lightProject[0][0];
+  genMatrix[1] = lightProject[0][1];
+  genMatrix[2] = lightProject[0][2];
+  genMatrix[3] = lightProject[0][3];
+
+  genMatrix[4] = lightProject[1][0];
+  genMatrix[5] = lightProject[1][1];
+  genMatrix[6] = lightProject[1][2];
+  genMatrix[7] = lightProject[1][3];
+
+  genMatrix[8] = 0;
+  genMatrix[9] = 0;
+  genMatrix[10] = 0;
+  genMatrix[11] = 0;
+
+  genMatrix[12] = lightProject[2][0];
+  genMatrix[13] = lightProject[2][1];
+  genMatrix[14] = lightProject[2][2];
+  genMatrix[15] = lightProject[2][3];
+
+  myGlMultMatrix(genMatrix, backEnd.lightTextureMatrix, final);
+
+  lightProject[0][0] = final[0];
+  lightProject[0][1] = final[1];
+  lightProject[0][2] = final[2];
+  lightProject[0][3] = final[3];
+
+  lightProject[1][0] = final[4];
+  lightProject[1][1] = final[5];
+  lightProject[1][2] = final[6];
+  lightProject[1][3] = final[7];
+}
+
 /*
 =============
 RB_CreateSingleDrawInteractions
@@ -960,8 +1042,8 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
 
     // now multiply the texgen by the light texture matrix
     if (lightStage->texture.hasMatrix) {
-      RB_GetShaderTextureMatrix(lightRegs, &lightStage->texture, backEnd.lightTextureMatrix);
-      RB_BakeTextureMatrixIntoTexgen(reinterpret_cast<class idPlane *>(inter.lightProjection), NULL);
+      RB_GLSL_GetShaderTextureMatrix(lightRegs, &lightStage->texture, backEnd.lightTextureMatrix);
+      RB_GLSL_BakeTextureMatrixIntoTexgen(reinterpret_cast<class idPlane *>(inter.lightProjection), NULL);
     }
 
     inter.bumpImage = NULL;
@@ -1470,7 +1552,7 @@ RB_GLSL_LoadShaderTextureMatrix
 */
 void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const textureStage_t *texture) {
   float matrix[16];
-  RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
+  RB_GLSL_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
 }
 
