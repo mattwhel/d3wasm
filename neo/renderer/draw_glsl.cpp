@@ -2222,6 +2222,9 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
   // Enable the arrays that will be always activated
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
+  // Load identity to Texture Matrix by Default
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+
   // we don't use RB_GLSL_RenderDrawSurfListWithFunction()
   // because we want to defer the matrix load because many
   // surfaces won't draw any ambient passes
