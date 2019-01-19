@@ -1235,9 +1235,6 @@ typedef struct shaderProgram_s {
 	GLint		modelViewProjectionMatrix;
 	GLint		textureMatrix;
 
-	GLint		windowCoords;
-	GLint		eyeOrigin;
-	GLint		localEyeOrigin;
 	GLint		localLightOrigin;
 	GLint		localViewOrigin;
 
@@ -1255,18 +1252,14 @@ typedef struct shaderProgram_s {
 
 	GLint		colorModulate;
 	GLint		colorAdd;
-
 	GLint		diffuseColor;
 	GLint		specularColor;
-
 	GLint		fogColor;
 
 	GLint		texGen0S;
 	GLint		texGen0T;
 	GLint		texGen1S;
 	GLint		texGen1T;
-
-	GLint		clip;
 
 	/* gl_... */
 	GLint		attr_TexCoord;
@@ -1276,10 +1269,7 @@ typedef struct shaderProgram_s {
 	GLint		attr_Vertex;
 	GLint		attr_Color;
 
-	GLint		nonPowerOfTwo;
-
 	GLint		u_fragmentMap[MAX_FRAGMENT_IMAGES];
-	GLint		u_vertexParm[MAX_VERTEX_PARMS];
 } shaderProgram_t;
 
 void  GL_UseProgram(shaderProgram_t *program);

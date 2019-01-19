@@ -627,11 +627,6 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->glColor = qglGetUniformLocation(shader->program, "u_glColor");
   shader->alphaTest = qglGetUniformLocation(shader->program, "u_alphaTest");
   shader->specularExponent = qglGetUniformLocation(shader->program, "u_specularExponent");
-
-  shader->eyeOrigin = qglGetUniformLocation(shader->program, "u_eyeOrigin");
-  shader->localEyeOrigin = qglGetUniformLocation(shader->program, "u_localEyeOrigin");
-  shader->nonPowerOfTwo = qglGetUniformLocation(shader->program, "u_nonPowerOfTwo");
-  shader->windowCoords = qglGetUniformLocation(shader->program, "u_windowCoords");
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
   shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
