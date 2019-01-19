@@ -186,31 +186,6 @@ void R_CreateVertexProgramShadowCache(srfTriangles_t *tri)
 
 /*
 ==================
-R_SkyboxTexGen
-==================
-*/
-void R_SkyboxTexGen(drawSurf_t *surf, const idVec3 &viewOrg) {
-  int i;
-  idVec3 localViewOrigin;
-
-  R_GlobalPointToLocal(surf->space->modelMatrix, viewOrg, localViewOrigin);
-
-  int numVerts = surf->geo->numVerts;
-  int size = numVerts * sizeof(idVec3);
-  idVec3 *texCoords = (idVec3 *) _alloca16(size);
-
-  const idDrawVert *verts = surf->geo->verts;
-  for (i = 0; i < numVerts; i++) {
-    texCoords[i][0] = verts[i].xyz[0] - localViewOrigin[0];
-    texCoords[i][1] = verts[i].xyz[1] - localViewOrigin[1];
-    texCoords[i][2] = verts[i].xyz[2] - localViewOrigin[2];
-  }
-
-  surf->dynamicTexCoords = vertexCache.AllocFrameTemp(texCoords, size, false);
-}
-
-/*
-==================
 R_WobbleskyTexGen
 ==================
 */
@@ -1198,9 +1173,6 @@ void R_AddDrawSurf(const srfTriangles_t *tri, const viewEntity_t *space, const r
 
   // skybox surfaces need a dynamic texgen
   switch (shader->Texgen()) {
-    case TG_SKYBOX_CUBE:
-      R_SkyboxTexGen(drawSurf, tr.viewDef->renderView.vieworg);
-      break;
     case TG_WOBBLESKY_CUBE:
       R_WobbleskyTexGen(drawSurf, tr.viewDef->renderView.vieworg);
       break;
