@@ -30,12 +30,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "tr_local.h"
 
+
 static const char *const interactionShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
-  "\n"
-  "// Option to use Blinn Phong instead of Gouraud\n"
-  "//#define BLINN_PHONG\n"
   "\n"
   "// In\n"
   "attribute vec4 attr_TexCoord;\n"
@@ -70,11 +68,7 @@ static const char *const interactionShaderVP =
   "varying vec4 var_TexLight;\n"
   "varying lowp vec4 var_Color;\n"
   "varying vec3 var_L;\n"
-  "#if defined(BLINN_PHONG)\n"
   "varying vec3 var_H;\n"
-  "#else\n"
-  "varying vec3 var_V;\n"
-  "#endif\n"
   "\n"
   "void main(void)\n"
   "{\n"
@@ -96,16 +90,10 @@ static const char *const interactionShaderVP =
   "\n"
   "\tvec3 L = u_lightOrigin.xyz - attr_Vertex.xyz;\n"
   "\tvec3 V = u_viewOrigin.xyz - attr_Vertex.xyz;\n"
-  "#if defined(BLINN_PHONG)\n"
   "\tvec3 H = normalize(L) + normalize(V);\n"
-  "#endif\n"
   "\n"
   "\tvar_L = L * M;\n"
-  "#if defined(BLINN_PHONG)\n"
   "\tvar_H = H * M;\n"
-  "#else\n"
-  "\tvar_V = V * M;\n"
-  "#endif\n"
   "\n"
   "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "\n"
@@ -119,9 +107,6 @@ static const char *const interactionShaderFP =
   "// Option to use Half Lambert for shading\n"
   "//#define HALF_LAMBERT\n"
   "\n"
-  "// Option to use Blinn Phong instead Gouraud\n"
-  "//#define BLINN_PHONG\n"
-  "\n"
   "// In\n"
   "varying vec2 var_TexDiffuse;\n"
   "varying vec2 var_TexNormal;\n"
@@ -129,11 +114,7 @@ static const char *const interactionShaderFP =
   "varying vec4 var_TexLight;\n"
   "varying lowp vec4 var_Color;\n"
   "varying vec3 var_L;\n"
-  "#if defined(BLINN_PHONG)\n"
   "varying vec3 var_H;\n"
-  "#else\n"
-  "varying vec3 var_V;\n"
-  "#endif\n"
   "\n"
   "// Uniforms\n"
   "uniform lowp vec4 u_diffuseColor;\n"
@@ -150,7 +131,133 @@ static const char *const interactionShaderFP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tfloat u_specularExponent = 4.0;\n"
+  "\tvec3 L = normalize(var_L);\n"
+  "\tvec3 H = normalize(var_H);\n"
+  "\tvec3 N = 2.0 * texture2D(u_fragmentMap0, var_TexNormal.st).agb - 1.0;\n"
+  "\n"
+  "\tfloat NdotL = clamp(dot(N, L), 0.0, 1.0);\n"
+  "#if defined(HALF_LAMBERT)\n"
+  "\tNdotL *= 0.5;\n"
+  "\tNdotL += 0.5;\n"
+  "\tNdotL = NdotL * NdotL;\n"
+  "#endif\n"
+  "\tfloat NdotH = clamp(dot(N, H), 0.0, 1.0);\n"
+  "\n"
+  "\tvec3 lightProjection = texture2DProj(u_fragmentMap2, var_TexLight.xyw).rgb;\n"
+  "\tvec3 lightFalloff = texture2D(u_fragmentMap1, vec2(var_TexLight.z, 0.5)).rgb;\n"
+  "\tvec3 diffuseColor = texture2D(u_fragmentMap3, var_TexDiffuse).rgb * u_diffuseColor.rgb;\n"
+  "\tvec3 specularColor = 2.0 * texture2D(u_fragmentMap4, var_TexSpecular).rgb * u_specularColor.rgb;\n"
+  "\n"
+  "\tfloat specularFalloff = pow(NdotH, 4.0);\n // Hardcoded to try to match with original D3 look"
+  "\n"
+  "\tvec3 color;\n"
+  "\tcolor = diffuseColor;\n"
+  "\tcolor += specularFalloff * specularColor;\n"
+  "\tcolor *= NdotL * lightProjection;\n"
+  "\tcolor *= lightFalloff;\n"
+  "\n"
+  "\tgl_FragColor = vec4(color, 1.0) * var_Color;\n"
+  "}\n";
+
+static const char *const interactionPhongShaderVP =
+  "#version 100\n"
+  "precision mediump float;\n"
+  "\n"
+  "// In\n"
+  "attribute vec4 attr_TexCoord;\n"
+  "attribute vec3 attr_Tangent;\n"
+  "attribute vec3 attr_Bitangent;\n"
+  "attribute vec3 attr_Normal;\n"
+  "attribute highp vec4 attr_Vertex;\n"
+  "attribute lowp vec4 attr_Color;\n"
+  "\n"
+  "// Uniforms\n"
+  "uniform highp mat4 u_modelViewProjectionMatrix;\n"
+  "uniform vec4 u_lightProjectionS;\n"
+  "uniform vec4 u_lightProjectionT;\n"
+  "uniform vec4 u_lightFalloff;\n"
+  "uniform vec4 u_lightProjectionQ;\n"
+  "uniform lowp vec4 u_colorModulate;\n"
+  "uniform lowp vec4 u_colorAdd;\n"
+  "uniform vec4 u_lightOrigin;\n"
+  "uniform vec4 u_viewOrigin;\n"
+  "uniform vec4 u_bumpMatrixS;\n"
+  "uniform vec4 u_bumpMatrixT;\n"
+  "uniform vec4 u_diffuseMatrixS;\n"
+  "uniform vec4 u_diffuseMatrixT;\n"
+  "uniform vec4 u_specularMatrixS;\n"
+  "uniform vec4 u_specularMatrixT;\n"
+  "\n"
+  "// Out\n"
+  "// gl_Position\n"
+  "varying vec2 var_TexDiffuse;\n"
+  "varying vec2 var_TexNormal;\n"
+  "varying vec2 var_TexSpecular;\n"
+  "varying vec4 var_TexLight;\n"
+  "varying lowp vec4 var_Color;\n"
+  "varying vec3 var_L;\n"
+  "varying vec3 var_V;\n"
+  "\n"
+  "void main(void)\n"
+  "{\n"
+  "\tmat3 M = mat3(attr_Tangent, attr_Bitangent, attr_Normal);\n"
+  "\n"
+  "\tvar_TexNormal.x = dot(u_bumpMatrixS, attr_TexCoord);\n"
+  "\tvar_TexNormal.y = dot(u_bumpMatrixT, attr_TexCoord);\n"
+  "\n"
+  "\tvar_TexDiffuse.x = dot(u_diffuseMatrixS, attr_TexCoord);\n"
+  "\tvar_TexDiffuse.y = dot(u_diffuseMatrixT, attr_TexCoord);\n"
+  "\n"
+  "\tvar_TexSpecular.x = dot(u_specularMatrixS, attr_TexCoord);\n"
+  "\tvar_TexSpecular.y = dot(u_specularMatrixT, attr_TexCoord);\n"
+  "\n"
+  "\tvar_TexLight.x = dot(u_lightProjectionS, attr_Vertex);\n"
+  "\tvar_TexLight.y = dot(u_lightProjectionT, attr_Vertex);\n"
+  "\tvar_TexLight.z = dot(u_lightFalloff, attr_Vertex);\n"
+  "\tvar_TexLight.w = dot(u_lightProjectionQ, attr_Vertex);\n"
+  "\n"
+  "\tvec3 L = u_lightOrigin.xyz - attr_Vertex.xyz;\n"
+  "\tvec3 V = u_viewOrigin.xyz - attr_Vertex.xyz;\n"
+  "\n"
+  "\tvar_L = L * M;\n"
+  "\tvar_V = V * M;\n"
+  "\n"
+  "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
+  "\n"
+  "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+  "}\n";
+
+static const char *const interactionPhongShaderFP =
+  "#version 100\n"
+  "precision mediump float;\n"
+  "\n"
+  "// Option to use Half Lambert for shading\n"
+  "//#define HALF_LAMBERT\n"
+  "\n"
+  "// In\n"
+  "varying vec2 var_TexDiffuse;\n"
+  "varying vec2 var_TexNormal;\n"
+  "varying vec2 var_TexSpecular;\n"
+  "varying vec4 var_TexLight;\n"
+  "varying lowp vec4 var_Color;\n"
+  "varying vec3 var_L;\n"
+  "varying vec3 var_V;\n"
+  "\n"
+  "// Uniforms\n"
+  "uniform lowp vec4 u_diffuseColor;\n"
+  "uniform lowp vec4 u_specularColor;\n"
+  "uniform float u_specularExponent;\n"
+  "uniform sampler2D u_fragmentMap0;\t/* u_bumpTexture */\n"
+  "uniform sampler2D u_fragmentMap1;\t/* u_lightFalloffTexture */\n"
+  "uniform sampler2D u_fragmentMap2;\t/* u_lightProjectionTexture */\n"
+  "uniform sampler2D u_fragmentMap3;\t/* u_diffuseTexture */\n"
+  "uniform sampler2D u_fragmentMap4;\t/* u_specularTexture */\n"
+  "\n"
+  "// Out\n"
+  "// gl_FragCoord\n"
+  "\n"
+  "void main(void)\n"
+  "{\n"
   "\n"
   "\tvec3 L = normalize(var_L);\n"
   "#if defined(BLINN_PHONG)\n"
@@ -167,22 +274,15 @@ static const char *const interactionShaderFP =
   "\tNdotL += 0.5;\n"
   "\tNdotL = NdotL * NdotL;\n"
   "#endif\n"
-  "#if defined(BLINN_PHONG)\n"
-  "\tfloat NdotH = clamp(dot(N, H), 0.0, 1.0);\n"
-  "#endif\n"
   "\n"
   "\tvec3 lightProjection = texture2DProj(u_fragmentMap2, var_TexLight.xyw).rgb;\n"
   "\tvec3 lightFalloff = texture2D(u_fragmentMap1, vec2(var_TexLight.z, 0.5)).rgb;\n"
   "\tvec3 diffuseColor = texture2D(u_fragmentMap3, var_TexDiffuse).rgb * u_diffuseColor.rgb;\n"
   "\tvec3 specularColor = 2.0 * texture2D(u_fragmentMap4, var_TexSpecular).rgb * u_specularColor.rgb;\n"
   "\n"
-  "#if defined(BLINN_PHONG)\n"
-  "\tfloat specularFalloff = pow(NdotH, u_specularExponent);\n"
-  "#else\n"
   "\tvec3 R = -reflect(L, N);\n"
   "\tfloat RdotV = clamp(dot(R, V), 0.0, 1.0);\n"
   "\tfloat specularFalloff = pow(RdotV, u_specularExponent);\n"
-  "#endif\n"
   "\n"
   "\tvec3 color;\n"
   "\tcolor = diffuseColor;\n"
@@ -292,7 +392,7 @@ static const char *const zfillShaderFP =
   "}\n";
 
 
-static const char *const zfillShaderClipVP =
+static const char *const zfillClipShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
   "\n"
@@ -319,7 +419,7 @@ static const char *const zfillShaderClipVP =
   "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
-static const char *const zfillShaderClipFP =
+static const char *const zfillClipShaderFP =
   "#version 100\n"
   "precision mediump float;\n"
   "\n"
@@ -424,9 +524,10 @@ static const char *const stencilShadowShaderFP =
   "}\n";
 
 shaderProgram_t interactionShader;
+shaderProgram_t interactionPhongShader;
 shaderProgram_t fogShader;
 shaderProgram_t zfillShader;
-shaderProgram_t zfillShaderClip;
+shaderProgram_t zfillClipShader;
 shaderProgram_t defaultShader;
 shaderProgram_t stencilShadowShader;
 
@@ -674,6 +775,19 @@ static bool RB_GLSL_InitShaders(void) {
     RB_GLSL_GetUniformLocations(&interactionShader);
   }
 
+  memset(&interactionPhongShader, 0, sizeof(shaderProgram_t));
+
+  // load interation shaders
+  R_LoadGLSLShader(interactionPhongShaderVP, &interactionPhongShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(interactionPhongShaderFP, &interactionPhongShader, GL_FRAGMENT_SHADER);
+
+  if (!R_LinkGLSLShader(&interactionPhongShader, "interactionPhong") && !R_ValidateGLSLProgram(&interactionPhongShader)) {
+    return false;
+  } else {
+    RB_GLSL_GetUniformLocations(&interactionPhongShader);
+  }
+
+
   memset(&defaultShader, 0, sizeof(shaderProgram_t));
 
   // load interation shaders
@@ -698,16 +812,16 @@ static bool RB_GLSL_InitShaders(void) {
     RB_GLSL_GetUniformLocations(&zfillShader);
   }
 
-  memset(&zfillShaderClip, 0, sizeof(shaderProgram_t));
+  memset(&zfillClipShader, 0, sizeof(shaderProgram_t));
 
   // load interation shaders
-  R_LoadGLSLShader(zfillShaderClipVP, &zfillShaderClip, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(zfillShaderClipFP, &zfillShaderClip, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(zfillClipShaderVP, &zfillClipShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(zfillClipShaderFP, &zfillClipShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&zfillShaderClip,"zfillclip") && !R_ValidateGLSLProgram(&zfillShaderClip)) {
+  if (!R_LinkGLSLShader(&zfillClipShader,"zfillclip") && !R_ValidateGLSLProgram(&zfillClipShader)) {
     return false;
   } else {
-    RB_GLSL_GetUniformLocations(&zfillShaderClip);
+    RB_GLSL_GetUniformLocations(&zfillClipShader);
   }
 
   memset(&fogShader, 0, sizeof(shaderProgram_t));
@@ -845,25 +959,29 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t *din) {
   GL_Uniform4fv(offsetof(shaderProgram_t, specularColor), din->specularColor.ToFloatPtr());
 
   // material may be NULL for shadow volumes
-  float f;
-  switch (din->surf->material->GetSurfaceType()) {
-    case SURFTYPE_METAL:
-    case SURFTYPE_RICOCHET:
-      f = 4.0f;
-      break;
-    case SURFTYPE_STONE:
-    case SURFTYPE_FLESH:
-    case SURFTYPE_WOOD:
-    case SURFTYPE_CARDBOARD:
-    case SURFTYPE_LIQUID:
-    case SURFTYPE_GLASS:
-    case SURFTYPE_PLASTIC:
-    case SURFTYPE_NONE:
-    default:
-      f = 4.0f;
-      break;
+  if (r_usePhong.GetBool())
+  {
+    float f;
+    switch (din->surf->material->GetSurfaceType()) {
+      case SURFTYPE_METAL:
+      case SURFTYPE_RICOCHET:
+        f = r_specularExponent.GetFloat();  // Maybe this should be adjusted
+        break;
+      case SURFTYPE_STONE:
+      case SURFTYPE_FLESH:
+      case SURFTYPE_WOOD:
+      case SURFTYPE_CARDBOARD:
+      case SURFTYPE_LIQUID:
+      case SURFTYPE_GLASS:
+      case SURFTYPE_PLASTIC:
+      case SURFTYPE_NONE:
+      default:
+        f = r_specularExponent.GetFloat();
+        break;
+    }
+    GL_Uniform1fv(offsetof(shaderProgram_t, specularExponent), &f);
+
   }
-  GL_Uniform1fv(offsetof(shaderProgram_t, specularExponent), &f);
 
   // set the textures
 
@@ -1154,7 +1272,14 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t *surf) {
   GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL);
 
   // bind the vertex and fragment shader
-  GL_UseProgram(&interactionShader);
+  if (r_usePhong.GetBool())
+  {
+    GL_UseProgram(&interactionPhongShader);
+  }
+  else {
+    GL_UseProgram(&interactionShader);
+  }
+
 
   // enable the vertex arrays
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
@@ -1975,7 +2100,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
   // If clip planes are enabled in the view, use he "Clip" version of zfill shader
   // and enable the second texture for mirror plane clipping if needed
   if (backEnd.viewDef->numClipPlanes) {
-    GL_UseProgram(&zfillShaderClip);
+    GL_UseProgram(&zfillClipShader);
     GL_SelectTexture(1);
     globalImages->alphaNotchImage->Bind();
 

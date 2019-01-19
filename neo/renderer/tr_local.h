@@ -825,6 +825,8 @@ extern idCVar r_brightness;				// changes gamma tables
 
 extern idCVar r_checkBounds;			// compare all surface bounds with precalculated ones
 
+extern idCVar r_usePhong;
+extern idCVar r_specularExponent;
 extern idCVar r_useLightPortalFlow;		// 1 = do a more precise area reference determination
 extern idCVar r_useShadowSurfaceScissor;// 1 = scissor shadows by the scissor rect of the interaction surfaces
 extern idCVar r_useConstantMaterials;	// 1 = use pre-calculated material registers if possible
@@ -1274,9 +1276,10 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 int  RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs);
 void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs);
 extern shaderProgram_t interactionShader;
+extern shaderProgram_t interactionPhongShader;
 extern shaderProgram_t fogShader;
 extern shaderProgram_t zfillShader;
-extern shaderProgram_t zfillShaderClip;
+extern shaderProgram_t zfillClipShader;
 extern shaderProgram_t defaultShader;
 extern shaderProgram_t stencilShadowShader;
 
