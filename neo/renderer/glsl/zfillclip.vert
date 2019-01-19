@@ -7,7 +7,7 @@ attribute highp vec4 attr_Vertex;
 
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
-uniform bool u_clip;
+uniform mat4 u_textureMatrix;
 uniform vec4 u_texGen0S;
 
 // Out
@@ -19,7 +19,7 @@ void main(void)
 {
     var_texClip = vec2( dot( u_texGen0S, attr_Vertex), 0 );
 
-    var_texDiffuse = attr_TexCoord.xy;
+    var_texDiffuse = (attr_TexCoord * u_textureMatrix).xy;
 
 	gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }

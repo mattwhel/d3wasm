@@ -908,7 +908,6 @@ extern idCVar r_showDominantTri;		// draw lines from vertexes to center of domin
 extern idCVar r_showTextureVectors;		// draw each triangles texture (tangent) vectors
 extern idCVar r_showLights;				// 1 = print light info, 2 = also draw volumes
 extern idCVar r_showLightCount;			// colors surfaces based on light count
-extern idCVar r_showShadows;			// visualize the stencil shadow volumes
 extern idCVar r_showShadowCount;		// colors screen based on shadow volume depth complexity
 extern idCVar r_showLightScissors;		// show light scissor rectangles
 extern idCVar r_showEntityScissors;		// show entity scissor rectangles

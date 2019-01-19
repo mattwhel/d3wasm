@@ -254,6 +254,7 @@ static const char *const zfillShaderVP =
   "\n"
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
+  "uniform mat4 u_textureMatrix;\n"
   "\n"
   "// Out\n"
   "// gl_Position\n"
@@ -261,7 +262,7 @@ static const char *const zfillShaderVP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "    var_texDiffuse = attr_TexCoord.xy;\n"
+  "    var_texDiffuse = (attr_TexCoord * u_textureMatrix).xy;\n"
   "\n"
   "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
@@ -301,7 +302,7 @@ static const char *const zfillShaderClipVP =
   "\n"
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
-  "uniform bool u_clip;\n"
+  "uniform mat4 u_textureMatrix;\n"
   "uniform vec4 u_texGen0S;\n"
   "\n"
   "// Out\n"
@@ -313,7 +314,7 @@ static const char *const zfillShaderClipVP =
   "{\n"
   "    var_texClip = vec2( dot( u_texGen0S, attr_Vertex), 0 );\n"
   "\n"
-  "    var_texDiffuse = attr_TexCoord.xy;\n"
+  "    var_texDiffuse = (attr_TexCoord * u_textureMatrix).xy;\n"
   "\n"
   "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
@@ -1473,15 +1474,10 @@ RB_GLSL_LoadShaderTextureMatrix
 ======================
 */
 void RB_GLSL_LoadShaderTextureMatrix(const float *shaderRegisters, const textureStage_t *texture) {
-  if (texture->hasMatrix) {
-    float matrix[16];
-    RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
-  } else {
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
-  }
+  float matrix[16];
+  RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
 }
-
 
 /*
 ================
@@ -1494,12 +1490,15 @@ void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t 
     qglDisable(GL_POLYGON_OFFSET_FILL);
   }
 
-  // We don't care to restore the state, as it will be setup again next time by PrepareStageTexturing
-  //if (pStage->texture.hasMatrix) {
-  //  GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
-  //}
+  if (pStage->texture.hasMatrix) {
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+  }
 
-  //GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
+  if (pStage->texture.texgen == TG_DIFFUSE_CUBE || pStage->texture.texgen == TG_SKYBOX_CUBE
+      || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
+                           (void *) &ac->st);
+  }
 
 #if !defined(GL_ES_VERSION_2_0)
 #if 0
@@ -1521,7 +1520,7 @@ void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t 
 
     GL_SelectTexture(1);
 
-    RB_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+    RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
 
     glDisable(GL_TEXTURE_GEN_S);
     glDisable(GL_TEXTURE_GEN_T);
@@ -1568,7 +1567,9 @@ void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage, const drawSurf_t
   }
 
   // set the texture matrix if needed
-  RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+  if (pStage->texture.hasMatrix) {
+    RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+  }
 
   // texgens
   if (pStage->texture.texgen == TG_DIFFUSE_CUBE) {
@@ -1577,10 +1578,6 @@ void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage, const drawSurf_t
   } else if (pStage->texture.texgen == TG_SKYBOX_CUBE || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, 0,
                            vertexCache.Position(surf->dynamicTexCoords));
-  }
-  else {
-    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord),
-                           2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
   }
 
 #if !defined(GL_ES_VERSION_2_0)
@@ -1726,7 +1723,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf) {
   const idMaterial *shader = surf->material;
   const shaderStage_t *pStage;
   const float *regs;
-  float color[4];
+  float color[4] = { 0, 0, 0, 1 };    // black by default
   const srfTriangles_t *tri = surf->geo;
   static const float one[1] = {1};
 
@@ -1785,21 +1782,14 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf) {
   // subviews will just down-modulate the color buffer by overbright
   if (shader->GetSort() == SS_SUBVIEW) {
     GL_State(GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO | GLS_DEPTHFUNC_LESS);
-    color[0] =
-    color[1] =
-    color[2] = (1.0 / backEnd.overBright);
-    color[3] = 1;
-  } else {
-    // others just draw black
-    color[0] = 0;
-    color[1] = 0;
-    color[2] = 0;
-    color[3] = 1;
+    color[0] = color[1] = color[2] = (1.0 / backEnd.overBright);
   }
 
   idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
   GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                          ac->xyz.ToFloatPtr());
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord),
+                         2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
 
   bool drawSolid = false;
 
@@ -1856,14 +1846,16 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf) {
     if (!didDraw) {
       drawSolid = true;
     }
+    else {
+      // Restore the default state
+      globalImages->whiteImage->Bind();
+      GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
+    }
   }
 
   // draw the entire surface solid
   if (drawSolid) {
     GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
-    GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
-
-    globalImages->whiteImage->Bind();
 
     // draw it
     RB_DrawElementsWithCounters(tri);
@@ -1878,6 +1870,9 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t *surf) {
   // reset blending
   if (shader->GetSort() == SS_SUBVIEW) {
     GL_State(GLS_DEPTHFUNC_LESS);
+    // Restore black color too
+    static const GLfloat black[4] = { 0, 0, 0, 1 };
+    GL_Uniform4fv(offsetof(shaderProgram_t, glColor), black);
   }
 }
 
@@ -1911,7 +1906,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
     // Be sure to reactivate Texture 0, as it will be bound later on
     GL_SelectTexture(0);
   }
-  // If no clip planes, just use the regular zfill shader
+    // If no clip planes, just use the regular zfill shader
   else {
     GL_UseProgram(&zfillShader);
   }
@@ -1921,6 +1916,16 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
   // Enable TexCooord Attribute
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+
+  // Load identity matrix for Texture marix
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+
+  // White image to Tex0 by default
+  globalImages->whiteImage->Bind();
+
+  // Alpha test always pass by default
+  static const GLfloat one[1] = { 1 };
+  GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
 
   // decal surfaces may enable polygon offset
   qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
@@ -2033,6 +2038,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf) {
   idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
   GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                          ac->xyz.ToFloatPtr());
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord),
+                         2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
 
   for (stage = 0; stage < shader->GetNumStages(); stage++) {
     pStage = shader->GetStage(stage);
@@ -2197,11 +2204,11 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
     // only dump if in a 3d view
     if (backEnd.viewDef->viewEntitys) {
-    //  globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
-    //                                                    backEnd.viewDef->viewport.y1,
-    //                                                    backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
-    //                                                    backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1,
-    //                                                    true);
+      //  globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
+      //                                                    backEnd.viewDef->viewport.y1,
+      //                                                    backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
+      //                                                    backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1,
+      //                                                    true);
     }
 
     backEnd.currentRenderCopied = true;
@@ -2382,7 +2389,7 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs) {
   // No shaders active
   // We don't care about uniforms state
 
-  // Let's use the stencil shadow shader
+  // Use the stencil shadow shader
   GL_UseProgram(&stencilShadowShader);
 
   // don't write to the color buffer, just the stencil buffer
