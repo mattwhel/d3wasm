@@ -209,18 +209,18 @@ static const char *const fogShaderVP =
   "\n"
   "// Out\n"
   "// gl_Position                   // output Vertex Coordinates\n"
-  "varying vec2 var_texFog;         // output Fog TexCoord\n"
-  "varying vec2 var_texFogEnter;    // output FogEnter TexCoord\n"
+  "varying vec2 var_TexFog;         // output Fog TexCoord\n"
+  "varying vec2 var_TexFogEnter;    // output FogEnter TexCoord\n"
   "\n"
   "void main(void)\n"
   "{\n"
   "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "\n"
-  "  var_texFog.x      = dot(u_texGen0S, attr_Vertex);\n"
-  "  var_texFog.y      = dot(u_texGen0T, attr_Vertex);\n"
+  "  var_TexFog.x      = dot(u_texGen0S, attr_Vertex);\n"
+  "  var_TexFog.y      = dot(u_texGen0T, attr_Vertex);\n"
   "\n"
-  "  var_texFogEnter.x = dot(u_texGen1S, attr_Vertex);\n"
-  "  var_texFogEnter.y = dot(u_texGen1T, attr_Vertex);\n"
+  "  var_TexFogEnter.x = dot(u_texGen1S, attr_Vertex);\n"
+  "  var_TexFogEnter.y = dot(u_texGen1T, attr_Vertex);\n"
   "}\n";
 
 static const char *const fogShaderFP =
@@ -228,8 +228,8 @@ static const char *const fogShaderFP =
   "precision mediump float;\n"
   "\n"
   "// In\n"
-  "varying vec2 var_texFog;            // input Fog TexCoord\n"
-  "varying vec2 var_texFogEnter;       // input FogEnter TexCoord\n"
+  "varying vec2 var_TexFog;            // input Fog TexCoord\n"
+  "varying vec2 var_TexFogEnter;       // input FogEnter TexCoord\n"
   "\n"
   "// Uniforms\n"
   "uniform sampler2D u_fragmentMap0;\t // Fog Image\n"
@@ -241,7 +241,7 @@ static const char *const fogShaderFP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "  gl_FragColor = texture2D( u_fragmentMap0, var_texFog ) * texture2D( u_fragmentMap1, var_texFogEnter ) * vec4(u_fogColor.rgb, 1.0);\n"
+  "  gl_FragColor = texture2D( u_fragmentMap0, var_TexFog ) * texture2D( u_fragmentMap1, var_TexFogEnter ) * vec4(u_fogColor.rgb, 1.0);\n"
   "}\n";
 
 static const char *const zfillShaderVP =
@@ -258,11 +258,11 @@ static const char *const zfillShaderVP =
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying vec2 var_texDiffuse;\n"
+  "varying vec4 var_TexDiffuse;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "    var_texDiffuse = (attr_TexCoord * u_textureMatrix).xy;\n"
+  "\tvar_TexDiffuse = (u_textureMatrix * attr_TexCoord);\n"
   "\n"
   "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
@@ -272,7 +272,7 @@ static const char *const zfillShaderFP =
   "precision mediump float;\n"
   "\n"
   "// In\n"
-  "varying vec2 var_texDiffuse;\n"
+  "varying vec4 var_TexDiffuse;\n"
   "\n"
   "// Uniforms\n"
   "uniform sampler2D u_fragmentMap0;\n"
@@ -284,7 +284,7 @@ static const char *const zfillShaderFP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "    if (u_alphaTest > texture2D(u_fragmentMap0, var_texDiffuse).a) {\n"
+  "    if (u_alphaTest > texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w).a) {\n"
   "        discard;\n"
   "    }\n"
   "\n"
@@ -307,14 +307,14 @@ static const char *const zfillShaderClipVP =
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying vec2 var_texDiffuse;\n"
-  "varying vec2 var_texClip;\n"
+  "varying vec4 var_TexDiffuse;\n"
+  "varying vec2 var_TexClip;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "    var_texClip = vec2( dot( u_texGen0S, attr_Vertex), 0 );\n"
+  "    var_TexClip = vec2( dot( u_texGen0S, attr_Vertex), 0 );\n"
   "\n"
-  "    var_texDiffuse = (attr_TexCoord * u_textureMatrix).xy;\n"
+  "    var_TexDiffuse = (u_textureMatrix * attr_TexCoord);\n"
   "\n"
   "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
@@ -324,8 +324,8 @@ static const char *const zfillShaderClipFP =
   "precision mediump float;\n"
   "\n"
   "// In\n"
-  "varying vec2 var_texDiffuse;\n"
-  "varying vec2 var_texClip;\n"
+  "varying vec4 var_TexDiffuse;\n"
+  "varying vec2 var_TexClip;\n"
   "\n"
   "// Uniforms\n"
   "uniform sampler2D u_fragmentMap0;\n"
@@ -338,7 +338,7 @@ static const char *const zfillShaderClipFP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "    if (u_alphaTest > (texture2D(u_fragmentMap0, var_texDiffuse).a * texture2D(u_fragmentMap1, var_texClip).a) ) {\n"
+  "    if (u_alphaTest > (texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w).a * texture2D(u_fragmentMap1, var_TexClip).a) ) {\n"
   "        discard;\n"
   "    }\n"
   "\n"
@@ -362,16 +362,16 @@ static const char *const defaultShaderVP =
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying vec2 var_TexDiffuse;\n"
+  "varying vec4 var_TexDiffuse;\n"
   "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tvar_TexDiffuse = (attr_TexCoord * u_textureMatrix).xy;\n"
+  "\tvar_TexDiffuse = (u_textureMatrix * attr_TexCoord);\n"
   "\n"
   "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "\n"
-  "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+  "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
 static const char *const defaultShaderFP =
@@ -381,12 +381,12 @@ static const char *const defaultShaderFP =
   "uniform sampler2D u_fragmentMap0;\n"
   "uniform lowp vec4 u_glColor;\n"
   "\n"
-  "varying vec2 var_TexDiffuse;\n"
+  "varying vec4 var_TexDiffuse;\n"
   "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tgl_FragColor = texture2D(u_fragmentMap0, var_TexDiffuse) * u_glColor * var_Color;\n"
+  "\tgl_FragColor = texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w) * u_glColor * var_Color;\n"
   "}\n";
 
 static const char *const stencilShadowShaderVP =
@@ -539,7 +539,7 @@ R_LinkGLSLShader
 links the GLSL vertex and fragment shaders together to form a GLSL program
 =================
 */
-static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram) {
+static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram, const char* name) {
   char buf[BUFSIZ];
   int len;
   GLint status;
@@ -566,7 +566,7 @@ static bool R_LinkGLSLShader(shaderProgram_t *shaderProgram) {
   }
 
   if (!linked) {
-    common->Error("R_LinkGLSLShader: program failed to link\n");
+    common->Error("R_LinkGLSLShader: program failed to link: %s\n", name);
     return false;
   }
 
@@ -668,7 +668,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(interactionShaderVP, &interactionShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(interactionShaderFP, &interactionShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&interactionShader) && !R_ValidateGLSLProgram(&interactionShader)) {
+  if (!R_LinkGLSLShader(&interactionShader, "interaction") && !R_ValidateGLSLProgram(&interactionShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&interactionShader);
@@ -680,7 +680,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(defaultShaderVP, &defaultShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(defaultShaderFP, &defaultShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&defaultShader) && !R_ValidateGLSLProgram(&defaultShader)) {
+  if (!R_LinkGLSLShader(&defaultShader, "default") && !R_ValidateGLSLProgram(&defaultShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&defaultShader);
@@ -692,7 +692,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(zfillShaderVP, &zfillShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(zfillShaderFP, &zfillShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&zfillShader) && !R_ValidateGLSLProgram(&zfillShader)) {
+  if (!R_LinkGLSLShader(&zfillShader, "zfill") && !R_ValidateGLSLProgram(&zfillShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&zfillShader);
@@ -704,7 +704,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(zfillShaderClipVP, &zfillShaderClip, GL_VERTEX_SHADER);
   R_LoadGLSLShader(zfillShaderClipFP, &zfillShaderClip, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&zfillShaderClip) && !R_ValidateGLSLProgram(&zfillShaderClip)) {
+  if (!R_LinkGLSLShader(&zfillShaderClip,"zfillclip") && !R_ValidateGLSLProgram(&zfillShaderClip)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&zfillShaderClip);
@@ -716,7 +716,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(fogShaderVP, &fogShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(fogShaderFP, &fogShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&fogShader) && !R_ValidateGLSLProgram(&fogShader)) {
+  if (!R_LinkGLSLShader(&fogShader, "fog") && !R_ValidateGLSLProgram(&fogShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&fogShader);
@@ -728,7 +728,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(stencilShadowShaderVP, &stencilShadowShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(stencilShadowShaderFP, &stencilShadowShader, GL_FRAGMENT_SHADER);
 
-  if (!R_LinkGLSLShader(&stencilShadowShader) && !R_ValidateGLSLProgram(&stencilShadowShader)) {
+  if (!R_LinkGLSLShader(&stencilShadowShader, "shadow") && !R_ValidateGLSLProgram(&stencilShadowShader)) {
     return false;
   } else {
     RB_GLSL_GetUniformLocations(&stencilShadowShader);
@@ -900,33 +900,32 @@ RB_GetShaderTextureMatrix
 void RB_GLSL_GetShaderTextureMatrix( const float *shaderRegisters,
                                 const textureStage_t *texture, float matrix[16] ) {
   matrix[0] = shaderRegisters[ texture->matrix[0][0] ];
-  matrix[1] = shaderRegisters[ texture->matrix[0][1] ];
-  matrix[2] = 0;
-  matrix[3] = shaderRegisters[ texture->matrix[0][2] ];
+  matrix[4] = shaderRegisters[ texture->matrix[0][1] ];
+  matrix[8] = 0;
+  matrix[12] = shaderRegisters[ texture->matrix[0][2] ];
 
   // we attempt to keep scrolls from generating incredibly large texture values, but
   // center rotations and center scales can still generate offsets that need to be > 1
-  if (matrix[3] < -40 || matrix[3] > 40) {
-    matrix[3] -= (int)matrix[3];
+  if ( matrix[12] < -40 || matrix[12] > 40 ) {
+    matrix[12] -= (int)matrix[12];
   }
 
-  matrix[4] = shaderRegisters[ texture->matrix[1][0] ];
+  matrix[1] = shaderRegisters[ texture->matrix[1][0] ];
   matrix[5] = shaderRegisters[ texture->matrix[1][1] ];
-  matrix[6] = 0;
-  matrix[7] = shaderRegisters[ texture->matrix[1][2] ];
-
-  if (matrix[7] < -40 || matrix[7] > 40) {
-    matrix[7] -= (int)matrix[7];
+  matrix[9] = 0;
+  matrix[13] = shaderRegisters[ texture->matrix[1][2] ];
+  if ( matrix[13] < -40 || matrix[13] > 40 ) {
+    matrix[13] -= (int)matrix[13];
   }
 
-  matrix[8] = 0;
-  matrix[9] = 0;
+  matrix[2] = 0;
+  matrix[6] = 0;
   matrix[10] = 1;
-  matrix[11] = 0;
-
-  matrix[12] = 0;
-  matrix[13] = 0;
   matrix[14] = 0;
+
+  matrix[3] = 0;
+  matrix[7] = 0;
+  matrix[11] = 0;
   matrix[15] = 1;
 }
 
@@ -941,36 +940,36 @@ void RB_GLSL_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float *
   float	final[16];
 
   genMatrix[0] = lightProject[0][0];
-  genMatrix[1] = lightProject[0][1];
-  genMatrix[2] = lightProject[0][2];
-  genMatrix[3] = lightProject[0][3];
+  genMatrix[4] = lightProject[0][1];
+  genMatrix[8] = lightProject[0][2];
+  genMatrix[12] = lightProject[0][3];
 
-  genMatrix[4] = lightProject[1][0];
+  genMatrix[1] = lightProject[1][0];
   genMatrix[5] = lightProject[1][1];
-  genMatrix[6] = lightProject[1][2];
-  genMatrix[7] = lightProject[1][3];
+  genMatrix[9] = lightProject[1][2];
+  genMatrix[13] = lightProject[1][3];
 
-  genMatrix[8] = 0;
-  genMatrix[9] = 0;
+  genMatrix[2] = 0;
+  genMatrix[6] = 0;
   genMatrix[10] = 0;
-  genMatrix[11] = 0;
+  genMatrix[14] = 0;
 
-  genMatrix[12] = lightProject[2][0];
-  genMatrix[13] = lightProject[2][1];
-  genMatrix[14] = lightProject[2][2];
+  genMatrix[3] = lightProject[2][0];
+  genMatrix[7] = lightProject[2][1];
+  genMatrix[11] = lightProject[2][2];
   genMatrix[15] = lightProject[2][3];
 
-  myGlMultMatrix(genMatrix, backEnd.lightTextureMatrix, final);
+  myGlMultMatrix( genMatrix, backEnd.lightTextureMatrix, final );
 
   lightProject[0][0] = final[0];
-  lightProject[0][1] = final[1];
-  lightProject[0][2] = final[2];
-  lightProject[0][3] = final[3];
+  lightProject[0][1] = final[4];
+  lightProject[0][2] = final[8];
+  lightProject[0][3] = final[12];
 
-  lightProject[1][0] = final[4];
+  lightProject[1][0] = final[1];
   lightProject[1][1] = final[5];
-  lightProject[1][2] = final[6];
-  lightProject[1][3] = final[7];
+  lightProject[1][2] = final[9];
+  lightProject[1][3] = final[13];
 }
 
 /*
