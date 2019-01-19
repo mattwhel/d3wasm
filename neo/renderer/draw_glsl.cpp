@@ -1171,8 +1171,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t *surf, void (*DrawInteract
 
     float lightColor[4];
 
-    // backEnd.lightScale is calculated so that lightColor[] will never exceed
-    // tr.backEndRendererMaxLight
+    // backEnd.lightScale is calculated so that lightColor[] will never exceed tr.backEndRendererMaxLight
     lightColor[0] = backEnd.lightScale * lightRegs[lightStage->color.registers[0]];
     lightColor[1] = backEnd.lightScale * lightRegs[lightStage->color.registers[1]];
     lightColor[2] = backEnd.lightScale * lightRegs[lightStage->color.registers[2]];
