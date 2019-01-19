@@ -593,20 +593,8 @@ typedef struct {
 	int		frontEndMsec;		// sum of time in all RE_RenderScene's in a frame
 } performanceCounters_t;
 
-
-typedef struct {
-	int		current2DMap;
-	int		current3DMap;
-	int		currentCubeMap;
-	int		texEnv;
-	textureType_t	textureType;
-} tmu_t;
-
 const int MAX_MULTITEXTURE_UNITS =	8;
 typedef struct {
-	tmu_t		tmu[MAX_MULTITEXTURE_UNITS];
-	int			currenttmu;
-
 	int			faceCulling;
 	int			glStateBits;
 	bool		forceGlState;		// the next GL_State will ignore glStateBits and set everything
@@ -1246,6 +1234,7 @@ typedef struct shaderProgram_s {
 	GLint		specularColor;
 	GLint		fogColor;
 
+	GLint   texgenmode;
 	GLint		texGen0S;
 	GLint		texGen0T;
 	GLint		texGen1S;
@@ -1260,6 +1249,7 @@ typedef struct shaderProgram_s {
 	GLint		attr_Color;
 
 	GLint		u_fragmentMap[MAX_FRAGMENT_IMAGES];
+  GLint		u_fragmentCubeMap[MAX_FRAGMENT_IMAGES];
 } shaderProgram_t;
 
 void  GL_UseProgram(shaderProgram_t *program);

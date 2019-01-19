@@ -1569,6 +1569,8 @@ void idMaterial::ParseStage( idLexer &src, const textureRepeat_t trpDefault ) {
 	if ( imageName[0] ) {
 		ts->image = globalImages->ImageFromFile( imageName, tf, allowPicmip, trp, td, cubeMap );
 		if ( !ts->image ) {
+
+			common->Printf( "BAD IMAGE %s %s\n", GetName(), imageName );
 			ts->image = globalImages->defaultImage;
 		}
 	} else if ( !ts->cinematic && !ts->dynamic && !ss->newStage ) {

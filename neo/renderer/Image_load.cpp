@@ -733,13 +733,6 @@ void idImage::PurgeImage() {
 		qglDeleteTextures( 1, &texnum );	// this should be the ONLY place it is ever called!
 		texnum = TEXTURE_NOT_LOADED;
 	}
-
-	// clear all the current binding caches, so the next bind will do a real one
-	for ( int i = 0 ; i < MAX_MULTITEXTURE_UNITS ; i++ ) {
-		backEnd.glState.tmu[i].current2DMap = -1;
-		backEnd.glState.tmu[i].current3DMap = -1;
-		backEnd.glState.tmu[i].currentCubeMap = -1;
-	}
 }
 
 /*
@@ -762,22 +755,11 @@ void idImage::Bind() {
 	frameUsed = backEnd.frameCount;
 	bindCount++;
 
-	tmu_t			*tmu = &backEnd.glState.tmu[backEnd.glState.currenttmu];
-
-	// enable or disable apropriate texture modes
-	tmu->textureType = type;
-
 	// bind the texture
 	if ( type == TT_2D ) {
-		if ( tmu->current2DMap != texnum ) {
-			tmu->current2DMap = texnum;
-			qglBindTexture( GL_TEXTURE_2D, texnum );
-		}
+		qglBindTexture( GL_TEXTURE_2D, texnum );
 	} else if ( type == TT_CUBIC ) {
-		if ( tmu->currentCubeMap != texnum ) {
-			tmu->currentCubeMap = texnum;
-			qglBindTexture( GL_TEXTURE_CUBE_MAP, texnum );
-		}
+		qglBindTexture( GL_TEXTURE_CUBE_MAP, texnum );
 	}
 }
 

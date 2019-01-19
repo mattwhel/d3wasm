@@ -131,6 +131,9 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 		if (texture->image) {
 			texture->image->Bind();
 		}
+		else {
+			common->Printf( "BAD IMAGE DOH!!!\n" );
+		}
 	}
 }
 

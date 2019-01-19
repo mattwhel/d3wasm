@@ -92,13 +92,7 @@ GL_SelectTexture
 ====================
 */
 void GL_SelectTexture( int unit ) {
-	if ( backEnd.glState.currenttmu == unit ) {
-		return;
-	}
-
 	qglActiveTexture( GL_TEXTURE0 + unit );
-
-	backEnd.glState.currenttmu = unit;
 }
 
 /*

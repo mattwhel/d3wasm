@@ -459,6 +459,8 @@ static const char *const defaultShaderVP =
   "uniform mat4 u_textureMatrix;\n"
   "uniform lowp vec4 u_colorAdd;\n"
   "uniform lowp vec4 u_colorModulate;\n"
+  "uniform int u_texgenmode;\n"
+  "uniform vec4 u_viewOrigin;\n"
   "\n"
   "// Out\n"
   "// gl_Position\n"
@@ -467,11 +469,18 @@ static const char *const defaultShaderVP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tvar_TexDiffuse = (u_textureMatrix * attr_TexCoord);\n"
-  "\n"
-  "\tvar_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
-  "\n"
-  "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+  "  if (u_texgenmode == 0)\n"
+  "  {\n"
+  "    var_TexDiffuse = (u_textureMatrix * attr_TexCoord);\n"
+  "  }\n"
+  "  else if (u_texgenmode == 1)\n"
+  "  {\n"
+  "    var_TexDiffuse = (u_textureMatrix * (attr_Vertex - u_viewOrigin));\n"
+  "  }\n"
+  "  \n"
+  "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
+  "  \n"
+  "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
 static const char *const defaultShaderFP =
@@ -479,6 +488,8 @@ static const char *const defaultShaderFP =
   "precision mediump float;\n"
   "\n"
   "uniform sampler2D u_fragmentMap0;\n"
+  "uniform samplerCube u_fragmentCubeMap0;\n"
+  "uniform int u_texgenmode;\n"
   "uniform lowp vec4 u_glColor;\n"
   "\n"
   "varying vec4 var_TexDiffuse;\n"
@@ -486,7 +497,19 @@ static const char *const defaultShaderFP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tgl_FragColor = texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w) * u_glColor * var_Color;\n"
+  "  vec4 col = vec4(1.0,1.0,1.0,1.0);"
+  "  //if (u_texgenmode == 0)\n"
+  "  {\n"
+  "    col = texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w) * u_glColor * var_Color;\n"
+  "  }\n"
+  "  //else if (u_texgenmode == 1)\n"
+  "  //{\n"
+  "    col = textureCube(u_fragmentCubeMap0, var_TexDiffuse.xyz) * u_glColor * var_Color;\n"
+  "  //}\n"
+  "  //else\n"
+  "  {\n"
+  "    gl_FragColor = col;\n"
+  "  }\n"
   "}\n";
 
 static const char *const stencilShadowShaderVP =
@@ -552,6 +575,15 @@ GL_Uniform1fv
 */
 static void GL_Uniform1fv(GLint location, const GLfloat *value) {
   qglUniform1fv(*(GLint * )((char *) backEnd.glState.currentProgram + location), 1, value);
+}
+
+/*
+====================
+GL_Uniform1iv
+====================
+*/
+static void GL_Uniform1iv(GLint location, const GLint *value) {
+  qglUniform1iv(*(GLint * )((char *) backEnd.glState.currentProgram + location), 1, value);
 }
 
 /*
@@ -721,6 +753,7 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
   shader->specularMatrixS = qglGetUniformLocation(shader->program, "u_specularMatrixS");
   shader->specularMatrixT = qglGetUniformLocation(shader->program, "u_specularMatrixT");
   shader->colorModulate = qglGetUniformLocation(shader->program, "u_colorModulate");
+  shader->texgenmode = qglGetUniformLocation(shader->program, "u_texgenmode");
   shader->colorAdd = qglGetUniformLocation(shader->program, "u_colorAdd");
   shader->fogColor = qglGetUniformLocation(shader->program, "u_fogColor");
   shader->diffuseColor = qglGetUniformLocation(shader->program, "u_diffuseColor");
@@ -739,6 +772,12 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t *shader) {
     idStr::snPrintf(buffer, sizeof(buffer), "u_fragmentMap%d", i);
     shader->u_fragmentMap[i] = qglGetUniformLocation(shader->program, buffer);
     qglUniform1i(shader->u_fragmentMap[i], i);
+  }
+
+  for (i = 0; i < MAX_FRAGMENT_IMAGES; i++) {
+    idStr::snPrintf(buffer, sizeof(buffer), "u_fragmentCubeMap%d", i);
+    shader->u_fragmentCubeMap[i] = qglGetUniformLocation(shader->program, buffer);
+    qglUniform1i(shader->u_fragmentCubeMap[i], i);
   }
 
   shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
@@ -1352,8 +1391,6 @@ RB_GLSL_DrawInteractions
 */
 void RB_GLSL_DrawInteractions(void) {
   viewLight_t *vLight;
-  const idMaterial *lightShader;
-
   //
   // for each light, perform adding and shadowing
   //
@@ -1373,8 +1410,6 @@ void RB_GLSL_DrawInteractions(void) {
         && !vLight->translucentInteractions) {
       continue;
     }
-
-    lightShader = vLight->lightShader;
 
     // clear the stencil buffer if needed
     if (vLight->globalShadows || vLight->localShadows) {
@@ -1696,6 +1731,8 @@ void RB_GLSL_FinishStageTexturing(const shaderStage_t *pStage, const drawSurf_t 
 
   if (pStage->texture.texgen == TG_DIFFUSE_CUBE || pStage->texture.texgen == TG_SKYBOX_CUBE
       || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+    static const int tcMode = 0;
+    GL_Uniform1iv(offsetof(shaderProgram_t, texgenmode), &tcMode);
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
                            (void *) &ac->st);
   }
@@ -1775,9 +1812,25 @@ void RB_GLSL_PrepareStageTexturing(const shaderStage_t *pStage, const drawSurf_t
   if (pStage->texture.texgen == TG_DIFFUSE_CUBE) {
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
                            ac->normal.ToFloatPtr());
-  } else if (pStage->texture.texgen == TG_SKYBOX_CUBE || pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
-    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, 0,
-                           vertexCache.Position(surf->dynamicTexCoords));
+    common->Printf("DiffuseCube\n");
+  } else if (pStage->texture.texgen == TG_SKYBOX_CUBE) {
+    static const int tcMode = 1;
+    GL_Uniform1iv(offsetof(shaderProgram_t, texgenmode), &tcMode);
+    common->Printf("SkyboxCube\n");
+  } else if (pStage->texture.texgen == TG_WOBBLESKY_CUBE) {
+  //GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, 0,
+  //                       vertexCache.Position(surf->dynamicTexCoords));
+    static const int tcMode = 2;
+    GL_Uniform1iv(offsetof(shaderProgram_t, texgenmode), &tcMode);
+    common->Printf("WobbleSkyCube\n");
+  } else if (pStage->texture.texgen == TG_SCREEN) {
+    common->Printf("Screen\n");
+  } else if (pStage->texture.texgen == TG_SCREEN2) {
+    common->Printf("Screen2\n");
+  } else if (pStage->texture.texgen == TG_GLASSWARP) {
+    common->Printf("Glasswarp\n");
+  } else if (pStage->texture.texgen == TG_REFLECT_CUBE) {
+    //common->Printf("ReflectCube\n");
   }
 
 #if !defined(GL_ES_VERSION_2_0)
@@ -2198,12 +2251,16 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf) {
   if (surf->space != backEnd.currentSpace) {
     backEnd.currentSpace = surf->space;
 
-    const struct viewEntity_s *space = backEnd.currentSpace;
-
     // set modelView matrix
     float mat[16];
     myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+
+    // setup the local view origin (might be needed for texgens)
+    idVec3 localViewOrigin;
+    R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin);
+    idVec4 localViewOriginVector( localViewOrigin.x, localViewOrigin.y, localViewOrigin.z, 1 );
+    GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOriginVector.ToFloatPtr());
   }
 
   // change the scissor if needed
@@ -2231,7 +2288,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t *surf) {
     RB_GLSL_EnterWeaponDepthHack(surf);
   }
 
-  if (surf->space->modelDepthHack != 0.0f) {
+  if (surf->space->modelDepthHack) {
     RB_GLSL_EnterModelDepthHack(surf);
   }
 
@@ -2429,6 +2486,10 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs) {
 
   // Load identity to Texture Matrix by Default
   GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+
+  // Set TexGen mode to Explicit by Default
+  static const int tcMode = 0;
+  GL_Uniform1iv(offsetof(shaderProgram_t, texgenmode), &tcMode);
 
   // we don't use RB_GLSL_RenderDrawSurfListWithFunction()
   // because we want to defer the matrix load because many
