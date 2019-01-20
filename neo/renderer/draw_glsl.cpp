@@ -2261,8 +2261,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   myGlMultMatrix(surf->space->modelViewMatrix, localProjectionMatrix, localMVP);
 
   // precompute the local view origin (might be needed for some texgens)
-  idVec3 localViewOrigin;
-  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin);
+  idVec4 localViewOrigin;
+  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
+  localViewOrigin.w = 1.0f;
 
   ///////////////////////
   // For each stage loop
@@ -2371,7 +2372,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the local view origin uniform
         // This is specific to this shader type
-        GL_Uniform3fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), mat4_identity.ToFloatPtr());
       }
@@ -2381,7 +2382,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the local view origin uniform
         // This is specific to this shader type
-        GL_Uniform3fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), mat4_identity.ToFloatPtr());
       }
@@ -2392,7 +2393,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the local view origin uniform
         // This is specific to this shader type
-        GL_Uniform3fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), surf->wobbleTransform);
       }
@@ -2408,7 +2409,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       }
       else if ( pStage->texture.texgen == TG_GLASSWARP ) {
         // Not yet supported
-        common->Printf("Glasswarp\n");
         continue;
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
