@@ -504,7 +504,6 @@ static const char* const defaultCubeMapShaderVP =
   "uniform mat4 u_wobbleMatrix;\n"
   "uniform lowp vec4 u_colorAdd;\n"
   "uniform lowp vec4 u_colorModulate;\n"
-  "uniform int u_texgenmode;\n"
   "uniform vec4 u_viewOrigin;\n"
   "\n"
   "// Out\n"
@@ -534,6 +533,40 @@ static const char* const defaultCubeMapShaderFP =
   "void main(void)\n"
   "{\n"
   "  gl_FragColor = textureCube(u_fragmentCubeMap0, var_TexCubeMap.xyz) * u_glColor * var_Color;\n"
+  "}\n";
+
+
+
+static const char* const defaultReflectShaderVP =
+  "#version 100\n"
+  "precision mediump float;\n"
+  "\n"
+  "// In\n"
+  "attribute lowp vec4 attr_Color;\n"
+  "attribute vec3 attr_Normal;\n"
+  "attribute highp vec4 attr_Vertex;\n"
+  "\n"
+  "// Uniforms\n"
+  "uniform highp mat4 u_modelViewProjectionMatrix;\n"
+  "uniform highp mat4 u_modelViewMatrix;\n"
+  "uniform highp mat4 u_modelViewMatrixTranspose;\n"
+  "uniform mat4 u_textureMatrix;\n"
+  "uniform lowp vec4 u_colorAdd;\n"
+  "uniform lowp vec4 u_colorModulate;\n"
+  "\n"
+  "// Out\n"
+  "// gl_Position\n"
+  "varying vec4 var_TexCubeMap;\n"
+  "varying lowp vec4 var_Color;\n"
+  "\n"
+  "void main(void)\n"
+  "{\n"
+  "  var_TexCubeMap = u_textureMatrix * u_modelViewMatrixTranspose * reflect( normalize( u_modelViewMatrix * attr_Vertex ), \n"
+  "                                                                            u_modelViewMatrix * vec4(attr_Normal,0.0) ) ;\n"
+  "  \n"
+  "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
+  "  \n"
+  "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
 static const char* const stencilShadowShaderVP =
@@ -577,6 +610,7 @@ shaderProgram_t zfillShader;
 shaderProgram_t zfillClipShader;
 shaderProgram_t defaultShader;
 shaderProgram_t defaultCubeMapShader;
+shaderProgram_t defaultReflectShader;
 shaderProgram_t stencilShadowShader;
 
 /*
@@ -785,6 +819,9 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->alphaTest = qglGetUniformLocation(shader->program, "u_alphaTest");
   shader->specularExponent = qglGetUniformLocation(shader->program, "u_specularExponent");
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
+  shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
+  shader->modelViewMatrixInverse = qglGetUniformLocation(shader->program, "u_modelViewMatrixInverse");
+  shader->modelViewMatrixTranspose = qglGetUniformLocation(shader->program, "u_modelViewMatrixTranspose");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
   shader->wobbleMatrix = qglGetUniformLocation(shader->program, "u_wobbleMatrix");
   shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
@@ -898,6 +935,20 @@ static bool RB_GLSL_InitShaders(void) {
   }
   else {
     RB_GLSL_GetUniformLocations(&defaultCubeMapShader);
+  }
+
+  // default shader, Reflect version
+  common->Printf("Loading default shader (Reflect version)\n");
+  memset(&defaultReflectShader, 0, sizeof(shaderProgram_t));
+
+  R_LoadGLSLShader(defaultReflectShaderVP, &defaultReflectShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(defaultCubeMapShaderFP, &defaultReflectShader, GL_FRAGMENT_SHADER); // Reuse this one
+
+  if ( !R_LinkGLSLShader(&defaultReflectShader, "defaultReflectShader") && !R_ValidateGLSLProgram(&defaultReflectShader)) {
+    return false;
+  }
+  else {
+    RB_GLSL_GetUniformLocations(&defaultReflectShader);
   }
 
   // Z Fill shader
@@ -2412,14 +2463,18 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         continue;
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
+//        if (!b)
+  //        continue;
         // This is cube mapping
-        GL_UseProgram(&defaultCubeMapShader);
+        GL_UseProgram(&defaultReflectShader);
 
-        // Setup the local view origin uniform
-        // This is specific to this shader type
-        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                               ac->normal.ToFloatPtr());
 
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix),  mat4_identity.ToFloatPtr());
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
+        float	mat[16];
+        R_TransposeGLMatrix( backEnd.viewDef->worldSpace.modelViewMatrix, mat );
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrixTranspose), mat);
       }
       else {
         // Otherwise, this is just regular shader with explicit texgen

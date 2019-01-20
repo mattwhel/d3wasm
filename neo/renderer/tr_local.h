@@ -1210,6 +1210,9 @@ typedef struct shaderProgram_s {
 	GLint		specularExponent;
 
 	GLint		modelViewProjectionMatrix;
+  GLint		modelViewMatrix;
+  GLint		modelViewMatrixTranspose;
+  GLint		modelViewMatrixInverse;
 	GLint		textureMatrix;
   GLint   wobbleMatrix;
 	GLint		localLightOrigin;
