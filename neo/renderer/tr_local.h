@@ -120,8 +120,7 @@ typedef struct drawSurf_s {
 	const struct drawSurf_s	*nextOnLight;	// viewLight chains
 	idScreenRect			scissorRect;	// for scissor clipping, local inside renderView viewport
 	int						dsFlags;			// DSF_VIEW_INSIDE_SHADOW, etc
-	struct vertCache_s		*dynamicTexCoords;	// float * in vertex cache memory
-	// specular directions for non vertex program cards, skybox texcoords, etc
+	float  wobbleTransform[16];
 } drawSurf_t;
 
 
@@ -1212,7 +1211,7 @@ typedef struct shaderProgram_s {
 
 	GLint		modelViewProjectionMatrix;
 	GLint		textureMatrix;
-
+  GLint   wobbleMatrix;
 	GLint		localLightOrigin;
 	GLint		localViewOrigin;
 
@@ -1234,7 +1233,6 @@ typedef struct shaderProgram_s {
 	GLint		specularColor;
 	GLint		fogColor;
 
-	GLint   texgenmode;
 	GLint		texGen0S;
 	GLint		texGen0T;
 	GLint		texGen1S;

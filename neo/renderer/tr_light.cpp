@@ -204,7 +204,6 @@ void R_WobbleskyTexGen(drawSurf_t *surf, const idVec3 &viewOrg) {
   rotateSpeed = rotateSpeed * 2 * idMath::PI / 60;
 
   // very ad-hoc "wobble" transform
-  float transform[16];
   float a = tr.viewDef->floatTime * wobbleSpeed;
   float s = sin(a) * sin(wobbleDegrees);
   float c = cos(a) * sin(wobbleDegrees);
@@ -231,39 +230,20 @@ void R_WobbleskyTexGen(drawSurf_t *surf, const idVec3 &viewOrg) {
   s = sin(rotateSpeed * tr.viewDef->floatTime);
   c = cos(rotateSpeed * tr.viewDef->floatTime);
 
-  transform[0] = axis[0][0] * c + axis[1][0] * s;
-  transform[4] = axis[0][1] * c + axis[1][1] * s;
-  transform[8] = axis[0][2] * c + axis[1][2] * s;
+  surf->wobbleTransform[0] = axis[0][0] * c + axis[1][0] * s;
+  surf->wobbleTransform[4] = axis[0][1] * c + axis[1][1] * s;
+  surf->wobbleTransform[8] = axis[0][2] * c + axis[1][2] * s;
 
-  transform[1] = axis[1][0] * c - axis[0][0] * s;
-  transform[5] = axis[1][1] * c - axis[0][1] * s;
-  transform[9] = axis[1][2] * c - axis[0][2] * s;
+  surf->wobbleTransform[1] = axis[1][0] * c - axis[0][0] * s;
+  surf->wobbleTransform[5] = axis[1][1] * c - axis[0][1] * s;
+  surf->wobbleTransform[9] = axis[1][2] * c - axis[0][2] * s;
 
-  transform[2] = axis[2][0];
-  transform[6] = axis[2][1];
-  transform[10] = axis[2][2];
+  surf->wobbleTransform[2] = axis[2][0];
+  surf->wobbleTransform[6] = axis[2][1];
+  surf->wobbleTransform[10] = axis[2][2];
 
-  transform[3] = transform[7] = transform[11] = 0.0f;
-  transform[12] = transform[13] = transform[14] = 0.0f;
-
-  R_GlobalPointToLocal(surf->space->modelMatrix, viewOrg, localViewOrigin);
-
-  int numVerts = surf->geo->numVerts;
-  int size = numVerts * sizeof(idVec3);
-  idVec3 *texCoords = (idVec3 *) _alloca16(size);
-
-  const idDrawVert *verts = surf->geo->verts;
-  for (i = 0; i < numVerts; i++) {
-    idVec3 v;
-
-    v[0] = verts[i].xyz[0] - localViewOrigin[0];
-    v[1] = verts[i].xyz[1] - localViewOrigin[1];
-    v[2] = verts[i].xyz[2] - localViewOrigin[2];
-
-    R_LocalPointToGlobal(transform, v, texCoords[i]);
-  }
-
-  surf->dynamicTexCoords = vertexCache.AllocFrameTemp(texCoords, size, false);
+  surf->wobbleTransform[3] = surf->wobbleTransform[7] = surf->wobbleTransform[11] = 0.0f;
+  surf->wobbleTransform[12] = surf->wobbleTransform[13] = surf->wobbleTransform[14] = 0.0f;
 }
 
 //=======================================================================================================
@@ -1175,6 +1155,14 @@ void R_AddDrawSurf(const srfTriangles_t *tri, const viewEntity_t *space, const r
   switch (shader->Texgen()) {
     case TG_WOBBLESKY_CUBE:
       R_WobbleskyTexGen(drawSurf, tr.viewDef->renderView.vieworg);
+      break;
+    case TG_SKYBOX_CUBE:
+    case TG_DIFFUSE_CUBE:
+    case TG_REFLECT_CUBE:
+      // Be sure to init the wobbleTransform to identity for cube-map based surfaces that does not use it
+      // (it will be passed to the shader)
+      memcpy(&drawSurf->wobbleTransform, mat4_identity.ToFloatPtr(), sizeof(drawSurf->wobbleTransform));
+    default:
       break;
   }
 
