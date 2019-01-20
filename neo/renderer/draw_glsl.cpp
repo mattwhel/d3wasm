@@ -622,6 +622,15 @@ static void GL_Uniform4fv(GLint location, const GLfloat* value) {
 
 /*
 ====================
+GL_Uniform3fv
+====================
+*/
+static void GL_Uniform3fv(GLint location, const GLfloat* value) {
+  qglUniform3fv(*( GLint * )((char*) backEnd.glState.currentProgram + location), 1, value);
+}
+
+/*
+====================
 GL_UniformMatrix4fv
 ====================
 */
@@ -636,15 +645,6 @@ GL_EnableVertexAttribArray
 */
 void GL_EnableVertexAttribArray(GLuint index) {
   qglEnableVertexAttribArray(*( GLint * )((char*) backEnd.glState.currentProgram + index));
-}
-
-/*
-====================
-GL_DisableVertexAttribArray
-====================
-*/
-static void GL_DisableVertexAttribArray(GLuint index) {
-  qglDisableVertexAttribArray(*( GLint * )((char*) backEnd.glState.currentProgram + index));
 }
 
 /*
@@ -700,7 +700,6 @@ links the GLSL vertex and fragment shaders together to form a GLSL program
 static bool R_LinkGLSLShader(shaderProgram_t* shaderProgram, const char* name) {
   char buf[BUFSIZ];
   int len;
-  GLint status;
   GLint linked;
 
   shaderProgram->program = qglCreateProgram();
@@ -968,8 +967,6 @@ R_ReloadGLSLPrograms_f
 ==================
 */
 void R_ReloadGLSLPrograms_f(const idCmdArgs& args) {
-  int i;
-
   common->Printf("----- R_ReloadGLSLPrograms -----\n");
 
   if ( !RB_GLSL_InitShaders()) {
@@ -2264,9 +2261,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   myGlMultMatrix(surf->space->modelViewMatrix, localProjectionMatrix, localMVP);
 
   // precompute the local view origin (might be needed for some texgens)
-  idVec3 tmpOrigin;
-  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, tmpOrigin);
-  const idVec4 localViewOrigin(tmpOrigin.x, tmpOrigin.y, tmpOrigin.z, 1.0);
+  idVec3 localViewOrigin;
+  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin);
 
   ///////////////////////
   // For each stage loop
@@ -2375,7 +2371,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the local view origin uniform
         // This is specific to this shader type
-        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_Uniform3fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), mat4_identity.ToFloatPtr());
       }
@@ -2385,7 +2381,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the local view origin uniform
         // This is specific to this shader type
-        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_Uniform3fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), mat4_identity.ToFloatPtr());
       }
@@ -2396,7 +2392,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the local view origin uniform
         // This is specific to this shader type
-        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        GL_Uniform3fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), surf->wobbleTransform);
       }
