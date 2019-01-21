@@ -1211,10 +1211,7 @@ typedef struct shaderProgram_s {
 
 	GLint		modelViewProjectionMatrix;
   GLint		modelViewMatrix;
-  GLint		modelViewMatrixTranspose;
-  GLint		modelViewMatrixInverse;
 	GLint		textureMatrix;
-  GLint   wobbleMatrix;
 	GLint		localLightOrigin;
 	GLint		localViewOrigin;
 
@@ -1253,19 +1250,23 @@ typedef struct shaderProgram_s {
   GLint		u_fragmentCubeMap[MAX_FRAGMENT_IMAGES];
 } shaderProgram_t;
 
-void  GL_UseProgram(shaderProgram_t *program);
+void GL_UseProgram(shaderProgram_t *program);
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
 void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2);
 void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 int  RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs);
 void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs);
+
 extern shaderProgram_t interactionShader;
 extern shaderProgram_t interactionPhongShader;
 extern shaderProgram_t fogShader;
 extern shaderProgram_t zfillShader;
 extern shaderProgram_t zfillClipShader;
-extern shaderProgram_t defaultShader;
+extern shaderProgram_t defaultSurfaceShader;
+extern shaderProgram_t diffuseCubeShader;
+extern shaderProgram_t skyboxCubeShader;
+extern shaderProgram_t reflectionCubeShader;
 extern shaderProgram_t stencilShadowShader;
 
 /*

@@ -362,7 +362,7 @@ static const char* const zfillShaderVP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "\tvar_TexDiffuse = (u_textureMatrix * attr_TexCoord);\n"
+  "\tvar_TexDiffuse = u_textureMatrix * attr_TexCoord;\n"
   "\n"
   "\tgl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
@@ -445,7 +445,7 @@ static const char* const zfillClipShaderFP =
   "\tgl_FragColor = u_glColor;\n"
   "}\n";
 
-static const char* const defaultShaderVP =
+static const char* const defaultSurfaceShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
   "\n"
@@ -462,35 +462,48 @@ static const char* const defaultShaderVP =
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying vec4 var_TexDiffuse;\n"
+  "varying vec4 var_TexCoord;\n"
   "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "  var_TexDiffuse = u_textureMatrix * attr_TexCoord;\n"
+  "  var_TexCoord = u_textureMatrix * attr_TexCoord;\n"
   "\n"
   "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "\n"
   "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
-static const char* const defaultShaderFP =
+static const char* const diffuseCubeShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
   "\n"
-  "uniform sampler2D u_fragmentMap0;\n"
-  "uniform lowp vec4 u_glColor;\n"
+  "// In\n"
+  "attribute lowp vec4 attr_Color;\n"
+  "attribute vec3 attr_Normal;\n"
+  "attribute highp vec4 attr_Vertex;\n"
   "\n"
-  "varying vec4 var_TexDiffuse;\n"
+  "// Uniforms\n"
+  "uniform highp mat4 u_modelViewProjectionMatrix;\n"
+  "uniform mat4 u_textureMatrix;\n"
+  "uniform lowp vec4 u_colorAdd;\n"
+  "uniform lowp vec4 u_colorModulate;\n"
+  "\n"
+  "// Out\n"
+  "// gl_Position\n"
+  "varying vec4 var_TexCoord;\n"
   "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "  gl_FragColor = texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w) * u_glColor * var_Color;\n"
+  "  var_TexCoord = u_textureMatrix * vec4(attr_Normal, 0.0);\n"
+  "\n"
+  "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
+  "\n"
+  "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
-
-static const char* const defaultCubeMapShaderVP =
+static const char* const skyboxCubeShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
   "\n"
@@ -507,34 +520,19 @@ static const char* const defaultCubeMapShaderVP =
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying vec4 var_TexCubeMap;\n"
+  "varying vec4 var_TexCoord;\n"
   "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "  var_TexCubeMap = u_textureMatrix * (attr_Vertex - u_viewOrigin);\n"
+  "  var_TexCoord = u_textureMatrix * (attr_Vertex - u_viewOrigin);\n"
   "  \n"
   "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "  \n"
   "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "}\n";
 
-static const char* const defaultCubeMapShaderFP =
-  "#version 100\n"
-  "precision mediump float;\n"
-  "\n"
-  "uniform samplerCube u_fragmentCubeMap0;\n"
-  "uniform lowp vec4 u_glColor;\n"
-  "\n"
-  "varying vec4 var_TexCubeMap;\n"
-  "varying lowp vec4 var_Color;\n"
-  "\n"
-  "void main(void)\n"
-  "{\n"
-  "  gl_FragColor = textureCube(u_fragmentCubeMap0, var_TexCubeMap.xyz) * u_glColor * var_Color;\n"
-  "}\n";
-
-static const char* const defaultReflectShaderVP =
+static const char* const reflectionCubeShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
   "\n"
@@ -552,12 +550,12 @@ static const char* const defaultReflectShaderVP =
   "\n"
   "// Out\n"
   "// gl_Position\n"
-  "varying vec4 var_TexCubeMap;\n"
+  "varying vec4 var_TexCoord;\n"
   "varying lowp vec4 var_Color;\n"
   "\n"
   "void main(void)\n"
   "{\n"
-  "  var_TexCubeMap = u_textureMatrix\n"
+  "  var_TexCoord = u_textureMatrix\n"
   "                       * reflect( normalize( u_modelViewMatrix * attr_Vertex ), \n"
   "                                   // This suppose the modelView matrix is orthogonal\n"
   "                                   // Otherwise, we should use the inverse transpose\n"
@@ -566,6 +564,36 @@ static const char* const defaultReflectShaderVP =
   "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "  \n"
   "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
+  "}\n";
+
+static const char* const diffuseMapShaderFP =
+  "#version 100\n"
+  "precision mediump float;\n"
+  "\n"
+  "uniform sampler2D u_fragmentMap0;\n"
+  "uniform lowp vec4 u_glColor;\n"
+  "\n"
+  "varying vec4 var_TexCoord;\n"
+  "varying lowp vec4 var_Color;\n"
+  "\n"
+  "void main(void)\n"
+  "{\n"
+  "  gl_FragColor = texture2D(u_fragmentMap0, var_TexCoord.xy / var_TexCoord.w) * u_glColor * var_Color;\n"
+  "}\n";
+
+static const char* const cubeMapShaderFP =
+  "#version 100\n"
+  "precision mediump float;\n"
+  "\n"
+  "uniform samplerCube u_fragmentCubeMap0;\n"
+  "uniform lowp vec4 u_glColor;\n"
+  "\n"
+  "varying vec4 var_TexCoord;\n"
+  "varying lowp vec4 var_Color;\n"
+  "\n"
+  "void main(void)\n"
+  "{\n"
+  "  gl_FragColor = textureCube(u_fragmentCubeMap0, var_TexCoord.xyz) * u_glColor * var_Color;\n"
   "}\n";
 
 static const char* const stencilShadowShaderVP =
@@ -607,9 +635,10 @@ shaderProgram_t interactionPhongShader;
 shaderProgram_t fogShader;
 shaderProgram_t zfillShader;
 shaderProgram_t zfillClipShader;
-shaderProgram_t defaultShader;
-shaderProgram_t defaultCubeMapShader;
-shaderProgram_t defaultReflectShader;
+shaderProgram_t defaultSurfaceShader;
+shaderProgram_t diffuseCubeShader;
+shaderProgram_t skyboxCubeShader;
+shaderProgram_t reflectionCubeShader;
 shaderProgram_t stencilShadowShader;
 
 /*
@@ -820,7 +849,6 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
   shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
-  shader->wobbleMatrix = qglGetUniformLocation(shader->program, "u_wobbleMatrix");
   shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
   shader->texGen0T = qglGetUniformLocation(shader->program, "u_texGen0T");
   shader->texGen1S = qglGetUniformLocation(shader->program, "u_texGen1S");
@@ -892,7 +920,7 @@ static bool RB_GLSL_InitShaders(void) {
   }
 
   // main Interaction shader, Phong version
-  common->Printf("Loading main interaction shader (Phong version) \n");
+  common->Printf("Loading main interaction shader (Phong) \n");
   memset(&interactionPhongShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(interactionPhongShaderVP, &interactionPhongShader, GL_VERTEX_SHADER);
@@ -906,46 +934,60 @@ static bool RB_GLSL_InitShaders(void) {
     RB_GLSL_GetUniformLocations(&interactionPhongShader);
   }
 
-  // default shader (for ambient surfaces)
-  common->Printf("Loading default shader\n");
-  memset(&defaultShader, 0, sizeof(shaderProgram_t));
+  // default surface shader
+  common->Printf("Loading default surface shader\n");
+  memset(&defaultSurfaceShader, 0, sizeof(shaderProgram_t));
 
-  R_LoadGLSLShader(defaultShaderVP, &defaultShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(defaultShaderFP, &defaultShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(defaultSurfaceShaderVP, &defaultSurfaceShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(diffuseMapShaderFP,     &defaultSurfaceShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&defaultShader, "default") && !R_ValidateGLSLProgram(&defaultShader)) {
+  if ( !R_LinkGLSLShader(&defaultSurfaceShader, "defaultSurface") && !R_ValidateGLSLProgram(&defaultSurfaceShader)) {
     return false;
   }
   else {
-    RB_GLSL_GetUniformLocations(&defaultShader);
+    RB_GLSL_GetUniformLocations(&defaultSurfaceShader);
   }
 
-  // default shader, Cube map version
-  common->Printf("Loading default shader (Cubemap version)\n");
-  memset(&defaultCubeMapShader, 0, sizeof(shaderProgram_t));
+  // Skybox cubemap shader
+  common->Printf("Loading skybox cubemap shader\n");
+  memset(&skyboxCubeShader, 0, sizeof(shaderProgram_t));
 
-  R_LoadGLSLShader(defaultCubeMapShaderVP, &defaultCubeMapShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(defaultCubeMapShaderFP, &defaultCubeMapShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(skyboxCubeShaderVP, &skyboxCubeShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP,    &skyboxCubeShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&defaultCubeMapShader, "defaultCubeMap") && !R_ValidateGLSLProgram(&defaultCubeMapShader)) {
+  if ( !R_LinkGLSLShader(&skyboxCubeShader, "skyboxCubeShader") && !R_ValidateGLSLProgram(&skyboxCubeShader)) {
     return false;
   }
   else {
-    RB_GLSL_GetUniformLocations(&defaultCubeMapShader);
+    RB_GLSL_GetUniformLocations(&skyboxCubeShader);
   }
 
-  // default shader, Reflect version
-  common->Printf("Loading default shader (Reflect version)\n");
-  memset(&defaultReflectShader, 0, sizeof(shaderProgram_t));
+  // Reflection cubemap shader
+  common->Printf("Loading reflection cubemap shader\n");
+  memset(&reflectionCubeShader, 0, sizeof(shaderProgram_t));
 
-  R_LoadGLSLShader(defaultReflectShaderVP, &defaultReflectShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(defaultCubeMapShaderFP, &defaultReflectShader, GL_FRAGMENT_SHADER); // Reuse this one
+  R_LoadGLSLShader(reflectionCubeShaderVP, &reflectionCubeShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP,        &reflectionCubeShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&defaultReflectShader, "defaultReflectShader") && !R_ValidateGLSLProgram(&defaultReflectShader)) {
+  if ( !R_LinkGLSLShader(&reflectionCubeShader, "reflectionCubeShader") && !R_ValidateGLSLProgram(&reflectionCubeShader)) {
     return false;
   }
   else {
-    RB_GLSL_GetUniformLocations(&defaultReflectShader);
+    RB_GLSL_GetUniformLocations(&reflectionCubeShader);
+  }
+
+  // Diffuse cubemap shader
+  common->Printf("Loading diffuse cubemap shader\n");
+  memset(&diffuseCubeShader, 0, sizeof(shaderProgram_t));
+
+  R_LoadGLSLShader(diffuseCubeShaderVP, &diffuseCubeShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP,     &diffuseCubeShader, GL_FRAGMENT_SHADER);
+
+  if ( !R_LinkGLSLShader(&diffuseCubeShader, "diffuseCubeShader") && !R_ValidateGLSLProgram(&diffuseCubeShader)) {
+    return false;
+  }
+  else {
+    RB_GLSL_GetUniformLocations(&diffuseCubeShader);
   }
 
   // Z Fill shader
@@ -2389,18 +2431,23 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // the associated TexGen. Then, setup its specific uniforms/attribs, and then only we can setup the common uniforms/attribs
 
       if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
+        // This is diffuse cube mapping
+        GL_UseProgram(&diffuseCubeShader);
 
-        //GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
-        //                       ac->normal.ToFloatPtr());
+        // FIXME: not tested, because never see an example in the game. Possible that normals should be transformed
+        //  by a normal matrix in the shader ??
 
-        //GL_UseProgram(&defaultCubeMapShader);
+        // Setup normal array
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
+          ac->normal.ToFloatPtr());
 
-        common->Printf("DIFFUSE CUBE\n");
-        continue;
+        // Setup the texture matrix to identity
+        // Note: not sure, in original D3 it looks like having diffuse cube with texture matrix other than identity is a possible case.
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
-        // This is cube mapping
-        GL_UseProgram(&defaultCubeMapShader);
+        // This is skybox cube mapping
+        GL_UseProgram(&skyboxCubeShader);
 
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
@@ -2410,8 +2457,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
-        // This is cube mapping
-        GL_UseProgram(&defaultCubeMapShader);
+        // This is skybox cube mapping, with special texture matrix
+        GL_UseProgram(&skyboxCubeShader);
 
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
@@ -2430,12 +2477,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         continue;
       }
       else if ( pStage->texture.texgen == TG_GLASSWARP ) {
-        // Not supported
+        // Not supported. This is an ARB2 shader without available source code.
+        // Never seen in the game actually
         continue;
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
-        // This is reflection mapping
-        GL_UseProgram(&defaultReflectShader);
+        // This is reflection cubemapping
+        GL_UseProgram(&reflectionCubeShader);
+
+        // NB: there is also the variant "Bump reflect cube". This is not implemented for now.
 
         // Setup the normals
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
@@ -2451,8 +2501,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat);
       }
       else {
-        // Otherwise, this is just regular shader with explicit texcoords
-        GL_UseProgram(&defaultShader);
+        // Otherwise, this is just regular surface shader with explicit texcoords
+        GL_UseProgram(&defaultSurfaceShader);
 
         // Setup the TexCoord pointer
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord),
