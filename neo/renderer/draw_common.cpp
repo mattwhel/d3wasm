@@ -251,17 +251,7 @@ void RB_RenderView(void) {
   // clear the z buffer, set the projection matrix, etc
   RB_BeginDrawingView();
 
-  // decide how much overbrighting we are going to do
-  RB_DetermineLightScale();
-
-  //
-  // Shadow, DepthFill, Ambient Surface, Interactions and Fog pass there is now ONLY the GLSL path (no more ARB and ARB2 paths)
-  //
-  // However BlendLight are still using standard ARB path
-  //
-
-  // fill the depth buffer and clear color buffer to black except on
-  // subviews
+  // fill the depth buffer and clear color buffer to black except on subviews
 	RB_GLSL_FillDepthBuffer( drawSurfs, numDrawSurfs );
 
   // main light renderer
@@ -269,10 +259,6 @@ void RB_RenderView(void) {
 
   // disable stencil shadow test
   qglStencilFunc(GL_ALWAYS, 128, 255);
-
-  // uplight the entire screen to crutch up not having better blending range
-  // Not needed on GLSL render path
-  //RB_LightScale();
 
   // now draw any non-light dependent shading passes
   const int processed = RB_GLSL_DrawShaderPasses(drawSurfs, numDrawSurfs);

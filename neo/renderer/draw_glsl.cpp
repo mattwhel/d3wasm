@@ -680,10 +680,10 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
 
     float lightColor[4];
 
-    // backEnd.lightScale is calculated so that lightColor[] will never exceed tr.backEndRendererMaxLight
-    lightColor[0] = backEnd.lightScale * lightRegs[lightStage->color.registers[0]];
-    lightColor[1] = backEnd.lightScale * lightRegs[lightStage->color.registers[1]];
-    lightColor[2] = backEnd.lightScale * lightRegs[lightStage->color.registers[2]];
+    const float lightscale = r_lightScale.GetFloat();
+    lightColor[0] = lightscale * lightRegs[lightStage->color.registers[0]];
+    lightColor[1] = lightscale * lightRegs[lightStage->color.registers[1]];
+    lightColor[2] = lightscale * lightRegs[lightStage->color.registers[2]];
     lightColor[3] = lightRegs[lightStage->color.registers[3]];
 
     // go through the individual stages
@@ -1214,7 +1214,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
   // NB: will be restored at end of the process
   if ( shader->GetSort() == SS_SUBVIEW ) {
     GL_State(GLS_SRCBLEND_DST_COLOR | GLS_DSTBLEND_ZERO | GLS_DEPTHFUNC_LESS);
-    color[0] = color[1] = color[2] = ( 1.0 / backEnd.overBright );
+    color[0] = color[1] = color[2] = 1.0f; // NB: was 1.0 / backEnd.overBright );
   }
   GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
 
@@ -1935,14 +1935,13 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
     }
 
     // only dump if in a 3d view
-    //  Not enabled yet. Looks like it is only needed for some specific shaders
-    //if (backEnd.viewDef->viewEntitys) {
-    //  globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
-    //                                                    backEnd.viewDef->viewport.y1,
-    //                                                    backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
-    //                                                    backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1,
-    //                                                    true);
-    //}
+    if (backEnd.viewDef->viewEntitys) {
+      globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
+                                                        backEnd.viewDef->viewport.y1,
+                                                        backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
+                                                        backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1,
+                                                        true);
+    }
 
     backEnd.currentRenderCopied = true;
   }

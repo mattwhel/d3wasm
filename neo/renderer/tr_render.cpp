@@ -173,63 +173,6 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 
 /*
 =================
-RB_DetermineLightScale
-
-Sets:
-backEnd.lightScale
-backEnd.overBright
-
-Find out how much we are going to need to overscale the lighting, so we
-can down modulate the pre-lighting passes.
-
-We only look at light calculations, but an argument could be made that
-we should also look at surface evaluations, which would let surfaces
-overbright past 1.0
-=================
-*/
-void RB_DetermineLightScale( void ) {
-	viewLight_t			*vLight;
-	const idMaterial	*shader;
-	float				max;
-	int					i, j, numStages;
-	const shaderStage_t	*stage;
-
-	// the light scale will be based on the largest color component of any surface
-	// that will be drawn.
-	// should we consider separating rgb scales?
-
-	// if there are no lights, this will remain at 1.0, so GUI-only
-	// rendering will not lose any bits of precision
-	max = 1.0;
-
-	for ( vLight = backEnd.viewDef->viewLights ; vLight ; vLight = vLight->next ) {
-		// lights with no surfaces or shaderparms may still be present
-		// for debug display
-		if ( !vLight->localInteractions && !vLight->globalInteractions
-			&& !vLight->translucentInteractions ) {
-			continue;
-		}
-
-		shader = vLight->lightShader;
-		numStages = shader->GetNumStages();
-		for ( i = 0 ; i < numStages ; i++ ) {
-			stage = shader->GetStage( i );
-			for ( j = 0 ; j < 3 ; j++ ) {
-				float	v = r_lightScale.GetFloat() * vLight->shaderRegisters[ stage->color.registers[j] ];
-				if ( v > max ) {
-					max = v;
-				}
-			}
-		}
-	}
-
-	backEnd.pc.maxLightValue = max;
-	backEnd.lightScale = r_lightScale.GetFloat();
-	backEnd.overBright = 1.0;
-}
-
-/*
-=================
 RB_BeginDrawingView
 
 Any mirrored or portaled views have already been drawn, so prepare
