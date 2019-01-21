@@ -1868,6 +1868,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       if ( pStage->privatePolygonOffset && !surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
         qglDisable(GL_POLYGON_OFFSET_FILL);
       }
+      else if ( pStage->privatePolygonOffset && surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
+        qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * shader->GetPolygonOffset());
+      }
 
       // Don't touch the rest, as this will either reset by the next stage, or handled by end of this method
     }
