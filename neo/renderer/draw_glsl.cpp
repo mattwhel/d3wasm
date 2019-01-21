@@ -501,7 +501,6 @@ static const char* const defaultCubeMapShaderVP =
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
   "uniform mat4 u_textureMatrix;\n"
-  "uniform mat4 u_wobbleMatrix;\n"
   "uniform lowp vec4 u_colorAdd;\n"
   "uniform lowp vec4 u_colorModulate;\n"
   "uniform vec4 u_viewOrigin;\n"
@@ -513,7 +512,7 @@ static const char* const defaultCubeMapShaderVP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "  var_TexCubeMap = (u_textureMatrix * u_wobbleMatrix * (attr_Vertex - u_viewOrigin));\n"
+  "  var_TexCubeMap = u_textureMatrix * (attr_Vertex - u_viewOrigin);\n"
   "  \n"
   "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "  \n"
@@ -535,8 +534,6 @@ static const char* const defaultCubeMapShaderFP =
   "  gl_FragColor = textureCube(u_fragmentCubeMap0, var_TexCubeMap.xyz) * u_glColor * var_Color;\n"
   "}\n";
 
-
-
 static const char* const defaultReflectShaderVP =
   "#version 100\n"
   "precision mediump float;\n"
@@ -548,8 +545,7 @@ static const char* const defaultReflectShaderVP =
   "\n"
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
-  "uniform highp mat4 u_modelViewMatrix;\n"
-  "uniform highp mat4 u_modelViewMatrixTranspose;\n"
+  "uniform mat4 u_modelViewMatrix;\n"
   "uniform mat4 u_textureMatrix;\n"
   "uniform lowp vec4 u_colorAdd;\n"
   "uniform lowp vec4 u_colorModulate;\n"
@@ -561,8 +557,11 @@ static const char* const defaultReflectShaderVP =
   "\n"
   "void main(void)\n"
   "{\n"
-  "  var_TexCubeMap = u_textureMatrix * u_modelViewMatrixTranspose * reflect( normalize( u_modelViewMatrix * attr_Vertex ), \n"
-  "                                                                            u_modelViewMatrix * vec4(attr_Normal,0.0) ) ;\n"
+  "  var_TexCubeMap = u_textureMatrix\n"
+  "                       * reflect( normalize( u_modelViewMatrix * attr_Vertex ), \n"
+  "                                   // This suppose the modelView matrix is orthogonal\n"
+  "                                   // Otherwise, we should use the inverse transpose\n"
+  "                                   u_modelViewMatrix * vec4(attr_Normal,0.0) ) ;\n"
   "  \n"
   "  var_Color = (attr_Color / 255.0) * u_colorModulate + u_colorAdd;\n"
   "  \n"
@@ -820,8 +819,6 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->specularExponent = qglGetUniformLocation(shader->program, "u_specularExponent");
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
   shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
-  shader->modelViewMatrixInverse = qglGetUniformLocation(shader->program, "u_modelViewMatrixInverse");
-  shader->modelViewMatrixTranspose = qglGetUniformLocation(shader->program, "u_modelViewMatrixTranspose");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
   shader->wobbleMatrix = qglGetUniformLocation(shader->program, "u_wobbleMatrix");
   shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
@@ -2231,6 +2228,12 @@ This is also called for the generated 2D rendering
 */
 void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
+  // global constants
+  static const float zero[4] = { 0, 0, 0, 0 };
+  static const float one[4] = { 1, 1, 1, 1 };
+  static const float negOne[4] = { -1, -1, -1, -1 };
+
+  // usefull pointers
   const idMaterial* const shader = surf->material;
   const srfTriangles_t* const tri = surf->geo;
 
@@ -2270,6 +2273,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   }
 
   // set polygon offset if necessary
+  // NB: must be restored at end of process
   if ( shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
     qglEnable(GL_POLYGON_OFFSET_FILL);
     qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * shader->GetPolygonOffset());
@@ -2279,20 +2283,18 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   GL_Cull(shader->GetCullType());
 
   // Quick and dirty hacks on the depth range
-  if ( surf->space->weaponDepthHack ) {
+  // NB: must be restored at end of process
+  if ( surf->space->weaponDepthHack && surf->space->modelDepthHack == 0.0f) {
     qglDepthRangef(0, 0.5);
   }
-  if (surf->space->modelDepthHack != 0) {
-    qglDepthRangef(0.0f, 1.0f);
-  }
 
-  // Additional precomputations that will be reused in the shader stages
+  // Location of vertex attributes data
+  const idDrawVert* const ac = (const idDrawVert* const) vertexCache.Position(tri->ambientCache);
 
   // get the expressions for conditionals / color / texcoords
   const float* const regs = surf->shaderRegisters;
 
-  // Location of vertex attributes data
-  const idDrawVert* const ac = (const idDrawVert* const) vertexCache.Position(tri->ambientCache);
+  // Additional precomputations that will be reused in the shader stages
 
   // precompute the projection matrix
   float localProjectionMatrix[16];
@@ -2347,36 +2349,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
     const newShaderStage_t* const newStage = pStage->newStage;
 
     if ( newStage ) {
-
       // new style stages: Not implemented in GLSL yet!
       continue;
-
-      /*
-      // I just keep this for reference
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                             (void *) &ac->color);
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Tangent), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                             ac->tangents[0].ToFloatPtr());
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                             ac->tangents[1].ToFloatPtr());
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                             ac->normal.ToFloatPtr());
-
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-
-      GL_State(pStage->drawStateBits);
-
-      // draw it
-      RB_DrawElementsWithCounters(tri);
-
-      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));  // gl_Color
-      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-       */
     }
     else {
 
@@ -2412,41 +2386,38 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // GL shader setup for the stage
       /////////////////////////////////
       // The very first thing we need to do before going down into GL is to choose he correct GLSL shader depending on
-      // the associated TexGen. Then, correctly setup its specific and common uniforms/attribs
+      // the associated TexGen. Then, setup its specific uniforms/attribs, and then only we can setup the common uniforms/attribs
 
       if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
-        // Not sure this is working
-        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                               ac->normal.ToFloatPtr());
 
-        GL_UseProgram(&defaultCubeMapShader);
+        //GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
+        //                       ac->normal.ToFloatPtr());
 
-        // Setup the local view origin uniform
-        // This is specific to this shader type
-        GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
+        //GL_UseProgram(&defaultCubeMapShader);
 
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), mat4_identity.ToFloatPtr());
+        common->Printf("DIFFUSE CUBE\n");
+        continue;
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
         // This is cube mapping
         GL_UseProgram(&defaultCubeMapShader);
 
         // Setup the local view origin uniform
-        // This is specific to this shader type
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), mat4_identity.ToFloatPtr());
+        // Setup the texture matrix to identity
+        // Note: not sure, in original D3 it looks like having skyboxes with texture matrix other than identity is a possible case.
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
         // This is cube mapping
-        // Not yet fully supported
         GL_UseProgram(&defaultCubeMapShader);
 
         // Setup the local view origin uniform
-        // This is specific to this shader type
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, wobbleMatrix), surf->wobbleTransform);
+        // Setup the specific texture matrix for the wobblesky
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), surf->wobbleTransform);
       }
       else if ( pStage->texture.texgen == TG_SCREEN ) {
         // Not yet supported
@@ -2459,31 +2430,42 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         continue;
       }
       else if ( pStage->texture.texgen == TG_GLASSWARP ) {
-        // Not yet supported
+        // Not supported
         continue;
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
-//        if (!b)
-  //        continue;
-        // This is cube mapping
+        // This is reflection mapping
         GL_UseProgram(&defaultReflectShader);
 
+        // Setup the normals
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
 
+        // Setup the modelViewMatrix, we will need it to compute the reflection
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
+
+        // Setup the texture matrix like original D3 code does: using the transpose modelViewMatrix
+        // NB: this is curious, not sure why this is done like this....
         float	mat[16];
         R_TransposeGLMatrix( backEnd.viewDef->worldSpace.modelViewMatrix, mat );
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrixTranspose), mat);
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat);
       }
       else {
-        // Otherwise, this is just regular shader with explicit texgen
+        // Otherwise, this is just regular shader with explicit texcoords
         GL_UseProgram(&defaultShader);
 
         // Setup the TexCoord pointer
-        // This is specific to this shader type
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord),
-                               2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
+          2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
+
+        // Setup the texture matrix
+        if ( pStage->texture.hasMatrix ) {
+          RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+        }
+        else {
+          // Use identity
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+        }
       }
 
       // Now we have a shader, we can setup the uniforms and attribute pointers common to all kind of shaders
@@ -2499,14 +2481,11 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // Setup the Color uniform
       GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
 
-      static const float zero[4] = { 0, 0, 0, 0 };
-      static const float one[4] = { 1, 1, 1, 1 };
-      static const float negOne[4] = { -1, -1, -1, -1 };
-
-      // Setup the Color pointer, and color modulation
+      // Setup the Color pointer
       GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
                              (void*) &ac->color);
 
+      // Setup the Color modulation
       switch ( pStage->vertexColor ) {
         default:
         case SVC_MODULATE:
@@ -2533,15 +2512,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       if ( pStage->privatePolygonOffset ) {
         qglEnable(GL_POLYGON_OFFSET_FILL);
         qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * pStage->privatePolygonOffset);
-      }
-
-      // Setup the texture matrix if needed
-      if ( pStage->texture.hasMatrix ) {
-        RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
-      }
-      else {
-        // Use identity
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
 
       /////////////////////
@@ -2626,6 +2596,10 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // (ie. common to each surface)
   ////////////////////////////////////////
 
+  // Invariants (each time we are here, these should be satisfied):
+  // No shaders active
+  // Tex0 active, and bound to NULL
+
   // Actually, no GL shader setup can be done there, as the shader to use is dependent on the surface shader stages
 
   /////////////////////////
@@ -2655,13 +2629,6 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
       break;
     }
 
-    //////////////////////////////////////////////
-    // GL shader setup for the current surface
-    // (ie. common to each surface shader stages)
-    //////////////////////////////////////////////
-
-    // Actually, no GL shader setup can be done there, as the shader to use is dependent on the surface shader stages
-
     ////////////////////
     // Do the real work
     ////////////////////
@@ -2671,6 +2638,11 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   /////////////////////////////////////////////
   // Restore everything to an acceptable state
   /////////////////////////////////////////////
+
+  // Invariants to match that may have changed:
+  // Tex0 active, and bound to NULL
+  // No shaders active
+  // Culling
 
   // Restore culling
   GL_Cull(CT_FRONT_SIDED);
