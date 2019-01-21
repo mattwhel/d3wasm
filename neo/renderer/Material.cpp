@@ -607,7 +607,7 @@ int idMaterial::ParseTerm( idLexer &src ) {
 		return EXP_REG_GLOBAL7;
 	}
 	if ( !token.Icmp( "fragmentPrograms" ) ) {
-		return GetExpressionConstant( (float) false );
+		return GetExpressionConstant( (float) true );
 	}
 
 	if ( !token.Icmp( "sound" ) ) {
@@ -1569,8 +1569,6 @@ void idMaterial::ParseStage( idLexer &src, const textureRepeat_t trpDefault ) {
 	if ( imageName[0] ) {
 		ts->image = globalImages->ImageFromFile( imageName, tf, allowPicmip, trp, td, cubeMap );
 		if ( !ts->image ) {
-
-			common->Printf( "BAD IMAGE %s %s\n", GetName(), imageName );
 			ts->image = globalImages->defaultImage;
 		}
 	} else if ( !ts->cinematic && !ts->dynamic && !ss->newStage ) {

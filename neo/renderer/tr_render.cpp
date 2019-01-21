@@ -102,6 +102,43 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 
 /*
 ======================
+RB_GetShaderTextureMatrix
+======================
+*/
+void RB_GetShaderTextureMatrix( const float *shaderRegisters,
+							   const textureStage_t *texture, float matrix[16] ) {
+	matrix[0] = shaderRegisters[ texture->matrix[0][0] ];
+	matrix[4] = shaderRegisters[ texture->matrix[0][1] ];
+	matrix[8] = 0;
+	matrix[12] = shaderRegisters[ texture->matrix[0][2] ];
+
+	// we attempt to keep scrolls from generating incredibly large texture values, but
+	// center rotations and center scales can still generate offsets that need to be > 1
+	if ( matrix[12] < -40 || matrix[12] > 40 ) {
+		matrix[12] -= (int)matrix[12];
+	}
+
+	matrix[1] = shaderRegisters[ texture->matrix[1][0] ];
+	matrix[5] = shaderRegisters[ texture->matrix[1][1] ];
+	matrix[9] = 0;
+	matrix[13] = shaderRegisters[ texture->matrix[1][2] ];
+	if ( matrix[13] < -40 || matrix[13] > 40 ) {
+		matrix[13] -= (int)matrix[13];
+	}
+
+	matrix[2] = 0;
+	matrix[6] = 0;
+	matrix[10] = 1;
+	matrix[14] = 0;
+
+	matrix[3] = 0;
+	matrix[7] = 0;
+	matrix[11] = 0;
+	matrix[15] = 1;
+}
+
+/*
+======================
 RB_BindVariableStageImage
 
 Handles generating a cinematic frame if needed
@@ -130,9 +167,6 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 		//FIXME: see why image is invalid
 		if (texture->image) {
 			texture->image->Bind();
-		}
-		else {
-			common->Printf( "BAD IMAGE DOH!!!\n" );
 		}
 	}
 }
@@ -369,84 +403,4 @@ void RB_DrawView( const void *data ) {
 		GLimp_ActivateContext();
 		RB_SetDefaultGLState();
 	}
-}
-
-
-/*
-======================
-RB_GetShaderTextureMatrix
-======================
-*/
-void RB_GetShaderTextureMatrix(const float* shaderRegisters,
-                               const textureStage_t* texture, float matrix[16]) {
-  matrix[0] = shaderRegisters[texture->matrix[0][0]];
-  matrix[4] = shaderRegisters[texture->matrix[0][1]];
-  matrix[8] = 0;
-  matrix[12] = shaderRegisters[texture->matrix[0][2]];
-
-  // we attempt to keep scrolls from generating incredibly large texture values, but
-  // center rotations and center scales can still generate offsets that need to be > 1
-  if ( matrix[12] < -40 || matrix[12] > 40 ) {
-    matrix[12] -= (int) matrix[12];
-  }
-
-  matrix[1] = shaderRegisters[texture->matrix[1][0]];
-  matrix[5] = shaderRegisters[texture->matrix[1][1]];
-  matrix[9] = 0;
-  matrix[13] = shaderRegisters[texture->matrix[1][2]];
-  if ( matrix[13] < -40 || matrix[13] > 40 ) {
-    matrix[13] -= (int) matrix[13];
-  }
-
-  matrix[2] = 0;
-  matrix[6] = 0;
-  matrix[10] = 1;
-  matrix[14] = 0;
-
-  matrix[3] = 0;
-  matrix[7] = 0;
-  matrix[11] = 0;
-  matrix[15] = 1;
-}
-
-/*
-=====================
-RB_BakeTextureMatrixIntoTexgen
-=====================
-*/
-void RB_BakeTextureMatrixIntoTexgen(idPlane lightProject[3], const float* textureMatrix) {
-  float genMatrix[16];
-  float final[16];
-
-  genMatrix[0] = lightProject[0][0];
-  genMatrix[4] = lightProject[0][1];
-  genMatrix[8] = lightProject[0][2];
-  genMatrix[12] = lightProject[0][3];
-
-  genMatrix[1] = lightProject[1][0];
-  genMatrix[5] = lightProject[1][1];
-  genMatrix[9] = lightProject[1][2];
-  genMatrix[13] = lightProject[1][3];
-
-  genMatrix[2] = 0;
-  genMatrix[6] = 0;
-  genMatrix[10] = 0;
-  genMatrix[14] = 0;
-
-  genMatrix[3] = lightProject[2][0];
-  genMatrix[7] = lightProject[2][1];
-  genMatrix[11] = lightProject[2][2];
-  genMatrix[15] = lightProject[2][3];
-
-  myGlMultMatrix(genMatrix, backEnd.lightTextureMatrix, final);
-
-  lightProject[0][0] = final[0];
-  lightProject[0][1] = final[4];
-  lightProject[0][2] = final[8];
-  lightProject[0][3] = final[12];
-
-  lightProject[1][0] = final[1];
-  lightProject[1][1] = final[5];
-  lightProject[1][2] = final[9];
-  lightProject[1][3] = final[13];
 }
