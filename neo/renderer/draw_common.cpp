@@ -244,7 +244,6 @@ RB_RenderView
 =============
 */
 void RB_RenderView(void) {
-  backEnd.depthFunc = GLS_DEPTHFUNC_EQUAL;
 
   drawSurf_t **drawSurfs = (drawSurf_t * *) & backEnd.viewDef->drawSurfs[0];
   const int numDrawSurfs = backEnd.viewDef->numDrawSurfs;

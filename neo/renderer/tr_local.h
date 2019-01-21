@@ -638,7 +638,6 @@ typedef struct {
 	// for scissor clipping, local inside renderView viewport
 
 	viewLight_t *		vLight;
-	int					depthFunc;			// GLS_DEPTHFUNC_EQUAL, or GLS_DEPTHFUNC_LESS for translucent
 	float				lightTextureMatrix[16];	// only if lightStage->texture.hasMatrix
 	float				lightColor[4];		// evaluation of current light's color stage
 

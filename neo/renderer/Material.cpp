@@ -607,7 +607,7 @@ int idMaterial::ParseTerm( idLexer &src ) {
 		return EXP_REG_GLOBAL7;
 	}
 	if ( !token.Icmp( "fragmentPrograms" ) ) {
-		return GetExpressionConstant( (float) true );
+		return GetExpressionConstant( (float) false );
 	}
 
 	if ( !token.Icmp( "sound" ) ) {

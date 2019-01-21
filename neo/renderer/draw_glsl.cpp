@@ -765,19 +765,13 @@ RB_GLSL_CreateDrawInteractions
 
 =============
 */
-static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf) {
+static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int depthFunc = GLS_DEPTHFUNC_EQUAL ) {
   if ( !surf ) {
     return;
   }
 
-  // Initial expected GL state:
-  // Texture 0 is active, and bound to NULL
-  // Vertex attribute array is enabled
-  // All other attributes array are disabled
-  // No shaders active
-
   // perform setup here that will be constant for all interactions
-  GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL);
+  GL_State(GLS_SRCBLEND_ONE | GLS_DSTBLEND_ONE | GLS_DEPTHMASK | depthFunc);
 
   // bind the vertex and fragment shader
   if ( r_usePhong.GetBool()) {
@@ -839,12 +833,20 @@ RB_GLSL_DrawInteractions
 ==================
 */
 void RB_GLSL_DrawInteractions(void) {
+
+  ///////////////////////
+  // For each light loop
+  ///////////////////////
+
   viewLight_t* vLight;
   //
   // for each light, perform adding and shadowing
   //
   for ( vLight = backEnd.viewDef->viewLights; vLight; vLight = vLight->next ) {
-    backEnd.vLight = vLight;
+
+    //////////////
+    // Skip Cases
+    //////////////
 
     // do fogging later
     if ( vLight->lightShader->IsFogLight()) {
@@ -860,8 +862,16 @@ void RB_GLSL_DrawInteractions(void) {
       continue;
     }
 
+    //////////////////
+    // Setup GL state
+    //////////////////
+
+    // Current light
+    backEnd.vLight = vLight;
+
     // clear the stencil buffer if needed
     if ( vLight->globalShadows || vLight->localShadows ) {
+      // Current scissor
       backEnd.currentScissor = vLight->scissorRect;
 
       if ( r_useScissor.GetBool()) {
@@ -891,8 +901,7 @@ void RB_GLSL_DrawInteractions(void) {
     }
 
     qglStencilFunc(GL_ALWAYS, 128, 255);
-    backEnd.depthFunc = GLS_DEPTHFUNC_LESS;
-    RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions);
+    RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions, GLS_DEPTHFUNC_LESS);
   }
 
   // disable stencil shadow test
@@ -1532,6 +1541,8 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   /////////////////////////////////////////////
   // Restore everything to an acceptable state
   /////////////////////////////////////////////
+  // Restore current space to NULL
+  backEnd.currentSpace = NULL;
 
   // Invariants to match that may have changed:
   // Tex1 bound to NULL
