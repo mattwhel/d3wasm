@@ -67,7 +67,7 @@ void RB_DrawElementsWithCounters( const srfTriangles_t *tri ) {
 	} else {
 		static bool bOnce = true;
 		if (bOnce) {
-			common->Printf("Attempting to draw without index caching\n");
+			common->Warning("Attempting to draw without index caching. This is a bug.\n");
       bOnce = false;
 		}
 	}
@@ -94,7 +94,7 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 	} else {
     static bool bOnce = true;
     if (bOnce) {
-      common->Printf("Attempting to draw without index caching\n");
+      common->Warning("Attempting to draw without index caching. This is a bug.\n");
       bOnce = false;
     }
 	}
@@ -136,88 +136,6 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 		}
 	}
 }
-
-/*
-======================
-RB_BindStageTexture
-======================
-*/
-/*
-void RB_BindStageTexture( const float *shaderRegisters, const textureStage_t *texture, const drawSurf_t *surf ) {
-	// image
-	RB_BindVariableStageImage( texture, shaderRegisters );
-
-	// texgens
-	if ( texture->texgen == TG_DIFFUSE_CUBE ) {
-		qglTexCoordPointer( 3, GL_FLOAT, sizeof( idDrawVert ), ((idDrawVert *)vertexCache.Position( surf->geo->ambientCache ))->normal.ToFloatPtr() );
-	}
-	if ( texture->texgen == TG_SKYBOX_CUBE || texture->texgen == TG_WOBBLESKY_CUBE ) {
-		qglTexCoordPointer( 3, GL_FLOAT, 0, vertexCache.Position( surf->dynamicTexCoords ) );
-	}
-	if ( texture->texgen == TG_REFLECT_CUBE ) {
-		qglEnable( GL_TEXTURE_GEN_S );
-		qglEnable( GL_TEXTURE_GEN_T );
-		qglEnable( GL_TEXTURE_GEN_R );
-		qglTexGenf( GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT );
-		qglTexGenf( GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT );
-		qglTexGenf( GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP_EXT );
-		qglEnableClientState( GL_NORMAL_ARRAY );
-		qglNormalPointer( GL_FLOAT, sizeof( idDrawVert ), ((idDrawVert *)vertexCache.Position( surf->geo->ambientCache ))->normal.ToFloatPtr() );
-
-		qglMatrixMode( GL_TEXTURE );
-		float	mat[16];
-
-		R_TransposeGLMatrix( backEnd.viewDef->worldSpace.modelViewMatrix, mat );
-
-		qglLoadMatrixf( mat );
-		qglMatrixMode( GL_MODELVIEW );
-	}
-
-	// matrix
-	if ( texture->hasMatrix ) {
-		RB_LoadShaderTextureMatrix( shaderRegisters, texture );
-	}
-}
-*/
-
-/*
-======================
-RB_FinishStageTexture
-======================
-*/
-/*
-void RB_FinishStageTexture( const textureStage_t *texture, const drawSurf_t *surf ) {
-	if ( texture->texgen == TG_DIFFUSE_CUBE || texture->texgen == TG_SKYBOX_CUBE
-		|| texture->texgen == TG_WOBBLESKY_CUBE ) {
-		qglTexCoordPointer( 2, GL_FLOAT, sizeof( idDrawVert ),
-			(void *)&(((idDrawVert *)vertexCache.Position( surf->geo->ambientCache ))->st) );
-	}
-
-	if ( texture->texgen == TG_REFLECT_CUBE ) {
-		qglDisable( GL_TEXTURE_GEN_S );
-		qglDisable( GL_TEXTURE_GEN_T );
-		qglDisable( GL_TEXTURE_GEN_R );
-		qglTexGenf( GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-		qglTexGenf( GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-		qglTexGenf( GL_R, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR );
-		qglDisableClientState( GL_NORMAL_ARRAY );
-
-		qglMatrixMode( GL_TEXTURE );
-		qglLoadIdentity();
-		qglMatrixMode( GL_MODELVIEW );
-	}
-
-	if ( texture->hasMatrix ) {
-		qglMatrixMode( GL_TEXTURE );
-		qglLoadIdentity();
-		qglMatrixMode( GL_MODELVIEW );
-	}
-}
-*/
-
-
-//=============================================================================================
-
 
 /*
 =================
@@ -275,7 +193,6 @@ void RB_DetermineLightScale( void ) {
 	backEnd.lightScale = r_lightScale.GetFloat();
 	backEnd.overBright = 1.0;
 }
-
 
 /*
 =================
@@ -452,4 +369,84 @@ void RB_DrawView( const void *data ) {
 		GLimp_ActivateContext();
 		RB_SetDefaultGLState();
 	}
+}
+
+
+/*
+======================
+RB_GetShaderTextureMatrix
+======================
+*/
+void RB_GetShaderTextureMatrix(const float* shaderRegisters,
+                               const textureStage_t* texture, float matrix[16]) {
+  matrix[0] = shaderRegisters[texture->matrix[0][0]];
+  matrix[4] = shaderRegisters[texture->matrix[0][1]];
+  matrix[8] = 0;
+  matrix[12] = shaderRegisters[texture->matrix[0][2]];
+
+  // we attempt to keep scrolls from generating incredibly large texture values, but
+  // center rotations and center scales can still generate offsets that need to be > 1
+  if ( matrix[12] < -40 || matrix[12] > 40 ) {
+    matrix[12] -= (int) matrix[12];
+  }
+
+  matrix[1] = shaderRegisters[texture->matrix[1][0]];
+  matrix[5] = shaderRegisters[texture->matrix[1][1]];
+  matrix[9] = 0;
+  matrix[13] = shaderRegisters[texture->matrix[1][2]];
+  if ( matrix[13] < -40 || matrix[13] > 40 ) {
+    matrix[13] -= (int) matrix[13];
+  }
+
+  matrix[2] = 0;
+  matrix[6] = 0;
+  matrix[10] = 1;
+  matrix[14] = 0;
+
+  matrix[3] = 0;
+  matrix[7] = 0;
+  matrix[11] = 0;
+  matrix[15] = 1;
+}
+
+/*
+=====================
+RB_BakeTextureMatrixIntoTexgen
+=====================
+*/
+void RB_BakeTextureMatrixIntoTexgen(idPlane lightProject[3], const float* textureMatrix) {
+  float genMatrix[16];
+  float final[16];
+
+  genMatrix[0] = lightProject[0][0];
+  genMatrix[4] = lightProject[0][1];
+  genMatrix[8] = lightProject[0][2];
+  genMatrix[12] = lightProject[0][3];
+
+  genMatrix[1] = lightProject[1][0];
+  genMatrix[5] = lightProject[1][1];
+  genMatrix[9] = lightProject[1][2];
+  genMatrix[13] = lightProject[1][3];
+
+  genMatrix[2] = 0;
+  genMatrix[6] = 0;
+  genMatrix[10] = 0;
+  genMatrix[14] = 0;
+
+  genMatrix[3] = lightProject[2][0];
+  genMatrix[7] = lightProject[2][1];
+  genMatrix[11] = lightProject[2][2];
+  genMatrix[15] = lightProject[2][3];
+
+  myGlMultMatrix(genMatrix, backEnd.lightTextureMatrix, final);
+
+  lightProject[0][0] = final[0];
+  lightProject[0][1] = final[4];
+  lightProject[0][2] = final[8];
+  lightProject[0][3] = final[12];
+
+  lightProject[1][0] = final[1];
+  lightProject[1][1] = final[5];
+  lightProject[1][2] = final[9];
+  lightProject[1][3] = final[13];
 }

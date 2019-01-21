@@ -1175,6 +1175,7 @@ srfTriangles_t *R_PolytopeSurface( int numPlanes, const idPlane *planes, idWindi
 ============================================================
 
 RENDER BACKEND
+ NB: Not touching to GLSL shader stuff. This is using classic OGL calls only.
 
 ============================================================
 */
@@ -1190,11 +1191,14 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 void RB_DetermineLightScale( void );
 void RB_BeginDrawingView (void);
 void RB_FogAllLights( void );
+void RB_GetShaderTextureMatrix(const float* shaderRegisters, const textureStage_t* texture, float matrix[16]);
+void RB_BakeTextureMatrixIntoTexgen(idPlane lightProject[3], const float* textureMatrix);
 
 /*
 ============================================================
 
 DRAW_GLSL
+ NB: Specific to GLSL shader stuff
 
 ============================================================
 */
@@ -1257,17 +1261,6 @@ void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2);
 void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 int  RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs);
 void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs);
-
-extern shaderProgram_t interactionShader;
-extern shaderProgram_t interactionPhongShader;
-extern shaderProgram_t fogShader;
-extern shaderProgram_t zfillShader;
-extern shaderProgram_t zfillClipShader;
-extern shaderProgram_t defaultSurfaceShader;
-extern shaderProgram_t diffuseCubeShader;
-extern shaderProgram_t skyboxCubeShader;
-extern shaderProgram_t reflectionCubeShader;
-extern shaderProgram_t stencilShadowShader;
 
 /*
 ============================================================

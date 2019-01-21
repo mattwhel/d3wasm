@@ -280,6 +280,7 @@ set(src_renderer
     renderer/RenderWorld_portals.cpp
     renderer/VertexCache.cpp
     renderer/draw_glsl.cpp
+    renderer/glsl/glsl_shaders.c
     renderer/draw_common.cpp
     renderer/tr_backend.cpp
     renderer/tr_deform.cpp
