@@ -690,7 +690,11 @@ int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	}
 
 	if ( nextWriteBlock != dwCurrentBlock ) {
+#ifdef NOMT
+  #else
 		Sys_Printf( "missed %d sound updates\n", dwCurrentBlock - nextWriteBlock );
+  #endif
+
 	}
 
 	int sampleTime = dwCurrentBlock * MIXBUFFER_SAMPLES;
