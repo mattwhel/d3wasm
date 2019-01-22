@@ -43,9 +43,7 @@ If you have questions concerning this license or the applicable additional terms
 #endif
 
 #if defined(__GNUC__)
-	#if !defined(__i386__) && !defined(__x86_64__)
-		#define NO_CPUID
-	#endif
+#define NO_CPUID
 #else
 #error unsupported compiler
 #endif
@@ -57,7 +55,7 @@ void Sys_FPU_SetDAZ(bool enable) {
 void Sys_FPU_SetFTZ(bool enable) {
 }
 #else
-
+#error unsupported compiler
 #if defined(__GNUC__)
 static inline void CPUid(int index, int *a, int *b, int *c, int *d) {
 #if __x86_64__
@@ -67,67 +65,69 @@ static inline void CPUid(int index, int *a, int *b, int *c, int *d) {
 #	define REG_b "ebx"
 #	define REG_S "esi"
 #endif
-	*a = *b = *c = *d = 0;
+  *a = *b = *c = *d = 0;
 
-	__asm__ volatile
-	(	"mov %%" REG_b ", %%" REG_S "\n\t"
-		"cpuid\n\t"
-		"xchg %%" REG_b ", %%" REG_S
-		:	"=a" (*a), "=S" (*b),
-			"=c" (*c), "=d" (*d)
-		: "0" (index));
+  __asm__ volatile
+  (	"mov %%" REG_b ", %%" REG_S "\n\t"
+    "cpuid\n\t"
+    "xchg %%" REG_b ", %%" REG_S
+    :	"=a" (*a), "=S" (*b),
+      "=c" (*c), "=d" (*d)
+    : "0" (index));
 }
 #else
 #error unsupported compiler
 #endif
 
-#define c_SSE3		(1 << 0)
-#define d_FXSAVE	(1 << 24)
+#define c_SSE3    (1 << 0)
+#define d_FXSAVE  (1 << 24)
 
 static inline bool HasDAZ() {
-	int a, b, c, d;
+  int a, b, c, d;
 
-	CPUid(0, &a, &b, &c, &d);
-	if (a < 1)
-		return false;
+  CPUid(0, &a, &b, &c, &d);
+  if ( a < 1 ) {
+    return false;
+  }
 
-	CPUid(1, &a, &b, &c, &d);
+  CPUid(1, &a, &b, &c, &d);
 
-	return (d & d_FXSAVE) == d_FXSAVE;
+  return ( d & d_FXSAVE) == d_FXSAVE;
 }
 
-#define MXCSR_DAZ	(1 << 6)
-#define MXCSR_FTZ	(1 << 15)
+#define MXCSR_DAZ  (1 << 6)
+#define MXCSR_FTZ  (1 << 15)
 
 #define STREFLOP_FSTCW(cw) do { asm volatile ("fstcw %0" : "=m" (cw) : ); } while (0)
 #define STREFLOP_FLDCW(cw) do { asm volatile ("fclex \n fldcw %0" : : "m" (cw)); } while (0)
 #define STREFLOP_STMXCSR(cw) do { asm volatile ("stmxcsr %0" : "=m" (cw) : ); } while (0)
 #define STREFLOP_LDMXCSR(cw) do { asm volatile ("ldmxcsr %0" : : "m" (cw) ); } while (0)
 
-static void EnableMXCSRFlag(int flag, bool enable, const char *name) {
-	int sse_mode;
+static void EnableMXCSRFlag(int flag, bool enable, const char* name) {
+  int sse_mode;
 
-	STREFLOP_STMXCSR(sse_mode);
+  STREFLOP_STMXCSR(sse_mode);
 
-	if (enable && (sse_mode & flag) == flag) {
-		common->Printf("%s mode is already enabled\n", name);
-		return;
-	}
+  if ( enable && ( sse_mode & flag ) == flag ) {
+    common->Printf("%s mode is already enabled\n", name);
+    return;
+  }
 
-	if (!enable && (sse_mode & flag) == 0) {
-		common->Printf("%s mode is already disabled\n", name);
-		return;
-	}
+  if ( !enable && ( sse_mode & flag ) == 0 ) {
+    common->Printf("%s mode is already disabled\n", name);
+    return;
+  }
 
-	if (enable) {
-		common->Printf("enabling %s mode\n", name);
-		sse_mode |= flag;
-	} else {
-		common->Printf("disabling %s mode\n", name);
-		sse_mode &= ~flag;
-	}
+  if ( enable ) {
+    common->Printf("enabling %s mode\n", name);
+    sse_mode |= flag;
+  }
+  else {
+    common->Printf("disabling %s mode\n", name);
+    sse_mode &= ~flag;
+  }
 
-	STREFLOP_LDMXCSR(sse_mode);
+  STREFLOP_LDMXCSR(sse_mode);
 }
 
 /*
@@ -136,12 +136,12 @@ Sys_FPU_SetDAZ
 ================
 */
 void Sys_FPU_SetDAZ(bool enable) {
-	if (!HasDAZ()) {
-		common->Printf("this CPU doesn't support Denormals-Are-Zero\n");
-		return;
-	}
+  if ( !HasDAZ()) {
+    common->Printf("this CPU doesn't support Denormals-Are-Zero\n");
+    return;
+  }
 
-	EnableMXCSRFlag(MXCSR_DAZ, enable, "Denormals-Are-Zero");
+  EnableMXCSRFlag(MXCSR_DAZ, enable, "Denormals-Are-Zero");
 }
 
 /*
@@ -150,8 +150,9 @@ Sys_FPU_SetFTZ
 ================
 */
 void Sys_FPU_SetFTZ(bool enable) {
-	EnableMXCSRFlag(MXCSR_FTZ, enable, "Flush-To-Zero");
+  EnableMXCSRFlag(MXCSR_FTZ, enable, "Flush-To-Zero");
 }
+
 #endif
 
 /*
@@ -159,22 +160,26 @@ void Sys_FPU_SetFTZ(bool enable) {
 Sys_GetProcessorId
 ================
 */
-int Sys_GetProcessorId( void ) {
-	int flags = CPUID_GENERIC;
+int Sys_GetProcessorId(void) {
+  int flags = CPUID_GENERIC;
 
-	if (SDL_HasMMX())
-		flags |= CPUID_MMX;
+  if ( SDL_HasMMX()) {
+    flags |= CPUID_MMX;
+  }
 
-	if (SDL_HasSSE())
-		flags |= CPUID_SSE;
+  if ( SDL_HasSSE()) {
+    flags |= CPUID_SSE;
+  }
 
-	if (SDL_HasSSE2())
-		flags |= CPUID_SSE2;
+  if ( SDL_HasSSE2()) {
+    flags |= CPUID_SSE2;
+  }
 
-	if (SDL_HasSSE3())
-		flags |= CPUID_SSE3;
+  if ( SDL_HasSSE3()) {
+    flags |= CPUID_SSE3;
+  }
 
-	return flags;
+  return flags;
 }
 
 /*

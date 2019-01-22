@@ -40,9 +40,6 @@ If you have questions concerning this license or the applicable additional terms
 ===============================================================================
 */
 
-// Unix
-#ifdef __unix__
-
 #define _alloca						alloca
 #define _alloca16( x )				((void *)((((uintptr_t)alloca( (x)+15 )) + 15) & ~15))
 
@@ -66,20 +63,13 @@ If you have questions concerning this license or the applicable additional terms
 
 #define assertmem( x, y )
 
-#endif
-
-
 #ifdef __GNUC__
 #define id_attribute(x) __attribute__(x)
 #else
 #define id_attribute(x)
 #endif
 
-	#include <inttypes.h>
-
-	#if defined(__MINGW32__)
-	#include <malloc.h>
-#endif
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -94,27 +84,27 @@ If you have questions concerning this license or the applicable additional terms
 
 #define ID_TIME_T time_t
 
-typedef unsigned char			byte;		// 8 bits
-typedef unsigned short			word;		// 16 bits
-typedef unsigned int			dword;		// 32 bits
-typedef unsigned int			uint;
-typedef unsigned long			ulong;
+typedef unsigned char byte;    // 8 bits
+typedef unsigned short word;    // 16 bits
+typedef unsigned int dword;    // 32 bits
+typedef unsigned int uint;
+typedef unsigned long ulong;
 
-typedef int						qhandle_t;
+typedef int qhandle_t;
 
 #ifndef NULL
-#define NULL					((void *)0)
+#define NULL          ((void *)0)
 #endif
 
 #ifndef BIT
-#define BIT( num )				( 1 << ( num ) )
+#define BIT(num)        ( 1 << ( num ) )
 #endif
 
-#define	MAX_STRING_CHARS		1024		// max length of a string
+#define  MAX_STRING_CHARS    1024    // max length of a string
 
 // maximum world size
-#define MAX_WORLD_COORD			( 128 * 1024 )
-#define MIN_WORLD_COORD			( -128 * 1024 )
-#define MAX_WORLD_SIZE			( MAX_WORLD_COORD - MIN_WORLD_COORD )
+#define MAX_WORLD_COORD      ( 128 * 1024 )
+#define MIN_WORLD_COORD      ( -128 * 1024 )
+#define MAX_WORLD_SIZE      ( MAX_WORLD_COORD - MIN_WORLD_COORD )
 
 #endif

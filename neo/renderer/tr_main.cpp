@@ -26,9 +26,6 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
-#ifdef __ppc__
-#include <vecLib/vecLib.h>
-#endif
 #if defined(__GNUC__) && defined(__SSE2__)
 #include <xmmintrin.h>
 #endif

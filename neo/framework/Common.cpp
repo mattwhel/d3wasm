@@ -93,11 +93,7 @@ idCVar com_memoryMarker("com_memoryMarker", "-1", CVAR_INTEGER | CVAR_SYSTEM | C
 idCVar com_preciseTic("com_preciseTic", "1", CVAR_BOOL | CVAR_SYSTEM, "run one game tick every async thread update");
 idCVar com_asyncInput("com_asyncInput", "0", CVAR_BOOL | CVAR_SYSTEM, "sample input from the async thread");
 #define ASYNCSOUND_INFO "0: mix sound inline, 1: memory mapped async mix, 2: callback mixing, 3: write async mix"
-#if defined( __unix__ )
 idCVar com_asyncSound( "com_asyncSound", "3", CVAR_INTEGER|CVAR_SYSTEM|CVAR_ROM, ASYNCSOUND_INFO );
-#else
-idCVar com_asyncSound("com_asyncSound", "1", CVAR_INTEGER | CVAR_SYSTEM, ASYNCSOUND_INFO, 0, 1);
-#endif
 idCVar com_forceGenericSIMD("com_forceGenericSIMD", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT,
                             "force generic platform independent SIMD");
 idCVar com_developer("developer", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT, "developer mode");
@@ -1265,11 +1261,7 @@ static void Com_Crash_f(const idCmdArgs &args) {
     return;
   }
 
-#ifdef __GNUC__
   __builtin_trap();
-#else
-  *(int *) 0 = 0x12345678;
-#endif
 }
 
 /*
@@ -1320,7 +1312,7 @@ void Com_ExecMachineSpec_f(const idCmdArgs &args) {
 
 #ifdef NOMT
   cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ROM );	// No multithreading
-  cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
+  //cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
 #endif
 
 #if 1
