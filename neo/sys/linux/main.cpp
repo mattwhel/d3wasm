@@ -290,6 +290,7 @@ extern "C" void emloopcb() {
 }
 
 void emmain() {
+  common->Printf("Entering main loop!\n");
 	emscripten_set_main_loop(emloopcb,0,false);
 }
 

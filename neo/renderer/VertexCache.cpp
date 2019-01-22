@@ -133,6 +133,8 @@ idVertexCache::Init
 ===========
 */
 void idVertexCache::Init() {
+  common->Printf("Init Vertex Cache\n");
+
 	cmdSystem->AddCommand( "listVertexCache", R_ListVertexCache_f, CMD_FL_RENDERER, "lists vertex cache" );
 
 	if ( r_vertexBufferMegs.GetInteger() < 8 ) {
@@ -157,6 +159,7 @@ void idVertexCache::Init() {
   staticAllocTotal = 0;
   staticCountTotal = 0;
 
+  // Allocate the temporary buffers (number of temporary buffers is NUM_VERTEX_FRAMES)
 	byte	*junk = (byte *)Mem_Alloc( frameBytes );
 	for ( int i = 0 ; i < NUM_VERTEX_FRAMES ; i++ ) {
 		allocatingTempBuffer = true;	// force the alloc to use GL_STREAM_DRAW_ARB

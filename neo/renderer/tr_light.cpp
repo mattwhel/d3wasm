@@ -102,8 +102,6 @@ void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
     return;
   }
   else {
-    common->Printf("CreatePrivateShadowCache\n");
-
     // Build the shadow cache
 
     // Free the existing one if it exists
@@ -174,7 +172,6 @@ R_WobbleskyTexGen
 ==================
 */
 void R_WobbleskyTexGen(drawSurf_t* surf, const idVec3& viewOrg) {
-  int i;
   idVec3 localViewOrigin;
 
   const int* parms = surf->material->GetTexGenRegisters();
