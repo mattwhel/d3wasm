@@ -324,7 +324,7 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&defaultSurfaceShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(defaultSurfaceShaderVP, &defaultSurfaceShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(diffuseMapShaderFP,     &defaultSurfaceShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(diffuseMapShaderFP, &defaultSurfaceShader, GL_FRAGMENT_SHADER);
 
   if ( !R_LinkGLSLShader(&defaultSurfaceShader, "defaultSurface") && !R_ValidateGLSLProgram(&defaultSurfaceShader)) {
     return false;
@@ -338,7 +338,7 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&skyboxCubeShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(skyboxCubeShaderVP, &skyboxCubeShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(cubeMapShaderFP,    &skyboxCubeShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP, &skyboxCubeShader, GL_FRAGMENT_SHADER);
 
   if ( !R_LinkGLSLShader(&skyboxCubeShader, "skyboxCubeShader") && !R_ValidateGLSLProgram(&skyboxCubeShader)) {
     return false;
@@ -352,9 +352,10 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&reflectionCubeShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(reflectionCubeShaderVP, &reflectionCubeShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(cubeMapShaderFP,        &reflectionCubeShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP, &reflectionCubeShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&reflectionCubeShader, "reflectionCubeShader") && !R_ValidateGLSLProgram(&reflectionCubeShader)) {
+  if ( !R_LinkGLSLShader(&reflectionCubeShader, "reflectionCubeShader") &&
+       !R_ValidateGLSLProgram(&reflectionCubeShader)) {
     return false;
   }
   else {
@@ -366,7 +367,7 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&diffuseCubeShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(diffuseCubeShaderVP, &diffuseCubeShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(cubeMapShaderFP,     &diffuseCubeShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP, &diffuseCubeShader, GL_FRAGMENT_SHADER);
 
   if ( !R_LinkGLSLShader(&diffuseCubeShader, "diffuseCubeShader") && !R_ValidateGLSLProgram(&diffuseCubeShader)) {
     return false;
@@ -616,6 +617,10 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
   // change the scissor if needed
   if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(surf->scissorRect)) {
     backEnd.currentScissor = surf->scissorRect;
+    if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
+        ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
+      backEnd.currentScissor = backEnd.viewDef->scissor;
+    }
     qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
                backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
                backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
@@ -758,7 +763,7 @@ RB_GLSL_CreateDrawInteractions
 
 =============
 */
-static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int depthFunc = GLS_DEPTHFUNC_EQUAL ) {
+static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int depthFunc = GLS_DEPTHFUNC_EQUAL) {
   if ( !surf ) {
     return;
   }
@@ -803,7 +808,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                            ac->xyz.ToFloatPtr());
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                           (void*)&ac->color);
+                           (void*) &ac->color);
 
     // this may cause RB_GLSL_DrawInteraction to be exacuted multiple
     // times with different colors and images if the surface or light have multiple layers
@@ -880,10 +885,13 @@ void RB_GLSL_DrawInteractions(void) {
 
     // clear the stencil buffer if needed
     if ( vLight->globalShadows || vLight->localShadows ) {
-      // Current scissor
-      backEnd.currentScissor = vLight->scissorRect;
 
-      if ( r_useScissor.GetBool()) {
+      if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(vLight->scissorRect)) {
+        backEnd.currentScissor = vLight->scissorRect;
+        if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
+            ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
+          backEnd.currentScissor = backEnd.viewDef->scissor;
+        }
         qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
                    backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
                    backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
@@ -988,10 +996,15 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
     // change the scissor if needed
     if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(drawSurf->scissorRect)) {
       backEnd.currentScissor = drawSurf->scissorRect;
+      if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
+          ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
+        backEnd.currentScissor = backEnd.viewDef->scissor;
+      }
       qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
                  backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
                  backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
                  backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
+
     }
 
     // render it
@@ -1011,13 +1024,14 @@ RB_FogPass
 ==================
 */
 void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2) {
-  const srfTriangles_t* frustumTris = backEnd.vLight->frustumTris;
+
   drawSurf_t ds;
   const idMaterial* lightShader;
   const shaderStage_t* stage;
   const float* regs;
 
   // create a surface for the light frustom triangles, which are oriented drawn side out
+  const srfTriangles_t* frustumTris = backEnd.vLight->frustumTris;
 
   // if we ran out of vertex cache memory, skip it
   if ( !frustumTris->ambientCache ) {
@@ -1441,11 +1455,14 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // If clip planes are enabled in the view, use he "Clip" version of zfill shader
   // and enable the second texture for mirror plane clipping if needed
   if ( backEnd.viewDef->numClipPlanes ) {
+    // Use he zfillClip shader
     GL_UseProgram(&zfillClipShader);
+
+    // Bind the Texture 1 to alphaNotchImage
     GL_SelectTexture(1);
     globalImages->alphaNotchImage->Bind();
 
-    // Be sure to reactivate Texture 0, as it will be bound later on
+    // Be sure to reactivate Texture 0, as it will be bound right after
     GL_SelectTexture(0);
   }
     // If no clip planes, just use the regular zfill shader
@@ -1453,6 +1470,9 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     GL_UseProgram(&zfillShader);
   }
 
+  // Enable the Vertex attributes arrays
+  // Vertex attribute is always enabled
+  // TexCoords
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // Texture 0 will be used for alpha tested surfaces. It should be already active.
@@ -1497,6 +1517,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     // Active shader: zfill or zfillClip
     // Tex0: active, and bound to whiteImage
     // Tex1: if zfillClip shader, bound to alphaNotchImage
+    // Attributes arrays enabled: Vertex, TexCoord
     // Texture matrix: identity
     // Alpha test: always pass
     // DepthFunc: LESS
@@ -1522,6 +1543,10 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     // change the scissor if needed
     if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(drawSurf->scissorRect)) {
       backEnd.currentScissor = drawSurf->scissorRect;
+      if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
+          ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
+        backEnd.currentScissor = backEnd.viewDef->scissor;
+      }
       qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
                  backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
                  backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
@@ -1556,12 +1581,13 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Restore current space to NULL
   backEnd.currentSpace = NULL;
 
+  // Disable TexCoord array
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+
   // Invariants to match that may have changed:
   // Tex1 bound to NULL
   // Tex0 active, and bound to NULL
   // No shaders active
-
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // Bind Tex1 to NULL
   if ( backEnd.viewDef->numClipPlanes ) {
@@ -1625,10 +1651,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   // change the scissor if needed
   if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(surf->scissorRect)) {
     backEnd.currentScissor = surf->scissorRect;
+    if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
+        ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
+      backEnd.currentScissor = backEnd.viewDef->scissor;
+    }
     qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
                backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
                backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
                backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
+
   }
 
   // set polygon offset if necessary
@@ -1643,7 +1674,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
   // Quick and dirty hacks on the depth range
   // NB: must be restored at end of process
-  if ( surf->space->weaponDepthHack && surf->space->modelDepthHack == 0.0f) {
+  if ( surf->space->weaponDepthHack && surf->space->modelDepthHack == 0.0f ) {
     qglDepthRangef(0, 0.5);
   }
 
@@ -1817,8 +1848,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup the texture matrix like original D3 code does: using the transpose modelViewMatrix
         // NB: this is curious, not sure why this is done like this....
-        float	mat[16];
-        R_TransposeGLMatrix( backEnd.viewDef->worldSpace.modelViewMatrix, mat );
+        float mat[16];
+        R_TransposeGLMatrix(backEnd.viewDef->worldSpace.modelViewMatrix, mat);
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat);
       }
       else {  // TG_EXPLICIT
@@ -1858,7 +1889,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
       // Setup the Color pointer
       GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                             (void*)&ac->color);
+                             (void*) &ac->color);
 
       // Setup the Color modulation
       switch ( pStage->vertexColor ) {
@@ -1982,7 +2013,7 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
     }
 
     // only dump if in a 3d view
-    if (backEnd.viewDef->viewEntitys) {
+    if ( backEnd.viewDef->viewEntitys ) {
       globalImages->currentRenderImage->CopyFramebuffer(backEnd.viewDef->viewport.x1,
                                                         backEnd.viewDef->viewport.y1,
                                                         backEnd.viewDef->viewport.x2 - backEnd.viewDef->viewport.x1 + 1,
@@ -2165,6 +2196,11 @@ been set to 128 on any surfaces that might receive shadows
 =====================
 */
 void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs) {
+
+  //////////////
+  // Skip cases
+  //////////////
+
   if ( !r_shadows.GetBool()) {
     return;
   }
@@ -2173,18 +2209,19 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs) {
     return;
   }
 
+  //////////////////
+  // Setup GL state
+  //////////////////
+
   // Initial expected GL state:
   // Texture 0 is active, and bound to NULL
-  // Vertex attribute array is enabled for every shader
-  // All other attributes array are disabled
   // No shaders active
-  // We don't care about uniforms state
 
   // Use the stencil shadow shader
   GL_UseProgram(&stencilShadowShader);
 
   // Enable the Vertex attributes arrays
-  // Vertex attrib is already enabled
+  // NB: Vertex attrib is already enabled
 
   // don't write to the color buffer, just the stencil buffer
   GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
