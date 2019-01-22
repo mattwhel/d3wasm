@@ -931,7 +931,6 @@ GL wrapper/helper functions
 */
 
 void	GL_SelectTexture( int unit );
-void  GL_EnableVertexAttribArray(GLuint index);
 void	GL_CheckErrors( void );
 void	GL_ClearStateDelta( void );
 void	GL_State( int stateVector );
@@ -1243,6 +1242,9 @@ typedef struct shaderProgram_s {
 } shaderProgram_t;
 
 void GL_UseProgram(shaderProgram_t *program);
+void GL_EnableVertexAttribArray(GLuint index);
+void GL_DisableVertexAttribArray(GLuint index);
+
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
 void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2);

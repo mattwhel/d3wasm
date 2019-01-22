@@ -104,6 +104,15 @@ void GL_EnableVertexAttribArray(GLuint index) {
 
 /*
 ====================
+GL_DisableVertexAttribArray
+====================
+*/
+void GL_DisableVertexAttribArray(GLuint index) {
+  qglDisableVertexAttribArray(*( GLint * )((char*) backEnd.glState.currentProgram + index));
+}
+
+/*
+====================
 GL_VertexAttribPointer
 ====================
 */
@@ -266,25 +275,8 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
   shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
 
-  // Enable the arrays for existing attributes
-  if ( shader->attr_Vertex != -1 ) {
-    GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
-  }
-  if ( shader->attr_TexCoord != -1 ) {
-    GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
-  }
-  if ( shader->attr_Tangent != -1 ) {
-    GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-  }
-  if ( shader->attr_Bitangent != -1 ) {
-    GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-  }
-  if ( shader->attr_Normal != -1 ) {
-    GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-  }
-  if ( shader->attr_Color != -1 ) {
-    GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
-  }
+  // Always enable the vertex attribute array
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
 
   GL_CheckErrors();
 
@@ -782,6 +774,14 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
     GL_UseProgram(&interactionShader);
   }
 
+  // Enable the Vertex attributes arrays
+  // Vertex attrib is already enabled
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
+
   for ( ; surf; surf = surf->nextOnLight ) {
     // perform setup here that will not change over multiple interaction passes
 
@@ -810,6 +810,14 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
     RB_GLSL_CreateSingleDrawInteractions(surf, RB_GLSL_DrawInteraction);
   }
 
+  // Disable the Vertex attributes arrays
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
+
+  // Cleanup the texture bindings
   GL_SelectTexture(4);
   globalImages->BindNull();
 
@@ -1445,6 +1453,8 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     GL_UseProgram(&zfillShader);
   }
 
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+
   // Texture 0 will be used for alpha tested surfaces. It should be already active.
   // Bind it to white image by default
   globalImages->whiteImage->Bind();
@@ -1550,6 +1560,8 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Tex1 bound to NULL
   // Tex0 active, and bound to NULL
   // No shaders active
+
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
   // Bind Tex1 to NULL
   if ( backEnd.viewDef->numClipPlanes ) {
@@ -1742,6 +1754,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         // FIXME: not tested, because never see an example in the game. Possible that normals should be transformed
         //  by a normal matrix in the shader ??
 
+        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+
         // Setup normal array
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
@@ -1792,6 +1806,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // NB: there is also the variant "Bump reflect cube". This is not implemented for now.
 
+        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+
         // Setup the normals
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
@@ -1805,9 +1821,11 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         R_TransposeGLMatrix( backEnd.viewDef->worldSpace.modelViewMatrix, mat );
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat);
       }
-      else {
+      else {  // TG_EXPLICIT
         // Otherwise, this is just regular surface shader with explicit texcoords
         GL_UseProgram(&defaultSurfaceShader);
+
+        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
 
         // Setup the TexCoord pointer
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
@@ -1835,6 +1853,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
       // Setup the Color uniform
       GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
+
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
       // Setup the Color pointer
       GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
@@ -1877,6 +1897,31 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       /////////////////////////////////////////////
       // Restore everything to an acceptable state
       /////////////////////////////////////////////
+
+      // Disable color attributes array
+      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
+
+      // Disable the other attributes array
+      if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
+        GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+      }
+      else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
+      }
+      else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
+      }
+      else if ( pStage->texture.texgen == TG_SCREEN ) {
+      }
+      else if ( pStage->texture.texgen == TG_SCREEN2 ) {
+      }
+      else if ( pStage->texture.texgen == TG_GLASSWARP ) {
+      }
+      else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
+        GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+      }
+      else {
+        GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+      }
+
       // unset privatePolygonOffset if necessary
       if ( pStage->privatePolygonOffset && !surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
         qglDisable(GL_POLYGON_OFFSET_FILL);
@@ -2137,6 +2182,9 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs) {
 
   // Use the stencil shadow shader
   GL_UseProgram(&stencilShadowShader);
+
+  // Enable the Vertex attributes arrays
+  // Vertex attrib is already enabled
 
   // don't write to the color buffer, just the stencil buffer
   GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);

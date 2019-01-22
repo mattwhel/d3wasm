@@ -49,7 +49,6 @@ void RB_SetDefaultGLState( void ) {
 	// No shaders set by default
 	GL_UseProgram(NULL);
 
-	//
 	// make sure our GL state vector is set correctly
 	//
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
