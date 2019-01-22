@@ -182,13 +182,7 @@ void idGuiModel::EmitSurface( guiModelSurface_t *surf, float modelMatrix[16], fl
 
 	// move the verts to the vertex cache
 	tri->ambientCache = vertexCache.AllocFrameTemp( tri->verts, tri->numVerts * sizeof( tri->verts[0] ), false );
-
-	// if we are out of vertex cache, don't create the surface
-	if ( !tri->ambientCache ) {
-		return;
-	}
-
-	tri->indexCache = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), true );
+	tri->indexCache   = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), true );
 
 	renderEntity_t renderEntity;
 	memset( &renderEntity, 0, sizeof( renderEntity ) );

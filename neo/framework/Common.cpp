@@ -2922,6 +2922,10 @@ void idCommonLocal::InitGame(void) {
   // initialize the renderSystem data structures, but don't start OpenGL yet
   renderSystem->Init();
 
+  // Well, start it now, because we will need VBO caches for everything (even to print loading messages)
+  // init OpenGL, which will open a window and connect sound and input hardware
+  InitRenderSystem();
+
   // initialize string database right off so we can use it for loading messages
   InitLanguageDict();
 
@@ -2971,15 +2975,6 @@ void idCommonLocal::InitGame(void) {
 
   // init async network
   idAsyncNetwork::Init();
-
-  //if (idAsyncNetwork::serverDedicated.GetInteger() == 1) {
-    //idAsyncNetwork::server.InitPort();
-  //  cvarSystem->SetCVarBool("s_noSound", true);
-  //} else {
-    // init OpenGL, which will open a window and connect sound and input hardware
-    PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04348"));
-    InitRenderSystem();
-  //}
 
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04349"));
 

@@ -531,16 +531,17 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   GL_Uniform4fv(offsetof(shaderProgram_t, specularMatrixT), din->specularMatrix[1].ToFloatPtr());
 
   switch ( din->vertexColor ) {
-    case SVC_IGNORE:
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), zero);
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
-      break;
     case SVC_MODULATE:
       GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), one);
       GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), zero);
       break;
     case SVC_INVERSE_MODULATE:
       GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), negOne);
+      GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
+      break;
+    case SVC_IGNORE:
+    default:
+      GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), zero);
       GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
       break;
   }
@@ -790,6 +791,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
 
     // set the vertex pointers
     idDrawVert* ac = (idDrawVert*) vertexCache.Position(surf->geo->ambientCache);
+
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                            ac->normal.ToFloatPtr());
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Bitangent), 3, GL_FLOAT, false, sizeof(idDrawVert),
@@ -798,11 +800,10 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
                            ac->tangents[0].ToFloatPtr());
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
                            ac->st.ToFloatPtr());
-
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                            ac->xyz.ToFloatPtr());
     GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                           ac->color);
+                           (void*)&ac->color);
 
     // this may cause RB_GLSL_DrawInteraction to be exacuted multiple
     // times with different colors and images if the surface or light have multiple layers
@@ -941,6 +942,7 @@ static void RB_T_GLSL_BasicFog(const drawSurf_t* surf) {
   }
 
   idDrawVert* ac = (idDrawVert*) vertexCache.Position(surf->geo->ambientCache);
+
   GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                          ac->xyz.ToFloatPtr());
 
@@ -1742,7 +1744,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
         // Setup normal array
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
-          ac->normal.ToFloatPtr());
+                               ac->normal.ToFloatPtr());
 
         // Setup the texture matrix to identity
         // Note: not sure, in original D3 it looks like having diffuse cube with texture matrix other than identity is a possible case.
@@ -1808,8 +1810,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         GL_UseProgram(&defaultSurfaceShader);
 
         // Setup the TexCoord pointer
-        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord),
-          2, GL_FLOAT, false, sizeof(idDrawVert), ac->st.ToFloatPtr());
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
+                               ac->st.ToFloatPtr());
 
         // Setup the texture matrix
         if ( pStage->texture.hasMatrix ) {
@@ -1836,11 +1838,10 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
       // Setup the Color pointer
       GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                             (void*) &ac->color);
+                             (void*)&ac->color);
 
       // Setup the Color modulation
       switch ( pStage->vertexColor ) {
-        default:
         case SVC_MODULATE:
           GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), one);
           GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), zero);
@@ -1850,6 +1851,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
           GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
         case SVC_IGNORE:
+        default:
           GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), zero);
           GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
