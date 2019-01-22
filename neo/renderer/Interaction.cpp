@@ -1133,7 +1133,7 @@ void idInteraction::AddActiveInteraction( void ) {
           // Create the private index cache if needed
           // GAB NOTE: If it is already existing, let's reuse the existing one. Not sure why it works...
           if ( !lightTris->indexCache ) {
-            vertexCache.Alloc( lightTris->indexes, lightTris->numIndexes * sizeof( lightTris->indexes[0] ), &lightTris->indexCache, true );
+            vertexCache.Alloc( lightTris->indexes, lightTris->numIndexes * sizeof( glIndex_t ), &lightTris->indexCache, true );
           }
 
           vertexCache.Touch( lightTris->indexCache );
@@ -1190,30 +1190,17 @@ void idInteraction::AddActiveInteraction( void ) {
 
 			// if we are using shared shadowVertexes and letting a vertex program fix them up,
 			// get the shadowCache from the parent ambient surface
-			if ( !shadowTris->shadowVertexes ) {
-        common->Printf("La!!");
-				// the data may have been purged, so get the latest from the "home position"
-				shadowTris->shadowCache = sint->ambientTris->shadowCache;
-				if ( shadowTris->indexCache ) {
-				  vertexCache.Free(shadowTris->indexCache);
-				  shadowTris->indexCache = NULL;
-        }
-				vertexCache.Alloc( shadowTris->indexes, shadowTris->numIndexes * sizeof( shadowTris->indexes[0] ), &shadowTris->indexCache, true );
-      }
-
 			// if we have been purged, re-upload the shadowVertexes
 			if ( !shadowTris->shadowCache ) {
 				if ( shadowTris->shadowVertexes ) {
 					// each interaction has unique vertexes
 					R_CreatePrivateShadowCache( shadowTris );
 				} else {
-				  common->Printf("Ici!!");
 					R_CreateVertexProgramShadowCache(sint->ambientTris);
-					if ( shadowTris->indexCache ) {
-            vertexCache.Free(shadowTris->indexCache);
-            shadowTris->indexCache = NULL;
-          }
-          vertexCache.Alloc( shadowTris->indexes, shadowTris->numIndexes * sizeof( shadowTris->indexes[0] ), &shadowTris->indexCache, true );
+          shadowTris->shadowCache = sint->ambientTris->shadowCache;
+					if ( !shadowTris->indexCache ){
+            vertexCache.Alloc( shadowTris->indexes, shadowTris->numIndexes * sizeof( glIndex_t ), &shadowTris->indexCache, true );
+					}
         }
 				// if we are out of vertex cache space, skip the interaction
 				if ( !shadowTris->shadowCache ) {

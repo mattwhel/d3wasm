@@ -1211,7 +1211,7 @@ static void R_ParticleDeform( drawSurf_t *surf, bool useArea ) {
 				}
 				tri->numIndexes = indexes;
 				tri->ambientCache = vertexCache.AllocFrameTemp( tri->verts, tri->numVerts * sizeof( idDrawVert ), false );
-				tri->indexCache = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( tri->indexes[0] ), true );
+				tri->indexCache = vertexCache.AllocFrameTemp( tri->indexes, tri->numIndexes * sizeof( glIndex_t ), true );
 
 				// add the drawsurf
 				R_AddDrawSurf( tri, surf->space, renderEntity, stage->material, surf->scissorRect );

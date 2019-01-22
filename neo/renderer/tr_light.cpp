@@ -83,7 +83,7 @@ bool R_CreateAmbientCache(srfTriangles_t* tri, bool needsLighting) {
         tri->indexCache = NULL;
       }
       // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(glIndex_t), &tri->indexCache, true);
 
       // Check for errors
       if ( !tri->indexCache ) {
@@ -94,7 +94,7 @@ bool R_CreateAmbientCache(srfTriangles_t* tri, bool needsLighting) {
   }
   else {
     // There is already an ambiant cache. Let's reuse it.
-    common->Printf("Already existing ambient cache\n");
+    //common->Printf("Already existing ambient cache\n");
   }
 
   return true;
@@ -133,7 +133,7 @@ void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
         tri->indexCache = NULL;
       }
       // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(glIndex_t), &tri->indexCache, true);
 
       // Check for errors
       if ( !tri->indexCache ) {
@@ -144,7 +144,7 @@ void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
   }
   else {
     // There is already a shadow cache. Let's reuse it.
-    common->Printf("Already existing shadow cache\n");
+    //common->Printf("Already existing shadow cache\n");
   }
 
   return;
@@ -181,26 +181,12 @@ void R_CreateVertexProgramShadowCache(srfTriangles_t* tri) {
     }
       // If it have been successfully build, build the shadow index cache too
     else {
-      // Free the existing index cache first in case it was already existing
-      if ( tri->indexCache ) {
-        common->Warning("R_CreateVertexProgramShadowCache: attempt to overwrite an existing index cache. "
-                        "Automatically free it first...\n");
-        vertexCache.Free(tri->indexCache);
-        tri->indexCache = NULL;
-      }
-      // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
-
-      // Check for errors
-      if ( !tri->indexCache ) {
-        common->Error("Unable to create an index cache\n");
-        return;
-      }
+      // The vertex program shadow caches does not need index caches, are it is always reused by other Tris that compute their own indices
     }
   }
   else {
     // There is already a shadow cache. Let's reuse it.
-    common->Printf("Already existing VP shadow cache\n");
+    //common->Printf("Already existing VP shadow cache\n");
   }
 
   return;
