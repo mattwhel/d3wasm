@@ -53,37 +53,48 @@ Create it if needed
 ==================
 */
 bool R_CreateAmbientCache(srfTriangles_t* tri, bool needsLighting) {
-  // Do nothing if there is no vertexes. This is a pathological case
-  if ( !tri->verts || !tri->indexes ) {
-    common->Warning("Tri have no vertex or indices. This is a bug.\n");
+  // Check for errors
+  if ( !tri->verts && !tri->indexes ) {
+    common->Error("Tri have no vertices or indices\n");
     return false;
   }
-  else {
-    // Ambient cache needs to be computed
-
+    // If there is no ambient cache, let's compute it
+  else if ( !tri->ambientCache ) {
     // we are going to use it for drawing, so make sure we have the tangents and normals
     if ( needsLighting && !tri->tangentsCalculated ) {
       R_DeriveTangents(tri);
     }
 
-    // Free the existing one if it exists
-    if (tri->ambientCache) {
-      vertexCache.Free( tri->ambientCache );
-      tri->ambientCache = NULL;
-    }
     // Build the ambient cache
     vertexCache.Alloc(tri->verts, tri->numVerts * sizeof(tri->verts[0]), &tri->ambientCache, false);
 
-    // If it have been successfully build, build the index cache too and return OK
-    if ( tri->ambientCache ) {
+    // Check for errors
+    if ( !tri->ambientCache ) {
+      common->Error("Unable to create an ambient cache\n");
+      return false;
+    }
+      // If it have been successfully build, build the index cache too
+    else {
       // Free the existing index cache first in case it was already existing
       if ( tri->indexCache ) {
+        common->Warning(
+          "R_CreateAmbientCache: attempt to overwrite an existing index cache. Automatically free it first...\n");
         vertexCache.Free(tri->indexCache);
         tri->indexCache = NULL;
       }
-      // and alloc a new one
+      // And build the new one
       vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+
+      // Check for errors
+      if ( !tri->indexCache ) {
+        common->Error("Unable to create an index cache\n");
+        return false;
+      }
     }
+  }
+  else {
+    // There is already an ambiant cache. Let's reuse it.
+    common->Printf("Already existing ambient cache\n");
   }
 
   return true;
@@ -97,31 +108,43 @@ This is used only for a specific light
 ==================
 */
 void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
-  // Do nothing if there is no shadow vertexes
-  if ( !tri->shadowVertexes || !tri->indexes ) {
+  // Check for errors
+  if ( !tri->shadowVertexes && !tri->indexes ) {
+    common->Error("Tri have no shadow vertices or indices.\n");
     return;
   }
-  else {
+    // If there is no ambient cache, let's compute it
+  else if ( !tri->shadowCache ) {
     // Build the shadow cache
-
-    // Free the existing one if it exists
-    if (tri->shadowCache) {
-      vertexCache.Free( tri->shadowCache );
-      tri->shadowCache = NULL;
-    }
-    // Build the new one
     vertexCache.Alloc(tri->shadowVertexes, tri->numVerts * sizeof(*tri->shadowVertexes), &tri->shadowCache, false);
 
-    // If it have been successfully build, build the index cache too
-    if ( tri->shadowCache ) {
-      // Free the existing indexCache
-      if ( tri->indexCache ) {
-        vertexCache.Free(tri->indexCache);
-        tri->indexCache = NULL;
+    // Check for errors
+    if ( !tri->shadowCache ) {
+      common->Error("Unable to create a vertex cache\n");
+      return;
+    }
+      // If it have been successfully build, build the shadow index cache too
+    else {
+      // Free the existing index cache first in case it was already existing
+      if ( tri->shadowIndexCache ) {
+        common->Warning(
+          "R_CreatePrivateShadowCache: attempt to overwrite an existing index cache. Automatically free it first...\n");
+        vertexCache.Free(tri->shadowIndexCache);
+        tri->shadowIndexCache = NULL;
       }
       // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->shadowIndexCache, true);
+
+      // Check for errors
+      if ( !tri->shadowIndexCache ) {
+        common->Error("Unable to create an index cache\n");
+        return;
+      }
     }
+  }
+  else {
+    // There is already a shadow cache. Let's reuse it.
+    common->Printf("Already existing shadow cache\n");
   }
 
   return;
@@ -137,30 +160,47 @@ takes care of projecting the verts to infinity.
 ==================
 */
 void R_CreateVertexProgramShadowCache(srfTriangles_t* tri) {
-  if ( tri->verts == NULL || tri->indexes == NULL ) {
-    // Oops...
+// Check for errors
+  if ( !tri->verts ) {
+    common->Error("Tri have no vertices\n");
     return;
-  } else {
-    // Let's build the shadow cache
+  }
+    // If there is no shadow cache, let's compute it
+  else if ( !tri->shadowCache ) {
+    // Build the temporary precomputed shadow vertices
     shadowCache_t* temp = (shadowCache_t*) _alloca16(tri->numVerts * 2 * sizeof(shadowCache_t));
-
     SIMDProcessor->CreateVertexProgramShadowCache(&temp->xyz, tri->verts, tri->numVerts);
 
-    // Free the existing one if it exists
-    if (tri->shadowCache) {
-      vertexCache.Free( tri->shadowCache );
-      tri->shadowCache = NULL;
-    }
+    // Build the shadow cache
     vertexCache.Alloc(temp, tri->numVerts * 2 * sizeof(shadowCache_t), &tri->shadowCache, false);
 
-    // If it have been successfully build, build the index cache too and return OK
-    if ( tri->shadowCache ) {
-      if ( tri->indexCache ) {
-        vertexCache.Free(tri->indexCache);
-        tri->indexCache = NULL;
-      }
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
+    // Check for errors
+    if ( !tri->shadowCache ) {
+      common->Error("Unable to create a vertex cache\n");
+      return;
     }
+      // If it have been successfully build, build the shadow index cache too
+    else {
+      // Free the existing index cache first in case it was already existing
+      if ( tri->shadowIndexCache ) {
+        common->Warning("R_CreateVertexProgramShadowCache: attempt to overwrite an existing index cache. "
+                        "Automatically free it first...\n");
+        vertexCache.Free(tri->shadowIndexCache);
+        tri->shadowIndexCache = NULL;
+      }
+      // And build the new one
+      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->shadowIndexCache, true);
+
+      // Check for errors
+      if ( !tri->shadowIndexCache ) {
+        common->Error("Unable to create an index cache\n");
+        return;
+      }
+    }
+  }
+  else {
+    // There is already a shadow cache. Let's reuse it.
+    common->Printf("Already existing VP shadow cache\n");
   }
 
   return;
@@ -856,7 +896,8 @@ void R_AddLightSurfaces(void) {
     // a random offset every time
     if ( r_lightSourceRadius.GetFloat() != 0.0f ) {
       for ( int i = 0; i < 3; i++ ) {
-        light->globalLightOrigin[i] += r_lightSourceRadius.GetFloat() * ( -1 + 2 * ( rand() & 0xfff ) / (float) 0xfff );
+        light->globalLightOrigin[i] += r_lightSourceRadius.GetFloat() *
+                                       ( -1 + 2 * ( rand() & 0xfff ) / (float) 0xfff );
       }
     }
 
@@ -911,7 +952,7 @@ void R_AddLightSurfaces(void) {
 
       // touch the shadow surface so it won't get purged
       vertexCache.Touch(tri->shadowCache);
-      vertexCache.Touch(tri->indexCache);
+      vertexCache.Touch(tri->shadowIndexCache);
 
       R_LinkLightSurf(&vLight->globalShadows, tri, NULL, light, NULL, vLight->scissorRect, true /* FIXME? */ );
     }
@@ -996,7 +1037,8 @@ idRenderModel* R_EntityDefDynamicModel(idRenderEntityLocal* def) {
   }
 
   // continously animating models (particle systems, etc) will have their snapshot updated every single view
-  if ( callbackUpdate || ( model->IsDynamicModel() == DM_CONTINUOUS && def->dynamicModelFrameCount != tr.frameCount )) {
+  if ( callbackUpdate ||
+       ( model->IsDynamicModel() == DM_CONTINUOUS && def->dynamicModelFrameCount != tr.frameCount )) {
     R_ClearEntityDefDynamicModel(def);
   }
 
@@ -1037,7 +1079,8 @@ idRenderModel* R_EntityDefDynamicModel(idRenderEntityLocal* def) {
   if ( def->dynamicModel && model->DepthHack() != 0.0f && tr.viewDef ) {
     idPlane eye, clip;
     idVec3 ndc;
-    R_TransformModelToClip(def->parms.origin, tr.viewDef->worldSpace.modelViewMatrix, tr.viewDef->projectionMatrix, eye,
+    R_TransformModelToClip(def->parms.origin, tr.viewDef->worldSpace.modelViewMatrix, tr.viewDef->projectionMatrix,
+                           eye,
                            clip);
     R_TransformClipToDevice(clip, tr.viewDef, ndc);
     def->parms.modelDepthHack = model->DepthHack() * ( 1.0f - ndc.z );
@@ -1287,10 +1330,12 @@ static void R_AddAmbientDrawsurfs(viewEntity_t* vEntity) {
 
       def->visibleCount = tr.viewCount;
 
-      // make sure we have an ambient cache
-      if ( !R_CreateAmbientCache(tri, shader->ReceivesLighting())) {
-        // don't add anything if the vertex cache was too full to give us an ambient cache
-        return;
+      if(!tri->ambientCache) {
+        // make sure we have an ambient cache
+        if ( !R_CreateAmbientCache(tri, shader->ReceivesLighting())) {
+          // don't add anything if the vertex cache was too full to give us an ambient cache
+          return;
+        }
       }
 
       // touch it so it won't get purged

@@ -346,15 +346,18 @@ void R_FreeStaticTriSurfVertexCaches( srfTriangles_t *tri ) {
   // If there is no ambient(ie. parent) surface, then we are sure the cache is private
 	if ( tri->ambientSurface == NULL ) {
 		// this is a real model surface
-		vertexCache.Free( tri->ambientCache );
-		tri->ambientCache = NULL;
+    if (tri->ambientCache) {
+      vertexCache.Free(tri->ambientCache);
+      tri->ambientCache = NULL;
+    }
 	}
-	// IndexCache is always private, so no worries
-	if ( tri->indexCache ) {
-		vertexCache.Free( tri->indexCache );
-		tri->indexCache = NULL;
-	}
-	// shadowCache is private if there is vertexes in the tri, otherwise it is shared
+
+  if (tri->indexCache) {
+    vertexCache.Free( tri->indexCache );
+    tri->indexCache = NULL;
+  }
+
+  // shadowCache is private if there is vertexes in the tri, otherwise it is shared
 	if ( tri->shadowCache && ( tri->shadowVertexes != NULL || tri->verts != NULL ) ) {
 		// if we don't have tri->shadowVertexes, these are a reference to a
 		// shadowCache on the original surface, which a vertex program
@@ -362,6 +365,11 @@ void R_FreeStaticTriSurfVertexCaches( srfTriangles_t *tri ) {
 		vertexCache.Free( tri->shadowCache );
 		tri->shadowCache = NULL;
 	}
+  // Shadow caches are always private, so we can free them without worrying
+	if (tri->shadowIndexCache) {
+    vertexCache.Free( tri->shadowIndexCache );
+    tri->shadowIndexCache = NULL;
+  }
 }
 
 /*

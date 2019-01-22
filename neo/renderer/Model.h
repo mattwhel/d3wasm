@@ -123,7 +123,8 @@ typedef struct srfTriangles_s {
 														// turboShadows will have SHADOW_CAP_INFINITE
 
 	shadowCache_t *				shadowVertexes;			// these will be copied to shadowCache when it is going to be drawn.
-														// these are NULL when vertex programs are available
+														                // these are NULL when vertex programs are available, or if it is precomputed shadow
+
 
 	struct srfTriangles_s *		ambientSurface;			// for light interactions, point back at the original surface that generated
 														// the interaction, which we will get the ambientCache from
@@ -134,6 +135,7 @@ typedef struct srfTriangles_s {
 	struct vertCache_s *		indexCache;				// int
 	struct vertCache_s *		ambientCache;			// idDrawVert
 	struct vertCache_s *		shadowCache;			// shadowCache_t
+  struct vertCache_s *    shadowIndexCache;  // int
 } srfTriangles_t;
 
 typedef idList<srfTriangles_t *> idTriList;

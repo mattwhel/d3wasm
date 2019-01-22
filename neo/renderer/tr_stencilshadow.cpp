@@ -1184,9 +1184,10 @@ srfTriangles_t *R_CreateShadowVolume( const idRenderEntityLocal *ent,
 	// use the fast infinite projection in dynamic situations, which
 	// trades somewhat more overdraw and no cap optimizations for
 	// a very simple generation process
-	if ( optimize == SG_DYNAMIC && r_useTurboShadow.GetBool() ) {
-		return R_CreateVertexProgramTurboShadowVolume(ent, tri, light, cullInfo);
-	}
+	//if ( optimize == SG_DYNAMIC && r_useTurboShadow.GetBool() ) {
+	//	return R_CreateVertexProgramTurboShadowVolume(ent, tri, light, cullInfo);
+	//}
+
 
 	R_CalcInteractionFacing( ent, tri, light, cullInfo );
 
@@ -1290,7 +1291,7 @@ srfTriangles_t *R_CreateShadowVolume( const idRenderEntityLocal *ent,
 
 	R_AllocStaticTriSurfIndexes( newTri, newTri->numIndexes );
 
-	if ( 1 /* sortCapIndexes */ ) {
+	if ( 1 ) {
 		newTri->shadowCapPlaneBits = capPlaneBits;
 
 		// copy the sil indexes first
