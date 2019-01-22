@@ -126,17 +126,17 @@ void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
       // If it have been successfully build, build the shadow index cache too
     else {
       // Free the existing index cache first in case it was already existing
-      if ( tri->shadowIndexCache ) {
+      if ( tri->indexCache ) {
         common->Warning(
           "R_CreatePrivateShadowCache: attempt to overwrite an existing index cache. Automatically free it first...\n");
-        vertexCache.Free(tri->shadowIndexCache);
-        tri->shadowIndexCache = NULL;
+        vertexCache.Free(tri->indexCache);
+        tri->indexCache = NULL;
       }
       // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->shadowIndexCache, true);
+      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
 
       // Check for errors
-      if ( !tri->shadowIndexCache ) {
+      if ( !tri->indexCache ) {
         common->Error("Unable to create an index cache\n");
         return;
       }
@@ -182,17 +182,17 @@ void R_CreateVertexProgramShadowCache(srfTriangles_t* tri) {
       // If it have been successfully build, build the shadow index cache too
     else {
       // Free the existing index cache first in case it was already existing
-      if ( tri->shadowIndexCache ) {
+      if ( tri->indexCache ) {
         common->Warning("R_CreateVertexProgramShadowCache: attempt to overwrite an existing index cache. "
                         "Automatically free it first...\n");
-        vertexCache.Free(tri->shadowIndexCache);
-        tri->shadowIndexCache = NULL;
+        vertexCache.Free(tri->indexCache);
+        tri->indexCache = NULL;
       }
       // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->shadowIndexCache, true);
+      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(tri->indexes[0]), &tri->indexCache, true);
 
       // Check for errors
-      if ( !tri->shadowIndexCache ) {
+      if ( !tri->indexCache ) {
         common->Error("Unable to create an index cache\n");
         return;
       }
@@ -952,7 +952,7 @@ void R_AddLightSurfaces(void) {
 
       // touch the shadow surface so it won't get purged
       vertexCache.Touch(tri->shadowCache);
-      vertexCache.Touch(tri->shadowIndexCache);
+      vertexCache.Touch(tri->indexCache);
 
       R_LinkLightSurf(&vLight->globalShadows, tri, NULL, light, NULL, vLight->scissorRect, true /* FIXME? */ );
     }

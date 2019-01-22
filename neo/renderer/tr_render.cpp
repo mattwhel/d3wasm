@@ -85,11 +85,11 @@ void RB_DrawShadowElementsWithCounters( const srfTriangles_t *tri, int numIndexe
 	backEnd.pc.c_shadowIndexes += numIndexes;
 	backEnd.pc.c_shadowVertexes += tri->numVerts;
 
-	if ( tri->shadowIndexCache ) {
+	if ( tri->indexCache ) {
 	qglDrawElements( GL_TRIANGLES,
 			numIndexes,
 						GL_INDEX_TYPE,
-						(int *)vertexCache.Position( tri->shadowIndexCache ) );
+						(int *)vertexCache.Position( tri->indexCache ) );
 		backEnd.pc.c_vboIndexes += numIndexes;
 	} else {
     static bool bOnce = true;

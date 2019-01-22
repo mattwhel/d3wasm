@@ -135,7 +135,6 @@ typedef struct srfTriangles_s {
 	struct vertCache_s *		indexCache;				// int
 	struct vertCache_s *		ambientCache;			// idDrawVert
 	struct vertCache_s *		shadowCache;			// shadowCache_t
-  struct vertCache_s *    shadowIndexCache;  // int
 } srfTriangles_t;
 
 typedef idList<srfTriangles_t *> idTriList;

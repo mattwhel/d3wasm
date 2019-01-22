@@ -365,11 +365,6 @@ void R_FreeStaticTriSurfVertexCaches( srfTriangles_t *tri ) {
 		vertexCache.Free( tri->shadowCache );
 		tri->shadowCache = NULL;
 	}
-  // Shadow caches are always private, so we can free them without worrying
-	if (tri->shadowIndexCache) {
-    vertexCache.Free( tri->shadowIndexCache );
-    tri->shadowIndexCache = NULL;
-  }
 }
 
 /*
