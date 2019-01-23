@@ -2948,35 +2948,43 @@ void idCommonLocal::InitGame(void) {
   FILE* f = NULL;
   f = fopen( "/usr/local/share/d3wasm/base/demo_bootstrap.pk4", "r");
   if (f) {
+    common->Printf("Check if data is correctly fetched\n");
     // Yes
     fclose(f);
     f = NULL;
 
+    static bool bPakLoaded = false;
+
     // Does the chunks are already loaded ?
     f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
 
-    if (f) {
+    if (f && bPakLoaded) {
       // Yes
       fclose(f);
       f = NULL;
     } else {
-      common->Printf("Fetching base demo data...\n");
-      PrintLoadingMessage("Fetching base demo data (15MB)...");
+      if (!f) {
+        common->Printf("Fetching base demo data...\n");
+        PrintLoadingMessage("Fetching base demo data (15MB)...");
 
-      while (f == NULL) {
-        // Wait for the next chunk to be loaded
-        emscripten_sleep_with_yield(333);
+        while (f == NULL) {
+          // Wait for the next chunk to be loaded
+          emscripten_sleep_with_yield(333);
 
-        f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
+          f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
+        }
       }
       fclose(f);
+      f = NULL;
 
-      common->Printf("Loading base game data...\n");
-      PrintLoadingMessage("Loading base game data...");
+      common->Printf("Loading base demo data...\n");
+      PrintLoadingMessage("Loading base demo data...");
 
       fileSystem->Restart();
 
       declManager->Init();
+
+      bPakLoaded = true;
     }
   }
 #endif
