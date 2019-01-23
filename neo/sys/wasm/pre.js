@@ -1,3 +1,10 @@
+var Module;
+if (Module['preRun'] instanceof Array) {
+  Module['preRun'].push(setupD3memfs);
+} else {
+  Module['preRun'] = [setupD3memfs];
+}
+
 (function(d, script) {
   script = d.createElement('script');
   script.type = 'text/javascript';
@@ -5,7 +12,7 @@
   script.onload = function(){
     // remote script has loaded
   };
-  script.src = 'demo00.js';
+  script.src = 'demo_bootstrap.js';
   d.getElementsByTagName('head')[0].appendChild(script);
 }(document));
 
@@ -18,13 +25,6 @@
 
 // For full game data
 //python $EMSCRIPTEN/tools/file_packager.py pak.data --preload data/full@/usr/local/share/d3wasm/base/ --js-output=pak.js --use-preload-cache --no-heap-copy
-
-var Module;
-if (Module['preRun'] instanceof Array) {
-  Module['preRun'].push(setupD3memfs);
-} else {
-  Module['preRun'] = [setupD3memfs];
-}
 
 function setupD3memfs() {
   console.info("Creating d3wasm data folder (/usr/local/share/d3wasm/base)");
