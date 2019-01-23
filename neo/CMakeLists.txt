@@ -142,7 +142,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
   set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
   set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
   set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs --D_DEBUG -O1 -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELEASE "-O3 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
   set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
 
@@ -200,7 +200,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   #set(ldflags "${ldflags} --llvm-lto 2")
   set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=js")
-  set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384 MB (minimum specs)
+  set(ldflags "${ldflags} -s TOTAL_MEMORY=268435456") # 256MB. I think below it would start to fail.
   set(ldflags "${ldflags} -s EMTERPRETIFY=1")
   set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
   set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=dhewm3.embin")
