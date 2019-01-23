@@ -1198,6 +1198,8 @@ void idInteraction::AddActiveInteraction( void ) {
 				} else {
 					R_CreateVertexProgramShadowCache(sint->ambientTris);
           shadowTris->shadowCache = sint->ambientTris->shadowCache;
+          // Create the private index cache if needed
+          // GAB NOTE: If it is already existing, let's reuse the existing one. Not sure why it works...
 					if ( !shadowTris->indexCache ){
             vertexCache.Alloc( shadowTris->indexes, shadowTris->numIndexes * sizeof( glIndex_t ), &shadowTris->indexCache, true );
 					}
