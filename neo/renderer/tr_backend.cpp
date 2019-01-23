@@ -311,6 +311,7 @@ static void	RB_SetBuffer( const void *data ) {
 	// that might leave unrendered portions of the screen
 	if ( r_clear.GetFloat() || idStr::Length( r_clear.GetString() ) != 1 || r_lockSurfaces.GetBool() || r_singleArea.GetBool() ) {
 		float c[3];
+    qglColorMask(1, 1, 1, 1);
 		if ( sscanf( r_clear.GetString(), "%f %f %f", &c[0], &c[1], &c[2] ) == 3 ) {
 			qglClearColor( c[0], c[1], c[2], 1 );
 		} else if ( r_clear.GetInteger() == 2 ) {
@@ -329,15 +330,21 @@ RB_SwapBuffers
 =============
 */
 const void	RB_SwapBuffers( const void *data ) {
-	// force a gl sync if requested
+
+  #ifdef WEBGL
+  // GAB Note Dec 2018: Clear the Alpha channel, so that final render will not blend with the HTML5 background (canvas with premultiplied alpha)
+  qglColorMask(0, 0, 0, 1);
+  qglClear(GL_COLOR_BUFFER_BIT);
+  #endif
+
+
+  // force a gl sync if requested
 	if ( r_finish.GetBool() ) {
 		qglFinish();
 	}
 
 	// don't flip if drawing to front buffer
-	if ( !r_frontBuffer.GetBool() ) {
-		GLimp_SwapBuffers();
-	}
+	GLimp_SwapBuffers();
 }
 
 /*

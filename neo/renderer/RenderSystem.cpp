@@ -586,12 +586,7 @@ void idRenderSystemLocal::BeginFrame( int windowWidth, int windowHeight ) {
 	cmd = (setBufferCommand_t *)R_GetCommandBuffer( sizeof( *cmd ) );
 	cmd->commandId = RC_SET_BUFFER;
 	cmd->frameCount = frameCount;
-
-	if ( r_frontBuffer.GetBool() ) {
-		cmd->buffer = (int)GL_FRONT;
-	} else {
-		cmd->buffer = (int)GL_BACK;
-	}
+	cmd->buffer = (int)GL_BACK;
 }
 
 void idRenderSystemLocal::WriteDemoPics() {
@@ -660,12 +655,6 @@ void idRenderSystemLocal::EndFrame( int *frontEndMsec, int *backEndMsec ) {
 			common->Printf( "write DC_END_FRAME\n" );
 		}
 	}
-
-#ifdef WEBGL
-	// GAB Note Dec 2018: Clear the Alpha channel, so that final render will not blend with the HTML5 background (canvas with premultiplied alpha)
-	qglColorMask(0, 0, 0, 1);
-	qglClear(GL_COLOR_BUFFER_BIT);
-#endif
 }
 
 /*
