@@ -1569,28 +1569,28 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
 #ifdef __EMSCRIPTEN__
   // Check if we are loading data in "chunks"
   FILE* f = NULL;
-  f = fopen( "/usr/local/share/dhewm3/base/demo_bootstrap.pk4", "r");
+  f = fopen( "/usr/local/share/d3wasm/base/demo_bootstrap.pk4", "r");
   if (f) {
     // Yes
     fclose(f);
     f = NULL;
 
     // Does the chunks are already loaded ?
-    f = fopen("/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+    f = fopen("/usr/local/share/d3wasm/base/demo_game01.pk4", "r");
 
     if (f) {
       // Yes
       fclose(f);
       f = NULL;
     } else {
-      common->Printf("Fetching full game data...\n");
-      common->PrintLoadingMessage("Fetching full game data (380MB)...");
+      common->Printf("Fetching full demo data...\n");
+      common->PrintLoadingMessage("Fetching full demo data (380MB)...");
 
       while (f == NULL) {
         // Wait for the next chunk to be loaded
         emscripten_sleep_with_yield(333);
 
-        f = fopen("/usr/local/share/dhewm3/base/demo_game01.pk4", "r");
+        f = fopen("/usr/local/share/d3wasm/base/demo_game01.pk4", "r");
       }
       fclose(f);
 

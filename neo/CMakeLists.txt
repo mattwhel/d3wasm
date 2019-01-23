@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
-project(dhewm3)
+project(d3wasm)
 
 # TODO
 
@@ -31,7 +31,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/sys/cmake")
 
 set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
 
-set(DHEWM3BINARY "dhewm3")
+set(D3WASMBINARY "d3wasm")
 
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
@@ -194,7 +194,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
   set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
-  set(ldflags "${ldflags} -o dhewm3.html")
+  set(ldflags "${ldflags} -o d3wasm.html")
   #set(ldflags "${ldflags} --profiling-funcs")
   set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
@@ -203,7 +203,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s TOTAL_MEMORY=268435456") # 256MB. I think below it would start to fail.
   set(ldflags "${ldflags} -s EMTERPRETIFY=1")
   set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
-  set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=dhewm3.embin")
+  set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=d3wasm.embin")
   set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=[\"_main\",\"__ZL17Session_NextMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal17HandleMsgCommandsEPKc\",\"__ZN14idSessionLocal10MessageBoxE12msgBoxType_tPKcS2_bS2_S2_b\",\"__ZN14idSessionLocal8SaveGameEPKcb\",\"__ZN25idRenderModelManagerLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal7StopBoxEv\",\"__ZN14idSessionLocal25HandleRestartMenuCommandsEPKc\",\"__ZN13idCommonLocal8GUIFrameEbb\",\"__ZN11idGameLocal16SpawnMapEntitiesEv\",\"__ZN11idGameLocal11MapPopulateEv\",\"__ZN11idGameLocal14InitFromNewMapEPKcP13idRenderWorldP12idSoundWorldbbi\",\"__ZN13idCommonLocal16InitRenderSystemEv\",\"__ZN13idCommonLocal19PrintLoadingMessageEPKc\",\"__ZN13idCommonLocal8InitGameEv\",\"__ZN13idCommonLocal4InitEiPPc\",\"__Z10LoadGame_fRK9idCmdArgs\",\"__ZN14idSessionLocal8LoadGameEPKc\",\"__ZN14idSessionLocal9MenuEventEPK10sysEvent_t\",\"__ZN14idSessionLocal12ProcessEventEPK10sysEvent_t\",\"__ZN14idSessionLocal25HandleSaveGameMenuCommandER9idCmdArgsRi\",\"__ZN11idEventLoop12ProcessEventE10sysEvent_t\",\"__ZN11idEventLoop12RunEventLoopEb\",\"__ZN16idCmdSystemLocal20ExecuteCommandBufferEv\",\"__ZN16idCmdSystemLocal22ExecuteTokenizedStringERK9idCmdArgs\",\"__ZL13Session_Map_fRK9idCmdArgs\",\"__ZL16Session_DevMap_fRK9idCmdArgs\",\"__ZN14idSessionLocal14ShowLoadingGuiEv\",\"__ZN14idImageManager12EndLevelLoadEv\",\"__ZN19idRenderSystemLocal12EndLevelLoadEv\",\"__ZN14idSessionLocal16ExecuteMapChangeEb\",\"__ZN14idSessionLocal12MoveToNewMapEPKc\",\"__ZN14idSessionLocal12StartNewGameEPKcb\",\"__ZN14idSessionLocal22HandleMainMenuCommandsEPKc\",\"__ZN14idSessionLocal15DispatchCommandEP15idUserInterfacePKcb\",\"__ZN14idSessionLocal14GuiFrameEventsEv\",\"__ZN14idSessionLocal5FrameEv\",\"__ZN13idCommonLocal5FrameEv\",\"__ZN14idSessionLocal12CompleteWipeEv\",\"_emloopcb\"]")
   set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
 endif ()
@@ -230,8 +230,8 @@ if (GNUINSTALLDIRS MATCHES "NOTFOUND")
 endif ()
 
 set(bindir "${CMAKE_INSTALL_FULL_BINDIR}")
-set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}/dhewm3")
-set(datadir "${CMAKE_INSTALL_FULL_DATADIR}/dhewm3")
+set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}/d3wasm")
+set(datadir "${CMAKE_INSTALL_FULL_DATADIR}/d3wasm")
 
 configure_file(
     "${CMAKE_SOURCE_DIR}/config.h.in"
@@ -569,7 +569,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_idlib})
 
 if (CORE)
   if (NODLL)
-    add_executable(${DHEWM3BINARY}
+    add_executable(${D3WASMBINARY}
         ${src_core}
         ${src_sys_base}
         ${src_sys_core}
@@ -578,9 +578,9 @@ if (CORE)
 
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core} ${src_game})
 
-    set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
+    set_target_properties(${D3WASMBINARY} PROPERTIES COMPILE_FLAGS "-I${CMAKE_SOURCE_DIR}/game")
   else ()
-    add_executable(${DHEWM3BINARY}
+    add_executable(${D3WASMBINARY}
         ${src_core}
         ${src_sys_base}
         ${src_sys_core}
@@ -588,11 +588,11 @@ if (CORE)
 
     source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_core} ${src_sys_base} ${src_sys_core})
 
-    set_target_properties(${DHEWM3BINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
+    set_target_properties(${D3WASMBINARY} PROPERTIES COMPILE_DEFINITIONS "__DOOM_DLL__")
   endif ()
 
-  set_target_properties(${DHEWM3BINARY} PROPERTIES LINK_FLAGS "${ldflags}")
-  target_link_libraries(${DHEWM3BINARY}
+  set_target_properties(${D3WASMBINARY} PROPERTIES LINK_FLAGS "${ldflags}")
+  target_link_libraries(${D3WASMBINARY}
       idlib
       ${OPENAL_LIBRARY}
       ${VORBISFILE_LIBRARIES}
@@ -604,7 +604,7 @@ if (CORE)
       ${sys_libs})
 
   if (NOT EMSCRIPTEN)
-    install(TARGETS ${DHEWM3BINARY}
+    install(TARGETS ${D3WASMBINARY}
         RUNTIME DESTINATION "${bindir}"
         LIBRARY DESTINATION "${libdir}"
         ARCHIVE DESTINATION "${libdir}"

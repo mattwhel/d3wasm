@@ -10,14 +10,14 @@
 }(document));
 
 // For chunked demo data
-//python $EMSCRIPTEN/tools/file_packager.py demo_bootstrap.data --preload data/chunked/demo_bootstrap.pk4@/usr/local/share/dhewm3/base/ --js-output=demo_bootstrap.js --use-preload-cache --no-heap-copy
+//python $EMSCRIPTEN/tools/file_packager.py demo_bootstrap.data --preload data/chunked/demo_bootstrap.pk4@/usr/local/share/d3wasm/base/ --js-output=demo_bootstrap.js --use-preload-cache --no-heap-copy
 // + see post.js
 
 // For full demo data
-//python $EMSCRIPTEN/tools/file_packager.py demo00.data --preload data/demo/demo00.pk4@/usr/local/share/dhewm3/base/ --js-output=demo00.js --use-preload-cache --no-heap-copy
+//python $EMSCRIPTEN/tools/file_packager.py demo00.data --preload data/demo/demo00.pk4@/usr/local/share/d3wasm/base/ --js-output=demo00.js --use-preload-cache --no-heap-copy
 
 // For full game data
-//python $EMSCRIPTEN/tools/file_packager.py pak.data --preload data/full@/usr/local/share/dhewm3/base/ --js-output=pak.js --use-preload-cache --no-heap-copy
+//python $EMSCRIPTEN/tools/file_packager.py pak.data --preload data/full@/usr/local/share/d3wasm/base/ --js-output=pak.js --use-preload-cache --no-heap-copy
 
 var Module;
 if (Module['preRun'] instanceof Array) {
@@ -27,12 +27,12 @@ if (Module['preRun'] instanceof Array) {
 }
 
 function setupD3memfs() {
-  console.info("Creating dhwem3 data folder (/usr/local/share/dhewm3/base)");
+  console.info("Creating d3wasm data folder (/usr/local/share/d3wasm/base)");
   FS.createPath('/', 'usr', true, true);
   FS.createPath('/usr', 'local', true, true);
   FS.createPath('/usr/local', 'share', true, true);
-  FS.createPath('/usr/local/share', 'dhewm3', true, true);
-  FS.createPath('/usr/local/share/dhewm3', 'base', true, true);
+  FS.createPath('/usr/local/share', 'd3wasm', true, true);
+  FS.createPath('/usr/local/share/d3wasm', 'base', true, true);
 
   console.info("Creating user home folder (/home/web_user)");
   FS.createPath('/', 'home', true, true);
@@ -47,12 +47,12 @@ function setupD3memfs() {
     }
     else {
       console.info("Mounting user home completed");
-      console.info("Creating user home config and local folders if necessary (~/.config, ~/.local/dhewm3/base)");
+      console.info("Creating user home config and local folders if necessary (~/.config, ~/.local/d3wasm/base)");
       FS.createPath('/home/web_user', '.config', true, true);
-      FS.createPath('/home/web_user/.config', 'dhewm3', true, true);
+      FS.createPath('/home/web_user/.config', 'd3wasm', true, true);
       FS.createPath('/home/web_user', '.local', true, true);
-      FS.createPath('/home/web_user/.local', 'dhewm3', true, true);
-      FS.createPath('/home/web_user/.local/dhewm3', 'base', true, true);
+      FS.createPath('/home/web_user/.local', 'd3wasm', true, true);
+      FS.createPath('/home/web_user/.local/d3wasm', 'base', true, true);
       Module['removeRunDependency']("setupD3memfs");
     }
   });

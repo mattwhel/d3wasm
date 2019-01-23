@@ -2653,49 +2653,6 @@ static bool checkForHelp(int argc, char **argv) {
       if (idStr::Icmp(arg, helpArgs[h]) == 0) {
         // write it to stdout
 #define WriteString(s) fputs(s, stdout);
-        WriteString(ENGINE_VERSION
-                        " - http://dhewm3.org\n");
-        WriteString("Commandline arguments:\n");
-        WriteString("-h or --help: Show this help\n");
-        WriteString("+<command> [command arguments]\n");
-        WriteString("  executes a command (with optional arguments)\n");
-
-        WriteString("\nSome interesting commands:\n");
-        WriteString("+map <map>\n");
-        WriteString("  directly loads the given level, e.g. +map game/hell1\n");
-        WriteString("+exec <config>\n");
-        WriteString("  execute the given config (mainly relevant for dedicated servers)\n");
-        WriteString("+disconnect\n");
-        WriteString("  starts the game, goes directly into main menu without showing\n  logo video\n");
-        WriteString("+connect <host>[:port]\n");
-        WriteString("  directly connect to multiplayer server at given host/port\n");
-        WriteString("  e.g. +connect d3.example.com\n");
-        WriteString("  e.g. +connect d3.example.com:27667\n");
-        WriteString("  e.g. +connect 192.168.0.42:27666\n");
-        WriteString("+set <cvarname> <value>\n");
-        WriteString("  Set the given cvar to the given value, e.g. +set r_fullscreen 0\n");
-        WriteString("+seta <cvarname> <value>\n");
-        WriteString("  like +set, but also makes sure the changed cvar is saved (\"archived\")\n  in a cfg\n");
-
-        WriteString("\nSome interesting cvars:\n");
-        WriteString("+set fs_basepath <gamedata path>\n");
-        WriteString("  set path to your Doom3 game data (the directory base/ is in)\n");
-        WriteString("+set fs_game <modname>\n");
-        WriteString("  start the given addon/mod, e.g. +set fs_game d3xp\n");
-
-        WriteString("+set r_fullscreen <0 or 1>\n");
-        WriteString("  start game in windowed (0) or fullscreen (1) mode\n");
-        WriteString("+set r_mode <modenumber>\n");
-        WriteString("  start game in resolution belonging to <modenumber>,\n");
-        WriteString("  use -1 for custom resolutions:\n");
-        WriteString("+set r_customWidth  <size in pixels>\n");
-        WriteString("+set r_customHeight <size in pixels>\n");
-        WriteString("  if r_mode is set to -1, these cvars allow you to specify the\n");
-        WriteString("  width/height of your custom resolution\n");
-
-        WriteString("\nSee https://modwiki.dhewm3.org/CVars_%28Doom_3%29 for more cvars\n");
-        WriteString("See https://modwiki.dhewm3.org/Commands_%28Doom_3%29 for more commands\n");
-
 #undef WriteString
 
         return true;
@@ -2989,28 +2946,28 @@ void idCommonLocal::InitGame(void) {
 #ifdef __EMSCRIPTEN__
   // Check if we are loading data in "chunks"
   FILE* f = NULL;
-  f = fopen( "/usr/local/share/dhewm3/base/demo_bootstrap.pk4", "r");
+  f = fopen( "/usr/local/share/d3wasm/base/demo_bootstrap.pk4", "r");
   if (f) {
     // Yes
     fclose(f);
     f = NULL;
 
     // Does the chunks are already loaded ?
-    f = fopen("/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
+    f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
 
     if (f) {
       // Yes
       fclose(f);
       f = NULL;
     } else {
-      common->Printf("Fetching base game data...\n");
-      PrintLoadingMessage("Fetching base game data (15MB)...");
+      common->Printf("Fetching base demo data...\n");
+      PrintLoadingMessage("Fetching base demo data (15MB)...");
 
       while (f == NULL) {
         // Wait for the next chunk to be loaded
         emscripten_sleep_with_yield(333);
 
-        f = fopen("/usr/local/share/dhewm3/base/demo_game00.pk4", "r");
+        f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
       }
       fclose(f);
 

@@ -2,8 +2,8 @@
 // Created by gab on 21/01/19.
 //
 
-#ifndef DHEWM3_GLSL_SHADERS_H
-#define DHEWM3_GLSL_SHADERS_H
+#ifndef D3WASM_GLSL_SHADERS_H
+#define D3WASM_GLSL_SHADERS_H
 
 extern const char* const interactionShaderVP;
 extern const char* const interactionShaderFP;
@@ -24,4 +24,4 @@ extern const char* const cubeMapShaderFP;
 extern const char* const stencilShadowShaderVP;
 extern const char* const stencilShadowShaderFP;
 
-#endif //DHEWM3_GLSL_SHADERS_H
+#endif //D3WASM_GLSL_SHADERS_H

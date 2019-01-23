@@ -35,14 +35,14 @@ If you have questions concerning this license or the applicable additional terms
 */
 #define GAME_NAME						"DOOM 3"		// appears on window titles and errors
 
-#define ENGINE_VERSION					"dhewm3 1.5.1pre"	// printed in console
+#define ENGINE_VERSION					"d3wasm 0.2"	// printed in console
 
 // paths
 #define	BASE_GAMEDIR					"base"
 
 // filenames
 #ifndef CONFIG_FILE
-#define CONFIG_FILE						"dhewm.cfg"
+#define CONFIG_FILE						"d3wasm.cfg"
 #endif
 
 // base folder where the source code lives

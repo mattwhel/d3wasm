@@ -1763,7 +1763,7 @@ idModList *idFileSystemLocal::ListMods( void ) {
 	}
 
 	list->mods.Insert( "" );
-	list->descriptions.Insert( "dhewm 3" );
+	list->descriptions.Insert( "d3wasm" );
 
 	assert( list->mods.Num() == list->descriptions.Num() );
 
