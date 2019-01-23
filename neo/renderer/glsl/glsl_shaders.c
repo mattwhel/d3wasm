@@ -571,7 +571,7 @@ const char* const stencilShadowShaderVP =
   "\n"
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
-  "uniform vec4 u_lightOrigin;\n"
+  "uniform highp vec4 u_lightOrigin;\n"
   "\n"
   "// Out\n"
   "// gl_Position\n"
