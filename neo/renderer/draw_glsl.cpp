@@ -1817,18 +1817,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), surf->wobbleTransform);
       }
       else if ( pStage->texture.texgen == TG_SCREEN ) {
-        // Not yet supported
-        common->Printf("Screen\n");
+        // Not used in game, so not implemented
         continue;
       }
       else if ( pStage->texture.texgen == TG_SCREEN2 ) {
-        // Not yet supported
-        common->Printf("Screen2\n");
+        // Not used in game, so not implemented
         continue;
       }
       else if ( pStage->texture.texgen == TG_GLASSWARP ) {
-        // Not supported. This is an ARB2 shader without available source code.
-        // Never seen in the game actually
+        // Not used in game, so not implemented. The shader code is even not present in original D3 data
         continue;
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
