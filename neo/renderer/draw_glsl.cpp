@@ -1779,15 +1779,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // the associated TexGen. Then, setup its specific uniforms/attribs, and then only we can setup the common uniforms/attribs
 
       if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
+        // Not used in game, but implemented because trivial
+
         // This is diffuse cube mapping
         GL_UseProgram(&diffuseCubeShader);
 
-        // FIXME: not tested, because never see an example in the game. Possible that normals should be transformed
-        //  by a normal matrix in the shader ??
-
-        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+        // Possible that normals should be transformed by a normal matrix in the shader ? I am not sure...
 
         // Setup normal array
+        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
 
