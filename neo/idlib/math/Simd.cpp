@@ -1086,7 +1086,7 @@ void TestCompare( void ) {
 
 /*
 ============
-TestMinMax
+Test
 ============
 */
 void TestMinMax( void ) {
