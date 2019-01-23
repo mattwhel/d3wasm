@@ -303,7 +303,7 @@ static void	RB_SetBuffer( const void *data ) {
 
 	backEnd.frameCount = cmd->frameCount;
 
-	//Disabled for OES2
+	// Disabled for OES2
 	//qglDrawBuffer( cmd->buffer );
 
 	// clear screen for debugging
@@ -311,7 +311,6 @@ static void	RB_SetBuffer( const void *data ) {
 	// that might leave unrendered portions of the screen
 	if ( r_clear.GetFloat() || idStr::Length( r_clear.GetString() ) != 1 || r_lockSurfaces.GetBool() || r_singleArea.GetBool() ) {
 		float c[3];
-    qglColorMask(1, 1, 1, 1);
 		if ( sscanf( r_clear.GetString(), "%f %f %f", &c[0], &c[1], &c[2] ) == 3 ) {
 			qglClearColor( c[0], c[1], c[2], 1 );
 		} else if ( r_clear.GetInteger() == 2 ) {
