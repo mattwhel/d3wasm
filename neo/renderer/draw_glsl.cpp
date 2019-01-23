@@ -1832,7 +1832,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         // This is reflection cubemapping
         GL_UseProgram(&reflectionCubeShader);
 
-        // NB: there is also the variant "Bump reflect cube". This is not implemented for now.
+        // NB: in original D3, if the surface had a bump map it would lead to the "Bumpy reflection cubemaping" shader being used.
+        // This is not implemented for now, we only do standard reflection cubemaping. Visual difference is really minor.
 
         GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
 
