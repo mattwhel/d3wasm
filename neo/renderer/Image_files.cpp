@@ -32,8 +32,8 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "renderer/Image.h"
 
-#include "renderer/libjpeg/jpeglib.h"
-#include "renderer/libjpeg/jerror.h"
+#include <jpeglib.h>
+#include <jerror.h>
 
 /*
 

@@ -36,26 +36,26 @@ set(D3WASMBINARY "d3wasm")
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 
-option(CORE     "Build the core" ON)
-option(BASE     "Build the base game code" ON)
-option(NODLL    "Build core and base game code, embedded inside one binary" ON)
-option(NOMT     "Do not use multithreading" ON)
-option(WEBGL    "We are in a WebGL environment" OFF)
-option(NOEFX    "Do not use OpenAL EFX" OFF)
+option(CORE "Build the core" ON)
+option(BASE "Build the base game code" ON)
+option(NODLL "Build core and base game code, embedded inside one binary" ON)
+option(NOMT "Do not use multithreading" ON)
+option(WEBGL "We are in a WebGL environment" OFF)
+option(NOEFX "Do not use OpenAL EFX" OFF)
 
 # Enforce some options for emscripten
 if (EMSCRIPTEN)
   set(NOEFX ON)
-  set(NOMT  ON)
+  set(NOMT ON)
   set(NODLL ON)
   set(WEBGL ON)
   SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
-else()
+else ()
   set(NOEFX ON)
-  set(NOMT  ON)
+  set(NOMT ON)
   set(NODLL ON)      # only one single binary with core+base game
   set(WEBGL OFF)
-endif()
+endif ()
 
 if (WEBGL)
   add_compile_options("-DWEBGL")
@@ -63,11 +63,11 @@ endif ()
 
 if (NOEFX)
   add_compile_options("-DNOEFX")
-endif()
+endif ()
 
 if (NOMT)
   add_compile_options("-DNOMT")
-endif()
+endif ()
 
 if (NODLL)
   set(BASE OFF)   # base game will be linked with core directly
@@ -99,39 +99,47 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # libs
-if(NOT EMSCRIPTEN)
-find_package(ZLIB REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIRS})
+if (NOT EMSCRIPTEN)
+  find_package(ZLIB REQUIRED)
+  include_directories(${ZLIB_INCLUDE_DIRS})
 
-find_package(OGG REQUIRED)
-include_directories(${OGG_INCLUDE_DIR})
+  find_package(OGG REQUIRED)
+  include_directories(${OGG_INCLUDE_DIR})
 
-find_package(Vorbis REQUIRED)
-include_directories(${VORBIS_INCLUDE_DIR})
+  find_package(Vorbis REQUIRED)
+  include_directories(${VORBIS_INCLUDE_DIR})
 
-find_package(VorbisFile REQUIRED)
-include_directories(${VORBISFILE_INCLUDE_DIR})
+  find_package(VorbisFile REQUIRED)
+  include_directories(${VORBISFILE_INCLUDE_DIR})
 
-set(SDL2_BUILDING_LIBRARY TRUE)
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIR})
-set(SDLx_LIBRARY ${SDL2_LIBRARY})
+  set(SDL2_BUILDING_LIBRARY TRUE)
+  find_package(SDL2 REQUIRED)
+  include_directories(${SDL2_INCLUDE_DIR})
+  set(SDLx_LIBRARY ${SDL2_LIBRARY})
 
-find_package(OpenAL REQUIRED)
-include_directories(${OPENAL_INCLUDE_DIR})
+  find_package(OpenAL REQUIRED)
+  include_directories(${OPENAL_INCLUDE_DIR})
 
-find_package(X11 REQUIRED)
-include_directories(${X11_INCLUDE_DIR})
-endif()
+  find_package(X11 REQUIRED)
+  include_directories(${X11_INCLUDE_DIR})
 
-# Embedded libjpeg handling
-# Be sure to init git submodules
-set(BUILD_STATIC ON CACHE BOOL "" FORCE)
-set(BUILD_EXECUTABLES OFF CACHE BOOL "" FORCE)
-set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-add_subdirectory(renderer/libjpeg)
+  find_package(JPEG REQUIRED)
+  include_directories(${JPEG_INCLUDE_DIR})
+  list(APPEND CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
+  list(APPEND CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
+else ()
+  # Embedded libjpeg handling
+  # Be sure to init git submodules
+  set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+  set(BUILD_EXECUTABLES OFF CACHE BOOL "" FORCE)
+  set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+  add_subdirectory(renderer/libjpeg)
+  set(JPEG_LIBRARY jpeg)
 
-if (EMSCRIPTEN)
+    # add Jpege include dirs
+  include_directories("renderer/libjpeg/") # AL headers are not in a standard location
+
+  # fix for OpenAL include dir
   include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
 endif ()
 
@@ -615,7 +623,7 @@ if (CORE)
       ${VORBISFILE_LIBRARIES}
       ${VORBIS_LIBRARIES}
       ${OGG_LIBRARIES}
-      jpeg
+      ${JPEG_LIBRARY}
       ${ZLIB_LIBRARY}
       ${SDLx_LIBRARY}
       ${sys_libs})
