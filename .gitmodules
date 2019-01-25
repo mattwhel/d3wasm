@@ -1,0 +1,3 @@
+[submodule "neo/renderer/libjpeg"]
+	path = neo/renderer/libjpeg
+	url = https://github.com/LuaDist/libjpeg.git
