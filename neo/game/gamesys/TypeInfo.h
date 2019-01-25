@@ -51,6 +51,6 @@ void			ListTypeInfo_f( const idCmdArgs &args );
 
 void			WriteGameState_f( const idCmdArgs &args );
 void			CompareGameState_f( const idCmdArgs &args );
-void			TestSaveGame_f( const idCmdArgs &args );
+//void			TestSaveGame_f( const idCmdArgs &args );
 
 #endif /* !__SYS_TYPEINFO_H__ */

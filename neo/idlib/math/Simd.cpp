@@ -3838,7 +3838,7 @@ void TestNegate( void ) {
 idSIMD::Test_f
 ============
 */
-void idSIMD::Test_f( const idCmdArgs &args ) {
+/*void idSIMD::Test_f( const idCmdArgs &args ) {
 
 	p_simd = processor;
 	p_generic = generic;
@@ -3941,4 +3941,4 @@ void idSIMD::Test_f( const idCmdArgs &args ) {
 	p_simd = NULL;
 	p_generic = NULL;
 
-}
+}*/

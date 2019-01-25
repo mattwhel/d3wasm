@@ -1349,7 +1349,7 @@ void CompareGameState_f( const idCmdArgs &args ) {
 TestSaveGame_f
 ================
 */
-void TestSaveGame_f( const idCmdArgs &args ) {
+/*void TestSaveGame_f( const idCmdArgs &args ) {
 	idStr name;
 
 	if ( args.Argc() <= 1 ) {
@@ -1370,7 +1370,7 @@ void TestSaveGame_f( const idCmdArgs &args ) {
 		// an ERR_DROP was thrown
 	}
 	cmdSystem->BufferCommandText( CMD_EXEC_NOW, "quit" );
-}
+}*/
 
 /*
 ================

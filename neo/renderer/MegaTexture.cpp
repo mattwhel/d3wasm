@@ -652,7 +652,7 @@ MakeMegaTexture_f
 Incrementally load a giant tga file and process into the mega texture block format
 ====================
 */
-void idMegaTexture::MakeMegaTexture_f( const idCmdArgs &args ) {
+/*void idMegaTexture::MakeMegaTexture_f( const idCmdArgs &args ) {
 	int		columns, fileSize, numBytes;
 	byte	*pixbuf;
 	int		row, column;
@@ -909,4 +909,4 @@ void idMegaTexture::MakeMegaTexture_f( const idCmdArgs &args ) {
 		R_VerticalFlip( *pic, *width, *height );
 	}
 #endif
-}
+}*/

@@ -874,7 +874,7 @@ void Cmd_Remove_f( const idCmdArgs &args ) {
 Cmd_TestLight_f
 ===================
 */
-void Cmd_TestLight_f( const idCmdArgs &args ) {
+/*void Cmd_TestLight_f( const idCmdArgs &args ) {
 	int			i;
 	idStr		filename;
 	const char *key, *value, *name;
@@ -926,14 +926,14 @@ void Cmd_TestLight_f( const idCmdArgs &args ) {
 	gameLocal.SpawnEntityDef( dict );
 
 	gameLocal.Printf( "Created new light\n");
-}
+}*/
 
 /*
 ===================
 Cmd_TestPointLight_f
 ===================
 */
-void Cmd_TestPointLight_f( const idCmdArgs &args ) {
+/*void Cmd_TestPointLight_f( const idCmdArgs &args ) {
 	const char *key, *value, *name;
 	int			i;
 	idPlayer	*player;
@@ -973,7 +973,7 @@ void Cmd_TestPointLight_f( const idCmdArgs &args ) {
 	gameLocal.SpawnEntityDef( dict );
 
 	gameLocal.Printf( "Created new point light\n");
-}
+}*/
 
 /*
 ==================
@@ -1058,7 +1058,7 @@ void Cmd_ClearLights_f( const idCmdArgs &args ) {
 Cmd_TestFx_f
 ==================
 */
-void Cmd_TestFx_f( const idCmdArgs &args ) {
+/*void Cmd_TestFx_f( const idCmdArgs &args ) {
 	idVec3		offset;
 	const char *name;
 	idPlayer *	player;
@@ -1087,7 +1087,7 @@ void Cmd_TestFx_f( const idCmdArgs &args ) {
 	dict.Set( "test", "1");
 	dict.Set( "fx", name );
 	gameLocal.testFx = ( idEntityFx * )gameLocal.SpawnEntityType( idEntityFx::Type, &dict );
-}
+}*/
 
 #define MAX_DEBUGLINES	128
 
@@ -1445,7 +1445,7 @@ static void Cmd_AASStats_f( const idCmdArgs &args ) {
 Cmd_TestDamage_f
 ==================
 */
-static void Cmd_TestDamage_f( const idCmdArgs &args ) {
+/*static void Cmd_TestDamage_f( const idCmdArgs &args ) {
 	idPlayer *player;
 	const char *damageDefName;
 
@@ -1476,14 +1476,14 @@ static void Cmd_TestDamage_f( const idCmdArgs &args ) {
 	player->health = player->inventory.maxHealth;
 	player->Damage( NULL, NULL, dir, damageDefName, 1.0f, INVALID_JOINT );
 	player->health = player->inventory.maxHealth;
-}
+}*/
 
 /*
 ==================
 Cmd_TestBoneFx_f
 ==================
 */
-static void Cmd_TestBoneFx_f( const idCmdArgs &args ) {
+/*static void Cmd_TestBoneFx_f( const idCmdArgs &args ) {
 	idPlayer *player;
 	const char *bone, *fx;
 
@@ -1501,14 +1501,14 @@ static void Cmd_TestBoneFx_f( const idCmdArgs &args ) {
 	bone = args.Argv( 2 );
 
 	player->StartFxOnBone( fx, bone );
-}
+}*/
 
 /*
 ==================
 Cmd_TestDamage_f
 ==================
 */
-static void Cmd_TestDeath_f( const idCmdArgs &args ) {
+/*static void Cmd_TestDeath_f( const idCmdArgs &args ) {
 	idPlayer *player;
 
 	player = gameLocal.GetLocalPlayer();
@@ -1526,7 +1526,7 @@ static void Cmd_TestDeath_f( const idCmdArgs &args ) {
 		player->SpawnGibs( dir, "damage_triggerhurt_1000" );
 	}
 
-}
+}*/
 
 /*
 ==================
@@ -1958,13 +1958,13 @@ static void Cmd_DisasmScript_f( const idCmdArgs &args ) {
 Cmd_TestSave_f
 ==================
 */
-static void Cmd_TestSave_f( const idCmdArgs &args ) {
+/*static void Cmd_TestSave_f( const idCmdArgs &args ) {
 	idFile *f;
 
 	f = fileSystem->OpenFileWrite( "test.sav" );
 	gameLocal.SaveGame( f );
 	fileSystem->CloseFile( f );
-}
+}*/
 
 /*
 ==================
@@ -2243,7 +2243,7 @@ Cmd_TestId_f
 outputs a string from the string table for the specified id
 ===============
 */
-void Cmd_TestId_f( const idCmdArgs &args ) {
+/*void Cmd_TestId_f( const idCmdArgs &args ) {
 	idStr	id;
 	int		i;
 	if ( args.Argc() == 1 ) {
@@ -2258,7 +2258,7 @@ void Cmd_TestId_f( const idCmdArgs &args ) {
 		id = STRTABLE_ID + id;
 	}
 	gameLocal.mpGame.AddChatLine( common->GetLanguageDict()->GetString( id ), "<nothing>", "<nothing>", "<nothing>" );
-}
+}*/
 
 /*
 =================
@@ -2271,7 +2271,7 @@ so it can perform tab completion
 void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "listTypeInfo",			ListTypeInfo_f,				CMD_FL_GAME,				"list type info" );
 	cmdSystem->AddCommand( "writeGameState",		WriteGameState_f,			CMD_FL_GAME,				"write game state" );
-	cmdSystem->AddCommand( "testSaveGame",			TestSaveGame_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"test a save game for a level" );
+	//cmdSystem->AddCommand( "testSaveGame",			TestSaveGame_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"test a save game for a level" );
 	cmdSystem->AddCommand( "game_memory",			idClass::DisplayInfo_f,		CMD_FL_GAME,				"displays game class info" );
 	cmdSystem->AddCommand( "listClasses",			idClass::ListClasses_f,		CMD_FL_GAME,				"lists game classes" );
 	cmdSystem->AddCommand( "listThreads",			idThread::ListThreads_f,	CMD_FL_GAME|CMD_FL_CHEAT,	"lists script threads" );
@@ -2306,13 +2306,13 @@ void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "blinkline",				Cmd_BlinkDebugLine_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"blinks a debug line" );
 	cmdSystem->AddCommand( "listLines",				Cmd_ListDebugLines_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"lists all debug lines" );
 	cmdSystem->AddCommand( "playerModel",			Cmd_PlayerModel_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"sets the given model on the player", idCmdSystem::ArgCompletion_Decl<DECL_MODELDEF> );
-	cmdSystem->AddCommand( "testFx",				Cmd_TestFx_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"tests an FX system", idCmdSystem::ArgCompletion_Decl<DECL_FX> );
-	cmdSystem->AddCommand( "testBoneFx",			Cmd_TestBoneFx_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests an FX system bound to a joint", idCmdSystem::ArgCompletion_Decl<DECL_FX> );
-	cmdSystem->AddCommand( "testLight",				Cmd_TestLight_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests a light" );
-	cmdSystem->AddCommand( "testPointLight",		Cmd_TestPointLight_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"tests a point light" );
+	//cmdSystem->AddCommand( "testFx",				Cmd_TestFx_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"tests an FX system", idCmdSystem::ArgCompletion_Decl<DECL_FX> );
+	//cmdSystem->AddCommand( "testBoneFx",			Cmd_TestBoneFx_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests an FX system bound to a joint", idCmdSystem::ArgCompletion_Decl<DECL_FX> );
+	//cmdSystem->AddCommand( "testLight",				Cmd_TestLight_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests a light" );
+	//cmdSystem->AddCommand( "testPointLight",		Cmd_TestPointLight_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"tests a point light" );
 	cmdSystem->AddCommand( "popLight",				Cmd_PopLight_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"removes the last created light" );
-	cmdSystem->AddCommand( "testDeath",				Cmd_TestDeath_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests death" );
-	cmdSystem->AddCommand( "testSave",				Cmd_TestSave_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"writes out a test savegame" );
+	//cmdSystem->AddCommand( "testDeath",				Cmd_TestDeath_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests death" );
+	//cmdSystem->AddCommand( "testSave",				Cmd_TestSave_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"writes out a test savegame" );
 	cmdSystem->AddCommand( "reloadScript",			Cmd_ReloadScript_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"reloads scripts" );
 	cmdSystem->AddCommand( "script",				Cmd_Script_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"executes a line of script" );
 	cmdSystem->AddCommand( "listCollisionModels",	Cmd_ListCollisionModels_f,	CMD_FL_GAME,				"lists collision models" );
@@ -2321,7 +2321,7 @@ void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "reloadanims",			Cmd_ReloadAnims_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"reloads animations" );
 	cmdSystem->AddCommand( "listAnims",				Cmd_ListAnims_f,			CMD_FL_GAME,				"lists all animations" );
 	cmdSystem->AddCommand( "aasStats",				Cmd_AASStats_f,				CMD_FL_GAME,				"shows AAS stats" );
-	cmdSystem->AddCommand( "testDamage",			Cmd_TestDamage_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests a damage def", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF> );
+	//cmdSystem->AddCommand( "testDamage",			Cmd_TestDamage_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"tests a damage def", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF> );
 	cmdSystem->AddCommand( "weaponSplat",			Cmd_WeaponSplat_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"projects a blood splat on the player weapon" );
 	cmdSystem->AddCommand( "saveSelected",			Cmd_SaveSelected_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"saves the selected entity to the .map file" );
 	cmdSystem->AddCommand( "deleteSelected",		Cmd_DeleteSelected_f,		CMD_FL_GAME|CMD_FL_CHEAT,	"deletes selected entity" );
@@ -2356,7 +2356,7 @@ void idGameLocal::InitConsoleCommands( void ) {
 
 	// localization help commands
 	cmdSystem->AddCommand( "nextGUI",				Cmd_NextGUI_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"teleport the player to the next func_static with a gui" );
-	cmdSystem->AddCommand( "testid",				Cmd_TestId_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"output the string for the specified id." );
+	//cmdSystem->AddCommand( "testid",				Cmd_TestId_f,				CMD_FL_GAME|CMD_FL_CHEAT,	"output the string for the specified id." );
 }
 
 /*

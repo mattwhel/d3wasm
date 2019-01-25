@@ -247,7 +247,7 @@ TestSound_f
   this is called from the main thread
 ===============
 */
-void TestSound_f( const idCmdArgs &args ) {
+/*void TestSound_f( const idCmdArgs &args ) {
 	if ( args.Argc() != 2 ) {
 		common->Printf( "Usage: testSound <file>\n" );
 		return;
@@ -255,7 +255,7 @@ void TestSound_f( const idCmdArgs &args ) {
 	if ( soundSystemLocal.currentSoundWorld ) {
 		soundSystemLocal.currentSoundWorld->PlayShaderDirectly( args.Argv( 1 ) );
 	}
-}
+}*/
 
 /*
 ===============
@@ -443,7 +443,7 @@ void idSoundSystemLocal::Init() {
 	cmdSystem->AddCommand( "listSounds", ListSounds_f, CMD_FL_SOUND, "lists all sounds" );
 	cmdSystem->AddCommand( "listSoundDecoders", ListSoundDecoders_f, CMD_FL_SOUND, "list active sound decoders" );
 	cmdSystem->AddCommand( "reloadSounds", SoundReloadSounds_f, CMD_FL_SOUND|CMD_FL_CHEAT, "reloads all sounds" );
-	cmdSystem->AddCommand( "testSound", TestSound_f, CMD_FL_SOUND | CMD_FL_CHEAT, "tests a sound", idCmdSystem::ArgCompletion_SoundName );
+	//cmdSystem->AddCommand( "testSound", TestSound_f, CMD_FL_SOUND | CMD_FL_CHEAT, "tests a sound", idCmdSystem::ArgCompletion_SoundName );
 	cmdSystem->AddCommand( "s_restart", SoundSystemRestart_f, CMD_FL_SOUND, "restarts the sound system" );
 }
 

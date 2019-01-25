@@ -2001,7 +2001,7 @@ void Com_LocalizeGuis_f(const idCmdArgs &args) {
   strTable.Save(filename);
 }
 
-void Com_LocalizeGuiParmsTest_f(const idCmdArgs &args) {
+/*void Com_LocalizeGuiParmsTest_f(const idCmdArgs &args) {
 
   common->SetRefreshOnPrint(true);
 
@@ -2084,7 +2084,7 @@ for( int i = 0; i < ent->epairs.GetNumKeyVals(); i++) {
   localizeFile->Write( out.c_str(), out.Length() );
 }*/
 
-          idStr classname = ent->epairs.GetString("classname");
+/*          idStr classname = ent->epairs.GetString("classname");
 
           //Hack: for info_location
           bool hasLocation = false;
@@ -2129,7 +2129,7 @@ for( int i = 0; i < ent->epairs.GetNumKeyVals(); i++) {
   fileSystem->CloseFile(localizeFile);
 
   common->SetRefreshOnPrint(false);
-}
+}*/
 
 /*
 =================
@@ -2212,7 +2212,7 @@ void idCommonLocal::InitCommands(void) {
                         "lists all keys used by dictionaries");
   cmdSystem->AddCommand("listDictValues", idDict::ListValues_f, CMD_FL_SYSTEM | CMD_FL_CHEAT,
                         "lists all values used by dictionaries");
-  cmdSystem->AddCommand("testSIMD", idSIMD::Test_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "test SIMD code");
+  //cmdSystem->AddCommand("testSIMD", idSIMD::Test_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "test SIMD code");
 
   // localization
   cmdSystem->AddCommand("localizeGuis", Com_LocalizeGuis_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "localize guis");
@@ -2220,10 +2220,10 @@ void idCommonLocal::InitCommands(void) {
   cmdSystem->AddCommand("reloadLanguage", Com_ReloadLanguage_f, CMD_FL_SYSTEM, "reload language dict");
 
   //D3XP Localization
-  cmdSystem->AddCommand("localizeGuiParmsTest", Com_LocalizeGuiParmsTest_f, CMD_FL_SYSTEM,
-                        "Create test files that show gui parms localized and ignored.");
-  cmdSystem->AddCommand("localizeMapsTest", Com_LocalizeMapsTest_f, CMD_FL_SYSTEM,
-                        "Create test files that shows which strings will be localized.");
+  //cmdSystem->AddCommand("localizeGuiParmsTest", Com_LocalizeGuiParmsTest_f, CMD_FL_SYSTEM,
+   //                     "Create test files that show gui parms localized and ignored.");
+  //cmdSystem->AddCommand("localizeMapsTest", Com_LocalizeMapsTest_f, CMD_FL_SYSTEM,
+  //                      "Create test files that shows which strings will be localized.");
 
   // build helpers
   cmdSystem->AddCommand("startBuild", Com_StartBuild_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "prepares to make a build");

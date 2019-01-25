@@ -591,23 +591,23 @@ void idSessionLocal::ClearWipe(void) {
 Session_TestGUI_f
 ================
 */
-static void Session_TestGUI_f(const idCmdArgs& args) {
+/*static void Session_TestGUI_f(const idCmdArgs& args) {
   sessLocal.TestGUI(args.Argv(1));
-}
+}*/
 
 /*
 ================
 idSessionLocal::TestGUI
 ================
 */
-void idSessionLocal::TestGUI(const char* guiName) {
+/*void idSessionLocal::TestGUI(const char* guiName) {
   if ( guiName && *guiName ) {
     guiTest = uiManager->FindGui(guiName, true, false, true);
   }
   else {
     guiTest = NULL;
   }
-}
+}*/
 
 /*
 ================
@@ -2991,7 +2991,7 @@ void idSessionLocal::Init() {
   cmdSystem->AddCommand("disconnect", Session_Disconnect_f, CMD_FL_SYSTEM, "disconnects from a game");
 
   cmdSystem->AddCommand("demoShot", Session_DemoShot_f, CMD_FL_SYSTEM, "writes a screenshot for a demo");
-  cmdSystem->AddCommand("testGUI", Session_TestGUI_f, CMD_FL_SYSTEM, "tests a gui");
+  //cmdSystem->AddCommand("testGUI", Session_TestGUI_f, CMD_FL_SYSTEM, "tests a gui");
 
   cmdSystem->AddCommand("saveGame", SaveGame_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "saves a game");
   cmdSystem->AddCommand("loadGame", LoadGame_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "loads a game",
