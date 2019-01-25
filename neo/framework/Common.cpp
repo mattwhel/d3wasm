@@ -2074,7 +2074,7 @@ void Com_LocalizeMapsTest_f(const idCmdArgs &args) {
         if (ent) {
 
           //Temp code to get a list of all entity key value pairs
-          /*idStr classname = ent->epairs.GetString("classname");
+*/          /*idStr classname = ent->epairs.GetString("classname");
 if(classname == "worldspawn" || classname == "func_static" || classname == "light" || classname == "speaker" || classname.Left(8) == "trigger_") {
   continue;
 }
