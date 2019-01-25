@@ -51,7 +51,7 @@ if (EMSCRIPTEN)
   set(WEBGL ON)
   SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
 else()
-  set(NOEFX OFF)
+  set(NOEFX ON)
   set(NOMT  ON)
   set(NODLL ON)      # only one single binary with core+base game
   set(WEBGL OFF)
@@ -124,10 +124,12 @@ find_package(X11 REQUIRED)
 include_directories(${X11_INCLUDE_DIR})
 endif()
 
-find_package(JPEG REQUIRED)
-include_directories(${JPEG_INCLUDE_DIR})
-list(APPEND CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
-list(APPEND CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
+# Embedded libjpeg handling
+# Be sure to init git submodules
+set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+set(BUILD_EXECUTABLES OFF CACHE BOOL "" FORCE)
+set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
+add_subdirectory(renderer/libjpeg)
 
 if (EMSCRIPTEN)
   include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
@@ -613,7 +615,7 @@ if (CORE)
       ${VORBISFILE_LIBRARIES}
       ${VORBIS_LIBRARIES}
       ${OGG_LIBRARIES}
-      ${JPEG_LIBRARY}
+      jpeg
       ${ZLIB_LIBRARY}
       ${SDLx_LIBRARY}
       ${sys_libs})

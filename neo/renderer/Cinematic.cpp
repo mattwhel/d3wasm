@@ -34,8 +34,8 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "renderer/Cinematic.h"
 
-#include <jpeglib.h>
-#include <jerror.h>
+#include "renderer/libjpeg/jpeglib.h"
+#include "renderer/libjpeg/jerror.h"
 
 #define CIN_system	1
 #define CIN_loop	2
