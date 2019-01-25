@@ -27,15 +27,22 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 #include <SDL_version.h>
+
+#ifdef NOMT
+#else
 #include <SDL_mutex.h>
 #include <SDL_thread.h>
 #include <SDL_timer.h>
+#endif
+
 
 #include "sys/platform.h"
 #include "framework/Common.h"
 
 #include "sys/sys_public.h"
 
+#ifdef NOMT
+#else
 static SDL_mutex	*mutex[MAX_CRITICAL_SECTIONS] = { };
 static SDL_cond		*cond[MAX_TRIGGER_EVENTS] = { };
 static bool			signaled[MAX_TRIGGER_EVENTS] = { };
@@ -43,6 +50,7 @@ static bool			waiting[MAX_TRIGGER_EVENTS] = { };
 
 static xthreadInfo	*thread[MAX_THREADS] = { };
 static size_t		thread_count = 0;
+#endif
 
 /*
 ==============
@@ -62,8 +70,22 @@ void Sys_Sleep(int msec) {
 Sys_Milliseconds
 ================
 */
+#include <sys/time.h>
+
+static bool InitTicks( struct timeval *st ) {
+  gettimeofday(st, NULL);
+  return true;
+}
+
 unsigned int Sys_Milliseconds() {
-	return SDL_GetTicks();
+  static struct timeval start;
+  static const bool   started = InitTicks(&start);
+
+  struct timeval now;
+  gettimeofday(&now, NULL);
+  const Uint32 ticks=(now.tv_sec-start.tv_sec)*1000+(now.tv_usec-start.tv_usec)/1000;
+  return(ticks);
+	//return SDL_GetTicks();
 }
 
 /*
