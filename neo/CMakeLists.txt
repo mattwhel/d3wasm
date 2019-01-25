@@ -99,14 +99,9 @@ if (NOT CMAKE_BUILD_TYPE)
 endif ()
 
 # libs
+if(NOT EMSCRIPTEN)
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
-
-find_package(JPEG REQUIRED)
-include_directories(${JPEG_INCLUDE_DIR})
-
-list(APPEND CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
-list(APPEND CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
 
 find_package(OGG REQUIRED)
 include_directories(${OGG_INCLUDE_DIR})
@@ -117,23 +112,26 @@ include_directories(${VORBIS_INCLUDE_DIR})
 find_package(VorbisFile REQUIRED)
 include_directories(${VORBISFILE_INCLUDE_DIR})
 
-find_package(OpenAL REQUIRED)
-if (EMSCRIPTEN)
-  include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
-  set(OPENAL_LIBRARY ) # "nul" is returned as a lib name, which is not compliant with emscripten STRICT mode
-else ()
-  include_directories(${OPENAL_INCLUDE_DIR})
-endif ()
-
-if (NOT EMSCRIPTEN)
-  find_package(X11 REQUIRED)
-  include_directories(${X11_INCLUDE_DIR})
-endif ()
-
 set(SDL2_BUILDING_LIBRARY TRUE)
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIR})
 set(SDLx_LIBRARY ${SDL2_LIBRARY})
+
+find_package(OpenAL REQUIRED)
+include_directories(${OPENAL_INCLUDE_DIR})
+
+find_package(X11 REQUIRED)
+include_directories(${X11_INCLUDE_DIR})
+endif()
+
+find_package(JPEG REQUIRED)
+include_directories(${JPEG_INCLUDE_DIR})
+list(APPEND CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
+list(APPEND CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
+
+if (EMSCRIPTEN)
+  include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
+endif ()
 
 # compiler specific flags
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTEN)
@@ -143,7 +141,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
   set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
   set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
   set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs --D_DEBUG -O1 -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELEASE "-O3 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
   set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
 
@@ -170,6 +168,12 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
     add_compile_options(-Wno-unused-function)
     add_compile_options(-Wno-unused-const-variable)
     add_compile_options(-Wno-unused-private-field)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_VORBIS=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_OGG=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
+
   else ()
     add_compile_options(-Wno-misleading-indentation)
   endif ()
@@ -212,6 +216,10 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s ASSERTIONS=0")
   set(ldflags "${ldflags} -s MALLOC=emmalloc")
   set(ldflags "${ldflags} -s ENVIRONMENT=web")
+  set(ldflags "${ldflags} -s USE_SDL=2")
+  set(ldflags "${ldflags} -s USE_ZLIB=1")
+  set(ldflags "${ldflags} -s USE_VORBIS=1")
+  set(ldflags "${ldflags} -s USE_OGG=1")
   #set(ldflags "${ldflags} -s STRICT=1")
 endif ()
 
