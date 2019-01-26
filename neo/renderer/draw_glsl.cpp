@@ -603,10 +603,9 @@ interaction into primitive interactions
 =============
 */
 static void
-RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInteraction)(const drawInteraction_t*)) {
+RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInteraction)(const drawInteraction_t*), const viewLight_t* vLight) {
   const idMaterial* surfaceShader = surf->material;
   const float* surfaceRegs = surf->shaderRegisters;
-  const viewLight_t* vLight = backEnd.vLight;
   const idMaterial* lightShader = vLight->lightShader;
   const float* lightRegs = vLight->shaderRegisters;
   drawInteraction_t inter;
@@ -650,7 +649,7 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
   idPlane lightProject[4];
 
   for ( int i = 0; i < 4; i++ ) {
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, backEnd.vLight->lightProject[i], lightProject[i]);
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, vLight->lightProject[i], lightProject[i]);
   }
 
   for ( int lightStageNum = 0; lightStageNum < lightShader->GetNumStages(); lightStageNum++ ) {
@@ -667,8 +666,9 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
 
     // now multiply the texgen by the light texture matrix
     if ( lightStage->texture.hasMatrix ) {
-      RB_GetShaderTextureMatrix(lightRegs, &lightStage->texture, backEnd.lightTextureMatrix);
-      RB_BakeTextureMatrixIntoTexgen(reinterpret_cast<class idPlane*>(inter.lightProjection), NULL);
+      float lightTextureMatrix[16];
+      RB_GetShaderTextureMatrix(lightRegs, &lightStage->texture, lightTextureMatrix);
+      RB_BakeTextureMatrixIntoTexgen(reinterpret_cast<class idPlane*>(inter.lightProjection), lightTextureMatrix);
     }
 
     inter.bumpImage = NULL;
@@ -764,7 +764,7 @@ RB_GLSL_CreateDrawInteractions
 
 =============
 */
-static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int depthFunc = GLS_DEPTHFUNC_EQUAL) {
+static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLight_t* vLight, const int depthFunc = GLS_DEPTHFUNC_EQUAL) {
   if ( !surf ) {
     return;
   }
@@ -817,7 +817,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
 
     // this may cause RB_GLSL_DrawInteraction to be exacuted multiple
     // times with different colors and images if the surface or light have multiple layers
-    RB_GLSL_CreateSingleDrawInteractions(surf, RB_GLSL_DrawInteraction);
+    RB_GLSL_CreateSingleDrawInteractions(surf, RB_GLSL_DrawInteraction, vLight);
 
     backEnd.currentSpace = surf->space;
   }
@@ -848,129 +848,103 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
   GL_UseProgram(NULL);
 }
 
+
 /*
-==================
-RB_GLSL_DrawInteractions
-==================
+=====================
+RB_T_GLSL_Shadow
+
+the shadow volumes face INSIDE
+=====================
 */
-void RB_GLSL_DrawInteractions(void) {
+static void RB_T_GLSL_Shadow(const drawSurf_t* surf, const viewLight_t* vLight) {
+  const srfTriangles_t* tri = surf->geo;
 
-  ///////////////////////
-  // For each light loop
-  ///////////////////////
+  if ( !tri->shadowCache ) {
+    return;
+  }
 
-  viewLight_t* vLight;
-  //
-  // for each light, perform adding and shadowing
-  //
-  for ( vLight = backEnd.viewDef->viewLights; vLight; vLight = vLight->next ) {
+  // set the light position for the vertex program to project the rear surfaces
+  if ( surf->space != backEnd.currentSpace ) {
+    idVec4 localLight;
 
-    //////////////
-    // Skip Cases
-    //////////////
+    R_GlobalPointToLocal(surf->space->modelMatrix, vLight->globalLightOrigin, localLight.ToVec3());
+    localLight.w = 0.0f;
+    GL_Uniform4fv(offsetof(shaderProgram_t, localLightOrigin), localLight.ToFloatPtr());
+  }
 
-    // do fogging later
-    if ( vLight->lightShader->IsFogLight()) {
-      continue;
-    }
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 4, GL_FLOAT, false, sizeof(shadowCache_t),
+                         vertexCache.Position(tri->shadowCache));
 
-    if ( vLight->lightShader->IsBlendLight()) {
-      continue;
-    }
+  // we always draw the sil planes, but we may not need to draw the front or rear caps
+  int numIndexes;
+  bool external = false;
 
-    if ( !vLight->localInteractions && !vLight->globalInteractions
-         && !vLight->translucentInteractions ) {
-      continue;
-    }
-
-    //////////////////
-    // Setup GL state
-    //////////////////
-
-    // Current light
-    backEnd.vLight = vLight;
-
-    // clear the stencil buffer if needed
-    if ( vLight->globalShadows || vLight->localShadows ) {
-
-      if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(vLight->scissorRect)) {
-        backEnd.currentScissor = vLight->scissorRect;
-        if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
-            ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
-          backEnd.currentScissor = backEnd.viewDef->scissor;
-        }
-        qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
-                   backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
-                   backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
-                   backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
-      }
-
-      qglClear(GL_STENCIL_BUFFER_BIT);
+  if ( !r_useExternalShadows.GetInteger()) {
+    numIndexes = tri->numIndexes;
+  }
+  else if ( r_useExternalShadows.GetInteger() == 2 ) {   // force to no caps for testing
+    numIndexes = tri->numShadowIndexesNoCaps;
+  }
+  else if ( !( surf->dsFlags & DSF_VIEW_INSIDE_SHADOW )) {
+    // if we aren't inside the shadow projection, no caps are ever needed needed
+    numIndexes = tri->numShadowIndexesNoCaps;
+    external = true;
+  }
+  else if ( !vLight->viewInsideLight && !( surf->geo->shadowCapPlaneBits & SHADOW_CAP_INFINITE )) {
+    // if we are inside the shadow projection, but outside the light, and drawing
+    // a non-infinite shadow, we can skip some caps
+    if ( vLight->viewSeesShadowPlaneBits & surf->geo->shadowCapPlaneBits ) {
+      // we can see through a rear cap, so we need to draw it, but we can skip the
+      // caps on the actual surface
+      numIndexes = tri->numShadowIndexesNoFrontCaps;
     }
     else {
-      // no shadows, so no need to read or write the stencil buffer
-      // we might in theory want to use GL_ALWAYS instead of disabling
-      // completely, to satisfy the invarience rules
-      qglStencilFunc(GL_ALWAYS, 128, 255);
+      // we don't need to draw any caps
+      numIndexes = tri->numShadowIndexesNoCaps;
     }
 
-    RB_GLSL_StencilShadowPass(vLight->globalShadows);
-    RB_GLSL_CreateDrawInteractions(vLight->localInteractions);
-    RB_GLSL_StencilShadowPass(vLight->localShadows);
-    RB_GLSL_CreateDrawInteractions(vLight->globalInteractions);
-
-    // translucent surfaces never get stencil shadowed
-    if ( r_skipTranslucent.GetBool()) {
-      continue;
-    }
-
-    qglStencilFunc(GL_ALWAYS, 128, 255);
-    RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions, GLS_DEPTHFUNC_LESS);
+    external = true;
+  }
+  else {
+    // must draw everything
+    numIndexes = tri->numIndexes;
   }
 
-  // disable stencil shadow test
-  qglStencilFunc(GL_ALWAYS, 128, 255);
-}
+  // depth-fail stencil shadows
+  if ( !external ) {
+    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_FRONT : GL_BACK, GL_KEEP, GL_DECR, GL_KEEP);
+    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_BACK : GL_FRONT, GL_KEEP, GL_INCR, GL_KEEP);
+  }
+  else {
+    // traditional depth-pass stencil shadows
+    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_FRONT : GL_BACK, GL_KEEP, GL_KEEP, GL_INCR);
+    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_BACK : GL_FRONT, GL_KEEP, GL_KEEP, GL_DECR);
+  }
+  GL_Cull(CT_TWO_SIDED);
+  RB_DrawShadowElementsWithCounters(tri, numIndexes);
 
-// NB: oh, a nice global variable. Argh....
-static idPlane fogPlanes[4];
-
-/*
-=====================
-RB_T_BasicFog
-=====================
-*/
-static void RB_T_GLSL_BasicFog(const drawSurf_t* surf) {
-  if ( backEnd.currentSpace != surf->space ) {
-    idPlane local;
-
-    //S
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[0], local);
-    local[3] += 0.5;
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0S), local.ToFloatPtr());
-
-    //T
-    local[0] = local[1] = local[2] = 0;
-    local[3] = 0.5;
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0T), local.ToFloatPtr());
-
-    //T
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[2], local);
-    local[3] += FOG_ENTER;
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1T), local.ToFloatPtr());
-
-    //S
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[3], local);
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1S), local.ToFloatPtr());
+  // patent-free work around
+  /*if (!external) {
+    // "preload" the stencil buffer with the number of volumes
+    // that get clipped by the near or far clip plane
+    qglStencilOp(GL_KEEP, GL_DECR, GL_DECR);
+    GL_Cull(CT_FRONT_SIDED);
+    RB_DrawShadowElementsWithCounters(tri, numIndexes);
+    qglStencilOp(GL_KEEP, GL_INCR, GL_INCR);
+    GL_Cull(CT_BACK_SIDED);
+    RB_DrawShadowElementsWithCounters(tri, numIndexes);
   }
 
-  idDrawVert* ac = (idDrawVert*) vertexCache.Position(surf->geo->ambientCache);
+  // traditional depth-pass stencil shadows
+  qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+  GL_Cull(CT_FRONT_SIDED);
+  RB_DrawShadowElementsWithCounters(tri, numIndexes);
 
-  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                         ac->xyz.ToFloatPtr());
-
-  RB_DrawElementsWithCounters(surf->geo);
+  qglStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+  GL_Cull(CT_BACK_SIDED);
+  RB_DrawShadowElementsWithCounters(tri, numIndexes);*/
 }
+
 
 /*
 ======================
@@ -978,7 +952,7 @@ RB_RenderDrawSurfChainWithFunction
 ======================
 */
 void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
-                                             void (* triFunc_)(const drawSurf_t*)) {
+                                             void (* triFunc_)(const drawSurf_t*, const viewLight_t*), const viewLight_t* vLight) {
   const drawSurf_t* drawSurf;
 
   backEnd.currentSpace = NULL;
@@ -1015,7 +989,7 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
     }
 
     // render it
-    triFunc_(drawSurf);
+    triFunc_(drawSurf, vLight);
 
     if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
       RB_GLSL_LeaveDepthHack(drawSurf);
@@ -1026,11 +1000,201 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
 }
 
 /*
+=====================
+RB_GLSL_StencilShadowPass
+
+Stencil test should already be enabled, and the stencil buffer should have
+been set to 128 on any surfaces that might receive shadows
+=====================
+*/
+void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* vLight) {
+
+  //////////////
+  // Skip cases
+  //////////////
+
+  if ( !r_shadows.GetBool()) {
+    return;
+  }
+
+  if ( !drawSurfs ) {
+    return;
+  }
+
+  //////////////////
+  // Setup GL state
+  //////////////////
+
+  // Initial expected GL state:
+  // Texture 0 is active, and bound to NULL
+  // No shaders active
+
+  // Use the stencil shadow shader
+  GL_UseProgram(&stencilShadowShader);
+
+  // Enable the Vertex attributes arrays
+  // NB: Vertex attrib is already enabled
+
+  // don't write to the color buffer, just the stencil buffer
+  GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
+
+  if ( r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
+    qglPolygonOffset(r_shadowPolygonFactor.GetFloat(), -r_shadowPolygonOffset.GetFloat());
+    qglEnable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  qglStencilFunc(GL_ALWAYS, 1, 255);
+
+  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow, vLight);
+
+  GL_Cull(CT_FRONT_SIDED);
+
+  if ( r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
+    qglDisable(GL_POLYGON_OFFSET_FILL);
+  }
+
+  qglStencilFunc(GL_GEQUAL, 128, 255);
+  qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+  // Restore GL State that might have been changed locally:
+  // Shader set to NULL
+  //
+  // This pass does not use any vertex attribute (other than vertexes obviously), and no textures
+  //
+  // We don't care about uniform states
+
+  // Desactivate the shader
+  GL_UseProgram(NULL);
+}
+
+
+/*
+==================
+RB_GLSL_DrawInteractions
+==================
+*/
+void RB_GLSL_DrawInteractions(void) {
+
+  ///////////////////////
+  // For each light loop
+  ///////////////////////
+
+  const viewLight_t* vLight;
+  //
+  // for each light, perform adding and shadowing
+  //
+  for ( vLight = backEnd.viewDef->viewLights; vLight; vLight = vLight->next ) {
+
+    //////////////
+    // Skip Cases
+    //////////////
+
+    // do fogging later
+    if ( vLight->lightShader->IsFogLight()) {
+      continue;
+    }
+
+    if ( vLight->lightShader->IsBlendLight()) {
+      continue;
+    }
+
+    if ( !vLight->localInteractions && !vLight->globalInteractions
+         && !vLight->translucentInteractions ) {
+      continue;
+    }
+
+    //////////////////
+    // Setup GL state
+    //////////////////
+
+    // clear the stencil buffer if needed
+    if ( vLight->globalShadows || vLight->localShadows ) {
+
+      if ( r_useScissor.GetBool() && !backEnd.currentScissor.Equals(vLight->scissorRect)) {
+        backEnd.currentScissor = vLight->scissorRect;
+        if (( backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1 ) < 0.0f ||
+            ( backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1 ) < 0.0f ) {
+          backEnd.currentScissor = backEnd.viewDef->scissor;
+        }
+        qglScissor(backEnd.viewDef->viewport.x1 + backEnd.currentScissor.x1,
+                   backEnd.viewDef->viewport.y1 + backEnd.currentScissor.y1,
+                   backEnd.currentScissor.x2 + 1 - backEnd.currentScissor.x1,
+                   backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
+      }
+
+      qglClear(GL_STENCIL_BUFFER_BIT);
+    }
+    else {
+      // no shadows, so no need to read or write the stencil buffer
+      // we might in theory want to use GL_ALWAYS instead of disabling
+      // completely, to satisfy the invarience rules
+      qglStencilFunc(GL_ALWAYS, 128, 255);
+    }
+
+    RB_GLSL_StencilShadowPass(vLight->globalShadows, vLight);
+    RB_GLSL_CreateDrawInteractions(vLight->localInteractions, vLight);
+    RB_GLSL_StencilShadowPass(vLight->localShadows, vLight);
+    RB_GLSL_CreateDrawInteractions(vLight->globalInteractions, vLight);
+
+    // translucent surfaces never get stencil shadowed
+    if ( r_skipTranslucent.GetBool()) {
+      continue;
+    }
+
+    qglStencilFunc(GL_ALWAYS, 128, 255);
+    RB_GLSL_CreateDrawInteractions(vLight->translucentInteractions, vLight, GLS_DEPTHFUNC_LESS);
+  }
+
+  // disable stencil shadow test
+  qglStencilFunc(GL_ALWAYS, 128, 255);
+}
+
+// NB: oh, a nice global variable. Argh....
+static idPlane fogPlanes[4];
+
+/*
+=====================
+RB_T_BasicFog
+=====================
+*/
+static void RB_T_GLSL_BasicFog(const drawSurf_t* surf, const viewLight_t* vLight) {
+  if ( backEnd.currentSpace != surf->space ) {
+    idPlane local;
+
+    //S
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[0], local);
+    local[3] += 0.5;
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0S), local.ToFloatPtr());
+
+    //T
+    local[0] = local[1] = local[2] = 0;
+    local[3] = 0.5;
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0T), local.ToFloatPtr());
+
+    //T
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[2], local);
+    local[3] += FOG_ENTER;
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1T), local.ToFloatPtr());
+
+    //S
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[3], local);
+    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1S), local.ToFloatPtr());
+  }
+
+  idDrawVert* ac = (idDrawVert*) vertexCache.Position(surf->geo->ambientCache);
+
+  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                         ac->xyz.ToFloatPtr());
+
+  RB_DrawElementsWithCounters(surf->geo);
+}
+
+/*
 ==================
 RB_FogPass
 ==================
 */
-void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2) {
+void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, const viewLight_t* vLight) {
 
   drawSurf_t ds;
   const idMaterial* lightShader;
@@ -1038,7 +1202,7 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2) 
   const float* regs;
 
   // create a surface for the light frustom triangles, which are oriented drawn side out
-  const srfTriangles_t* frustumTris = backEnd.vLight->frustumTris;
+  const srfTriangles_t* frustumTris = vLight->frustumTris;
 
   // if we ran out of vertex cache memory, skip it
   if ( !frustumTris->ambientCache ) {
@@ -1059,21 +1223,23 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2) 
   ds.scissorRect = backEnd.viewDef->scissor;
 
   // find the current color and density of the fog
-  lightShader = backEnd.vLight->lightShader;
-  regs = backEnd.vLight->shaderRegisters;
+  lightShader = vLight->lightShader;
+  regs = vLight->shaderRegisters;
   // assume fog shaders have only a single stage
   stage = lightShader->GetStage(0);
 
-  backEnd.lightColor[0] = regs[stage->color.registers[0]];
-  backEnd.lightColor[1] = regs[stage->color.registers[1]];
-  backEnd.lightColor[2] = regs[stage->color.registers[2]];
-  backEnd.lightColor[3] = regs[stage->color.registers[3]];
+  float lightColor[4];
+
+  lightColor[0] = regs[stage->color.registers[0]];
+  lightColor[1] = regs[stage->color.registers[1]];
+  lightColor[2] = regs[stage->color.registers[2]];
+  lightColor[3] = regs[stage->color.registers[3]];
 
   // FogColor
-  GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), backEnd.lightColor);
+  GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), lightColor);
 
   // calculate the falloff planes
-  const float a = ( backEnd.lightColor[3] <= 1.0 ) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / backEnd.lightColor[3];
+  const float a = ( lightColor[3] <= 1.0 ) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / lightColor[3];
 
   // texture 0 is the falloff image
   globalImages->fogImage->Bind();
@@ -1094,10 +1260,10 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2) 
   GL_SelectTexture(0);
 
   // T will get a texgen for the fade plane, which is always the "top" plane on unrotated lights
-  fogPlanes[2][0] = 0.001f * backEnd.vLight->fogPlane[0];
-  fogPlanes[2][1] = 0.001f * backEnd.vLight->fogPlane[1];
-  fogPlanes[2][2] = 0.001f * backEnd.vLight->fogPlane[2];
-  fogPlanes[2][3] = 0.001f * backEnd.vLight->fogPlane[3];
+  fogPlanes[2][0] = 0.001f * vLight->fogPlane[0];
+  fogPlanes[2][1] = 0.001f * vLight->fogPlane[1];
+  fogPlanes[2][2] = 0.001f * vLight->fogPlane[2];
+  fogPlanes[2][3] = 0.001f * vLight->fogPlane[3];
 
   // S is based on the view origin
   const float s = backEnd.viewDef->renderView.vieworg * fogPlanes[2].Normal() + fogPlanes[2][3];
@@ -1108,14 +1274,14 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2) 
 
   // draw it
   GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_EQUAL);
-  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_BasicFog);
-  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_GLSL_BasicFog);
+  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_BasicFog, vLight);
+  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_GLSL_BasicFog, vLight);
 
   // the light frustum bounding planes aren't in the depth buffer, so use depthfunc_less instead
   // of depthfunc_equal
   GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_LESS);
   GL_Cull(CT_BACK_SIDED);
-  RB_GLSL_RenderDrawSurfChainWithFunction(&ds, RB_T_GLSL_BasicFog);
+  RB_GLSL_RenderDrawSurfChainWithFunction(&ds, RB_T_GLSL_BasicFog, vLight);
   GL_Cull(CT_FRONT_SIDED);
   GL_State(GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL); // Restore DepthFunc
 
@@ -2094,169 +2260,4 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
 
   // Return the counter of drawn surfaces
   return i;
-}
-
-/*
-=====================
-RB_T_GLSL_Shadow
-
-the shadow volumes face INSIDE
-=====================
-*/
-static void RB_T_GLSL_Shadow(const drawSurf_t* surf) {
-  const srfTriangles_t* tri = surf->geo;
-
-  if ( !tri->shadowCache ) {
-    return;
-  }
-
-  // set the light position for the vertex program to project the rear surfaces
-  if ( surf->space != backEnd.currentSpace ) {
-    idVec4 localLight;
-
-    R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.vLight->globalLightOrigin, localLight.ToVec3());
-    localLight.w = 0.0f;
-    GL_Uniform4fv(offsetof(shaderProgram_t, localLightOrigin), localLight.ToFloatPtr());
-  }
-
-  GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 4, GL_FLOAT, false, sizeof(shadowCache_t),
-                         vertexCache.Position(tri->shadowCache));
-
-  // we always draw the sil planes, but we may not need to draw the front or rear caps
-  int numIndexes;
-  bool external = false;
-
-  if ( !r_useExternalShadows.GetInteger()) {
-    numIndexes = tri->numIndexes;
-  }
-  else if ( r_useExternalShadows.GetInteger() == 2 ) {   // force to no caps for testing
-    numIndexes = tri->numShadowIndexesNoCaps;
-  }
-  else if ( !( surf->dsFlags & DSF_VIEW_INSIDE_SHADOW )) {
-    // if we aren't inside the shadow projection, no caps are ever needed needed
-    numIndexes = tri->numShadowIndexesNoCaps;
-    external = true;
-  }
-  else if ( !backEnd.vLight->viewInsideLight && !( surf->geo->shadowCapPlaneBits & SHADOW_CAP_INFINITE )) {
-    // if we are inside the shadow projection, but outside the light, and drawing
-    // a non-infinite shadow, we can skip some caps
-    if ( backEnd.vLight->viewSeesShadowPlaneBits & surf->geo->shadowCapPlaneBits ) {
-      // we can see through a rear cap, so we need to draw it, but we can skip the
-      // caps on the actual surface
-      numIndexes = tri->numShadowIndexesNoFrontCaps;
-    }
-    else {
-      // we don't need to draw any caps
-      numIndexes = tri->numShadowIndexesNoCaps;
-    }
-
-    external = true;
-  }
-  else {
-    // must draw everything
-    numIndexes = tri->numIndexes;
-  }
-
-  // depth-fail stencil shadows
-  if ( !external ) {
-    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_FRONT : GL_BACK, GL_KEEP, GL_DECR, GL_KEEP);
-    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_BACK : GL_FRONT, GL_KEEP, GL_INCR, GL_KEEP);
-  }
-  else {
-    // traditional depth-pass stencil shadows
-    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_FRONT : GL_BACK, GL_KEEP, GL_KEEP, GL_INCR);
-    qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_BACK : GL_FRONT, GL_KEEP, GL_KEEP, GL_DECR);
-  }
-  GL_Cull(CT_TWO_SIDED);
-  RB_DrawShadowElementsWithCounters(tri, numIndexes);
-
-  // patent-free work around
-  /*if (!external) {
-    // "preload" the stencil buffer with the number of volumes
-    // that get clipped by the near or far clip plane
-    qglStencilOp(GL_KEEP, GL_DECR, GL_DECR);
-    GL_Cull(CT_FRONT_SIDED);
-    RB_DrawShadowElementsWithCounters(tri, numIndexes);
-    qglStencilOp(GL_KEEP, GL_INCR, GL_INCR);
-    GL_Cull(CT_BACK_SIDED);
-    RB_DrawShadowElementsWithCounters(tri, numIndexes);
-  }
-
-  // traditional depth-pass stencil shadows
-  qglStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-  GL_Cull(CT_FRONT_SIDED);
-  RB_DrawShadowElementsWithCounters(tri, numIndexes);
-
-  qglStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-  GL_Cull(CT_BACK_SIDED);
-  RB_DrawShadowElementsWithCounters(tri, numIndexes);*/
-}
-
-
-/*
-=====================
-RB_GLSL_StencilShadowPass
-
-Stencil test should already be enabled, and the stencil buffer should have
-been set to 128 on any surfaces that might receive shadows
-=====================
-*/
-void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs) {
-
-  //////////////
-  // Skip cases
-  //////////////
-
-  if ( !r_shadows.GetBool()) {
-    return;
-  }
-
-  if ( !drawSurfs ) {
-    return;
-  }
-
-  //////////////////
-  // Setup GL state
-  //////////////////
-
-  // Initial expected GL state:
-  // Texture 0 is active, and bound to NULL
-  // No shaders active
-
-  // Use the stencil shadow shader
-  GL_UseProgram(&stencilShadowShader);
-
-  // Enable the Vertex attributes arrays
-  // NB: Vertex attrib is already enabled
-
-  // don't write to the color buffer, just the stencil buffer
-  GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
-
-  if ( r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
-    qglPolygonOffset(r_shadowPolygonFactor.GetFloat(), -r_shadowPolygonOffset.GetFloat());
-    qglEnable(GL_POLYGON_OFFSET_FILL);
-  }
-
-  qglStencilFunc(GL_ALWAYS, 1, 255);
-
-  RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow);
-
-  GL_Cull(CT_FRONT_SIDED);
-
-  if ( r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
-    qglDisable(GL_POLYGON_OFFSET_FILL);
-  }
-
-  qglStencilFunc(GL_GEQUAL, 128, 255);
-  qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-  // Restore GL State that might have been changed locally:
-  // Shader set to NULL
-  //
-  // This pass does not use any vertex attribute (other than vertexes obviously), and no textures
-  //
-  // We don't care about uniform states
-
-  // Desactivate the shader
-  GL_UseProgram(NULL);
 }

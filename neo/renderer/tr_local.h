@@ -632,15 +632,10 @@ typedef struct {
 	const viewDef_t	*	viewDef;
 	backEndCounters_t	pc;
 
-	const viewEntity_t *currentSpace;		// for detecting when a matrix must change
-	idScreenRect		currentScissor;
-	// for scissor clipping, local inside renderView viewport
-
-	viewLight_t *		vLight;
-	float				lightTextureMatrix[16];	// only if lightStage->texture.hasMatrix
-	float				lightColor[4];		// evaluation of current light's color stage
-
-	bool				currentRenderCopied;	// true if any material has already referenced _currentRender
+	// Current states, for optimizations
+	const viewEntity_t * currentSpace;		// for detecting when a matrix must change
+	idScreenRect		     currentScissor; // for scissor clipping, local inside renderView viewport
+	bool				         currentRenderCopied;	// true if any material has already referenced _currentRender
 
 	// our OpenGL state deltas
 	glstate_t			glState;
@@ -1247,10 +1242,9 @@ void GL_DisableVertexAttribArray(GLuint index);
 
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
 void RB_GLSL_DrawInteractions(void);
-void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2);
+void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2, const viewLight_t* vLight);
 void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
 int  RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs);
-void RB_GLSL_StencilShadowPass(const drawSurf_t *drawSurfs);
 
 /*
 ============================================================

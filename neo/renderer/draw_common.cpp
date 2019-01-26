@@ -60,7 +60,7 @@ void RB_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float *textu
 	genMatrix[11] = lightProject[2][2];
 	genMatrix[15] = lightProject[2][3];
 
-	myGlMultMatrix( genMatrix, backEnd.lightTextureMatrix, final );
+	myGlMultMatrix( genMatrix, textureMatrix, final );
 
 	lightProject[0][0] = final[0];
 	lightProject[0][1] = final[4];
@@ -210,7 +210,7 @@ RB_FogAllLights
 ==================
 */
 void RB_FogAllLights(void) {
-  viewLight_t *vLight;
+  const viewLight_t *vLight;
 
   if (r_skipFogLights.GetBool() || backEnd.viewDef->isXraySubview /* dont fog in xray mode*/ ) {
     return;
@@ -219,14 +219,13 @@ void RB_FogAllLights(void) {
   qglDisable(GL_STENCIL_TEST);
 
   for (vLight = backEnd.viewDef->viewLights; vLight; vLight = vLight->next) {
-    backEnd.vLight = vLight;
 
     if (!vLight->lightShader->IsFogLight() && !vLight->lightShader->IsBlendLight()) {
       continue;
     }
 
     if (vLight->lightShader->IsFogLight()) {
-      RB_GLSL_FogPass(vLight->globalInteractions, vLight->localInteractions);
+      RB_GLSL_FogPass(vLight->globalInteractions, vLight->localInteractions, vLight);
     } else if (vLight->lightShader->IsBlendLight()) {
       //RB_BlendLight(vLight->globalInteractions, vLight->localInteractions);
     }
