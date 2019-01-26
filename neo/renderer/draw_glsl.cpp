@@ -230,10 +230,7 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
 
   shader->localLightOrigin = qglGetUniformLocation(shader->program, "u_lightOrigin");
   shader->localViewOrigin = qglGetUniformLocation(shader->program, "u_viewOrigin");
-  shader->lightProjectionS = qglGetUniformLocation(shader->program, "u_lightProjectionS");
-  shader->lightProjectionT = qglGetUniformLocation(shader->program, "u_lightProjectionT");
-  shader->lightProjectionQ = qglGetUniformLocation(shader->program, "u_lightProjectionQ");
-  shader->lightFalloff = qglGetUniformLocation(shader->program, "u_lightFalloff");
+  shader->lightProjection = qglGetUniformLocation(shader->program, "u_lightProjection");
   shader->bumpMatrixS = qglGetUniformLocation(shader->program, "u_bumpMatrixS");
   shader->bumpMatrixT = qglGetUniformLocation(shader->program, "u_bumpMatrixT");
   shader->diffuseMatrixS = qglGetUniformLocation(shader->program, "u_diffuseMatrixS");
@@ -513,10 +510,7 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   // load all the vertex program parameters
   GL_Uniform4fv(offsetof(shaderProgram_t, localLightOrigin), din->localLightOrigin.ToFloatPtr());
   GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), din->localViewOrigin.ToFloatPtr());
-  GL_Uniform4fv(offsetof(shaderProgram_t, lightProjectionS), din->lightProjection[0].ToFloatPtr());
-  GL_Uniform4fv(offsetof(shaderProgram_t, lightProjectionT), din->lightProjection[1].ToFloatPtr());
-  GL_Uniform4fv(offsetof(shaderProgram_t, lightProjectionQ), din->lightProjection[2].ToFloatPtr());
-  GL_Uniform4fv(offsetof(shaderProgram_t, lightFalloff), din->lightProjection[3].ToFloatPtr());
+  GL_UniformMatrix4fv(offsetof(shaderProgram_t, lightProjection), din->lightProjection.ToFloatPtr());
   GL_Uniform4fv(offsetof(shaderProgram_t, bumpMatrixS), din->bumpMatrix[0].ToFloatPtr());
   GL_Uniform4fv(offsetof(shaderProgram_t, bumpMatrixT), din->bumpMatrix[1].ToFloatPtr());
   GL_Uniform4fv(offsetof(shaderProgram_t, diffuseMatrixS), din->diffuseMatrix[0].ToFloatPtr());
@@ -662,13 +656,16 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
 
     inter.lightImage = lightStage->texture.image;
 
-    memcpy(inter.lightProjection, lightProject, sizeof(inter.lightProjection));
+    inter.lightProjection[0] = lightProject[0].ToVec4(); // S
+    inter.lightProjection[1] = lightProject[1].ToVec4(); // T
+    inter.lightProjection[2] = lightProject[3].ToVec4(); // CAUTION! this is the 4th vector. R = Falloff
+    inter.lightProjection[3] = lightProject[2].ToVec4(); // CAUTION! this is the 3rd vector. Q
 
     // now multiply the texgen by the light texture matrix
     if ( lightStage->texture.hasMatrix ) {
       float lightTextureMatrix[16];
       RB_GetShaderTextureMatrix(lightRegs, &lightStage->texture, lightTextureMatrix);
-      RB_BakeTextureMatrixIntoTexgen(reinterpret_cast<class idPlane*>(inter.lightProjection), lightTextureMatrix);
+      RB_BakeTextureMatrixIntoTexgen(inter.lightProjection, lightTextureMatrix);
     }
 
     inter.bumpImage = NULL;

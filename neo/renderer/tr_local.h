@@ -454,7 +454,7 @@ typedef struct {
 	// these are loaded into the vertex program
 	idVec4				localLightOrigin;
 	idVec4				localViewOrigin;
-	idVec4				lightProjection[4];	// in local coordinates, possibly with a texture matrix baked in
+	idMat4				lightProjection;	// S,T,R=Falloff,Q   // in local coordinates, possibly with a texture matrix baked in
 	idVec4				bumpMatrix[2];
 	idVec4				diffuseMatrix[2];
 	idVec4				specularMatrix[2];
@@ -1174,7 +1174,7 @@ void RB_BindVariableStageImage( const textureStage_t *texture, const float *shad
 void RB_BeginDrawingView (void);
 void RB_FogAllLights( void );
 void RB_GetShaderTextureMatrix(const float* shaderRegisters, const textureStage_t* texture, float matrix[16]);
-void RB_BakeTextureMatrixIntoTexgen(idPlane lightProject[3], const float* textureMatrix);
+void RB_BakeTextureMatrixIntoTexgen( idMat4 & lightProject, const float* textureMatrix);
 
 /*
 ============================================================
@@ -1201,10 +1201,7 @@ typedef struct shaderProgram_s {
 	GLint		localLightOrigin;
 	GLint		localViewOrigin;
 
-	GLint		lightProjectionS;
-	GLint		lightProjectionT;
-	GLint		lightProjectionQ;
-	GLint		lightFalloff;
+  GLint		lightProjection;
 
 	GLint		bumpMatrixS;
 	GLint		bumpMatrixT;

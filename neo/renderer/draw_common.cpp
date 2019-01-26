@@ -36,7 +36,7 @@ If you have questions concerning this license or the applicable additional terms
 RB_BakeTextureMatrixIntoTexgen
 =====================
 */
-void RB_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float *textureMatrix ) {
+void RB_BakeTextureMatrixIntoTexgen( idMat4 & lightProject, const float *textureMatrix ) {
 	float	genMatrix[16];
 	float	final[16];
 
@@ -55,10 +55,10 @@ void RB_BakeTextureMatrixIntoTexgen( idPlane lightProject[3], const float *textu
 	genMatrix[10] = 0;
 	genMatrix[14] = 0;
 
-	genMatrix[3] = lightProject[2][0];
-	genMatrix[7] = lightProject[2][1];
-	genMatrix[11] = lightProject[2][2];
-	genMatrix[15] = lightProject[2][3];
+	genMatrix[3] = lightProject[3][0];
+	genMatrix[7] = lightProject[3][1];
+	genMatrix[11] = lightProject[3][2];
+	genMatrix[15] = lightProject[3][3];
 
 	myGlMultMatrix( genMatrix, textureMatrix, final );
 
