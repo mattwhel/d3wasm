@@ -505,9 +505,10 @@ RB_GLSL_DrawInteraction
 ==================
 */
 static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
-  static const float zero[4] = { 0, 0, 0, 0 };
-  static const float one[4] = { 1, 1, 1, 1 };
-  static const float negOne[4] = { -1, -1, -1, -1 };
+  static const GLfloat zero[1] = { 0 };
+  static const GLfloat one[1] = { 1 };
+  static const GLfloat oneScaled[1] = { 1 / 255.0f };
+  static const GLfloat negOneScaled[1] = { -1.0f / 255.0f };
 
   // load all the vertex program parameters
   GL_Uniform4fv(offsetof(shaderProgram_t, localLightOrigin), din->localLightOrigin.ToFloatPtr());
@@ -525,17 +526,17 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
 
   switch ( din->vertexColor ) {
     case SVC_MODULATE:
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), one);
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), zero);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
       break;
     case SVC_INVERSE_MODULATE:
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), negOne);
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), negOneScaled);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
       break;
     case SVC_IGNORE:
     default:
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), zero);
-      GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
       break;
   }
 
@@ -1371,7 +1372,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
     GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
 
     // Restore alphatest always passing
-    static const float one[4] = { 1, 1, 1, 1 };
+    static const float one[1] = { 1 };
     GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
 
     // Restore white image binding to Tex0
@@ -1614,9 +1615,10 @@ This is also called for the generated 2D rendering
 void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
 
   // global constants
-  static const float zero[4] = { 0, 0, 0, 0 };
-  static const float one[4] = { 1, 1, 1, 1 };
-  static const float negOne[4] = { -1, -1, -1, -1 };
+  static const GLfloat zero[1] = { 0 };
+  static const GLfloat one[1] = { 1 };
+  static const GLfloat oneScaled[1] = { 1 / 255.0f };
+  static const GLfloat negOneScaled[1] = { -1.0f / 255.0f };
 
   // usefull pointers
   const idMaterial* const shader = surf->material;
@@ -1892,17 +1894,17 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // Setup the Color modulation
       switch ( pStage->vertexColor ) {
         case SVC_MODULATE:
-          GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), one);
-          GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), zero);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
           break;
         case SVC_INVERSE_MODULATE:
-          GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), negOne);
-          GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), negOneScaled);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
         case SVC_IGNORE:
         default:
-          GL_Uniform4fv(offsetof(shaderProgram_t, colorModulate), zero);
-          GL_Uniform4fv(offsetof(shaderProgram_t, colorAdd), one);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
       }
 
