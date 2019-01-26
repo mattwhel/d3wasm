@@ -49,13 +49,13 @@ VERTEX CACHE GENERATORS
 ==================
 R_CreateAmbientCache
 
-Create it if needed
+Create it if needed, or return the existing one
 ==================
 */
 bool R_CreateAmbientCache(srfTriangles_t* tri, bool needsLighting) {
   // Check for errors
-  if ( !tri->verts && !tri->indexes ) {
-    common->Error("Tri have no vertices or indices\n");
+  if ( !tri->verts ) {
+    common->Error("R_CreateAmbientCache: Tri have no vertices\n");
     return false;
   }
     // If there is no ambient cache, let's compute it
@@ -70,31 +70,43 @@ bool R_CreateAmbientCache(srfTriangles_t* tri, bool needsLighting) {
 
     // Check for errors
     if ( !tri->ambientCache ) {
-      common->Error("Unable to create an ambient cache\n");
+      common->Error("R_CreateAmbientCache: Unable to create an ambient cache\n");
       return false;
-    }
-      // If it have been successfully build, build the index cache too
-    else {
-      // Free the existing index cache first in case it was already existing
-      if ( tri->indexCache ) {
-        common->Warning(
-          "R_CreateAmbientCache: attempt to overwrite an existing index cache. Automatically free it first...\n");
-        vertexCache.Free(tri->indexCache);
-        tri->indexCache = NULL;
-      }
-      // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(glIndex_t), &tri->indexCache, true);
-
-      // Check for errors
-      if ( !tri->indexCache ) {
-        common->Error("Unable to create an index cache\n");
-        return false;
-      }
     }
   }
   else {
     // There is already an ambiant cache. Let's reuse it.
-    //common->Printf("Already existing ambient cache\n");
+  }
+
+  return true;
+}
+
+/*
+==================
+R_CreateIndexCache
+
+This is used only for a specific light
+==================
+*/
+bool R_CreateIndexCache(srfTriangles_t* tri) {
+  // Check for errors
+  if ( !tri->indexes ) {
+    common->Error("R_CreateIndexCache: Tri have no indices\n");
+    return false;
+  }
+    // If there is no index cache, let's compute it
+  else if ( !tri->indexCache ) {
+    // Build the index cache
+    vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(glIndex_t), &tri->indexCache, true);
+
+    // Check for errors
+    if ( !tri->indexCache ) {
+      common->Error("R_CreateIndexCache: Unable to create an index cache\n");
+      return false;
+    }
+  }
+  else {
+    // There is already an index cache. Let's reuse it.
   }
 
   return true;
@@ -107,11 +119,11 @@ R_CreatePrivateShadowCache
 This is used only for a specific light
 ==================
 */
-void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
+bool R_CreatePrivateShadowCache(srfTriangles_t* tri) {
   // Check for errors
-  if ( !tri->shadowVertexes && !tri->indexes ) {
-    common->Error("Tri have no shadow vertices or indices.\n");
-    return;
+  if ( !tri->shadowVertexes ) {
+    common->Error("R_CreatePrivateShadowCache: Tri have no shadow vertices\n");
+    return false;
   }
     // If there is no ambient cache, let's compute it
   else if ( !tri->shadowCache ) {
@@ -120,34 +132,15 @@ void R_CreatePrivateShadowCache(srfTriangles_t* tri) {
 
     // Check for errors
     if ( !tri->shadowCache ) {
-      common->Error("Unable to create a vertex cache\n");
-      return;
-    }
-      // If it have been successfully build, build the shadow index cache too
-    else {
-      // Free the existing index cache first in case it was already existing
-      if ( tri->indexCache ) {
-        common->Warning(
-          "R_CreatePrivateShadowCache: attempt to overwrite an existing index cache. Automatically free it first...\n");
-        vertexCache.Free(tri->indexCache);
-        tri->indexCache = NULL;
-      }
-      // And build the new one
-      vertexCache.Alloc(tri->indexes, tri->numIndexes * sizeof(glIndex_t), &tri->indexCache, true);
-
-      // Check for errors
-      if ( !tri->indexCache ) {
-        common->Error("Unable to create an index cache\n");
-        return;
-      }
+      common->Error("R_CreatePrivateShadowCache: Unable to create a vertex cache\n");
+      return false;
     }
   }
   else {
     // There is already a shadow cache. Let's reuse it.
-    //common->Printf("Already existing shadow cache\n");
   }
 
-  return;
+  return true;
 }
 
 
@@ -159,11 +152,11 @@ This is constant for any number of lights, the vertex program
 takes care of projecting the verts to infinity.
 ==================
 */
-void R_CreateVertexProgramShadowCache(srfTriangles_t* tri) {
-// Check for errors
+bool R_CreateVertexProgramShadowCache(srfTriangles_t* tri) {
+  // Check for errors
   if ( !tri->verts ) {
-    common->Error("Tri have no vertices\n");
-    return;
+    common->Error("R_CreateVertexProgramShadowCache: Tri have no vertices\n");
+    return false;
   }
     // If there is no shadow cache, let's compute it
   else if ( !tri->shadowCache ) {
@@ -176,20 +169,15 @@ void R_CreateVertexProgramShadowCache(srfTriangles_t* tri) {
 
     // Check for errors
     if ( !tri->shadowCache ) {
-      common->Error("Unable to create a vertex cache\n");
-      return;
-    }
-      // If it have been successfully build, build the shadow index cache too
-    else {
-      // The vertex program shadow caches does not need index caches, are it is always reused by other Tris that compute their own indices
+      common->Error("R_CreateVertexProgramShadowCache: Unable to create a vertex cache\n");
+      return false ;
     }
   }
   else {
     // There is already a shadow cache. Let's reuse it.
-    //common->Printf("Already existing VP shadow cache\n");
   }
 
-  return;
+  return true;
 }
 
 /*
@@ -896,13 +884,14 @@ void R_AddLightSurfaces(void) {
     // fog lights will need to draw the light frustum triangles, so make sure they
     // are in the vertex cache
     if ( lightShader->IsFogLight()) {
-      if ( !light->frustumTris->ambientCache ) {
-        if ( !R_CreateAmbientCache(light->frustumTris, false)) {
-          // skip if we are out of vertex memory
-          continue;
-        }
+      if ( !R_CreateAmbientCache(light->frustumTris, false)) {
+        // skip if we are out of vertex memory
+        continue;
       }
-
+      if ( !R_CreateIndexCache(light->frustumTris)) {
+        // skip if we are out of vertex memory
+        continue;
+      }
       // touch the surface so it won't get purged
       vertexCache.Touch(light->frustumTris->ambientCache);
       vertexCache.Touch(light->frustumTris->indexCache);
@@ -929,11 +918,13 @@ void R_AddLightSurfaces(void) {
       }
 
       // if we have been purged, re-upload the shadowVertexes
-      if ( !tri->shadowCache ) {
-        R_CreatePrivateShadowCache(tri);
-        if ( !tri->shadowCache ) {
-          continue;
-        }
+      if ( !R_CreatePrivateShadowCache(tri) ) {
+        // skip if we are out of vertex memory
+        continue;
+      }
+      if ( !R_CreateIndexCache(tri)) {
+        // skip if we are out of vertex memory
+        continue;
       }
 
       // touch the shadow surface so it won't get purged
@@ -1316,12 +1307,14 @@ static void R_AddAmbientDrawsurfs(viewEntity_t* vEntity) {
 
       def->visibleCount = tr.viewCount;
 
-      if(!tri->ambientCache) {
-        // make sure we have an ambient cache
-        if ( !R_CreateAmbientCache(tri, shader->ReceivesLighting())) {
-          // don't add anything if the vertex cache was too full to give us an ambient cache
-          return;
-        }
+      // make sure we have an ambient cache
+      if ( !R_CreateAmbientCache(tri, shader->ReceivesLighting())) {
+        // don't add anything if the vertex cache was too full to give us an ambient cache
+        return;
+      }
+      if ( !R_CreateIndexCache(tri)) {
+        // skip if we are out of vertex memory
+        continue;
       }
 
       // touch it so it won't get purged
