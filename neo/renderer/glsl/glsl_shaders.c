@@ -262,10 +262,7 @@ const char* const fogShaderVP =
   "\n"
   "// Uniforms\n"
   "uniform highp mat4 u_modelViewProjectionMatrix;\n"
-  "uniform vec4 u_texGen0S;         // fogPlane 0\n"
-  "uniform vec4 u_texGen0T;         // fogPlane 1\n"
-  "uniform vec4 u_texGen1S;         // fogPlane 3 (not 2!)\n"
-  "uniform vec4 u_texGen1T;         // fogPlane 2\n"
+  "uniform mat4 u_fogMatrix;        // fogPlanes 0, 1, 3 (CATION: not 2!), 2\n"
   "\n"
   "// Out\n"
   "// gl_Position                   // output Vertex Coordinates\n"
@@ -276,11 +273,11 @@ const char* const fogShaderVP =
   "{\n"
   "  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;\n"
   "\n"
-  "  var_TexFog.x      = dot(u_texGen0S, attr_Vertex);\n"
-  "  var_TexFog.y      = dot(u_texGen0T, attr_Vertex);\n"
+  "  var_TexFog.x      = dot(u_fogMatrix[0], attr_Vertex);\n"
+  "  var_TexFog.y      = dot(u_fogMatrix[1], attr_Vertex);\n"
   "\n"
-  "  var_TexFogEnter.x = dot(u_texGen1S, attr_Vertex);\n"
-  "  var_TexFogEnter.y = dot(u_texGen1T, attr_Vertex);\n"
+  "  var_TexFogEnter.x = dot(u_fogMatrix[2], attr_Vertex);\n"
+  "  var_TexFogEnter.y = dot(u_fogMatrix[3], attr_Vertex);\n"
   "}\n";
 
 const char* const fogShaderFP =

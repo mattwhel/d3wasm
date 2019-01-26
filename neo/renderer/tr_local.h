@@ -1216,10 +1216,9 @@ typedef struct shaderProgram_s {
 	GLint		specularColor;
 	GLint		fogColor;
 
+  GLint		fogMatrix;
+
 	GLint		texGen0S;
-	GLint		texGen0T;
-	GLint		texGen1S;
-	GLint		texGen1T;
 
 	/* gl_... */
 	GLint		attr_TexCoord;

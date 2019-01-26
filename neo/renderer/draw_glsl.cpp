@@ -249,9 +249,7 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
   shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
-  shader->texGen0T = qglGetUniformLocation(shader->program, "u_texGen0T");
-  shader->texGen1S = qglGetUniformLocation(shader->program, "u_texGen1S");
-  shader->texGen1T = qglGetUniformLocation(shader->program, "u_texGen1T");
+  shader->fogMatrix = qglGetUniformLocation(shader->program, "u_fogMatrix");
 
   for ( i = 0; i < MAX_FRAGMENT_IMAGES; i++ ) {
     idStr::snPrintf(buffer, sizeof(buffer), "u_fragmentMap%d", i);
@@ -1156,26 +1154,27 @@ RB_T_BasicFog
 */
 static void RB_T_GLSL_BasicFog(const drawSurf_t* surf, const viewLight_t* vLight) {
   if ( backEnd.currentSpace != surf->space ) {
-    idPlane local;
+    idPlane transfoFogPlane[4];
 
     //S
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[0], local);
-    local[3] += 0.5;
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0S), local.ToFloatPtr());
-
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[0], transfoFogPlane[0]);
+    transfoFogPlane[0][3] += 0.5;
     //T
-    local[0] = local[1] = local[2] = 0;
-    local[3] = 0.5;
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0T), local.ToFloatPtr());
-
+    transfoFogPlane[1][0] = transfoFogPlane[1][1] = transfoFogPlane[1][2] = 0;
+    transfoFogPlane[1][3] = 0.5;
     //T
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[2], local);
-    local[3] += FOG_ENTER;
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1T), local.ToFloatPtr());
-
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[2], transfoFogPlane[2]);
+    transfoFogPlane[2][3] += FOG_ENTER;
     //S
-    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[3], local);
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen1S), local.ToFloatPtr());
+    R_GlobalPlaneToLocal(surf->space->modelMatrix, fogPlanes[3], transfoFogPlane[3]);
+
+    idMat4 fogMatrix;
+    fogMatrix[0] = transfoFogPlane[0].ToVec4();
+    fogMatrix[1] = transfoFogPlane[1].ToVec4();
+    fogMatrix[2] = transfoFogPlane[2].ToVec4();
+    fogMatrix[3] = transfoFogPlane[3].ToVec4();
+
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, fogMatrix), fogMatrix.ToFloatPtr());
   }
 
   idDrawVert* ac = (idDrawVert*) vertexCache.Position(surf->geo->ambientCache);
