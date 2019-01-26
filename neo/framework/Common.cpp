@@ -1091,7 +1091,7 @@ void idCommonLocal::WriteConfiguration(void) {
   cvarSystem->ClearModifiedFlags(CVAR_ARCHIVE);
 
   // disable printing out the "Writing to:" message
-  bool developer = com_developer.GetBool();
+  const bool developer = com_developer.GetBool();
   com_developer.SetBool(false);
 
   WriteConfigToFile(CONFIG_FILE);

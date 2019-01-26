@@ -311,7 +311,7 @@ GLimp_ActivateContext
 =================
 */
 void GLimp_ActivateContext() {
-  common->DPrintf("TODO: GLimp_ActivateContext\n");
+  //common->DPrintf("TODO: GLimp_ActivateContext\n");
 }
 
 /*
@@ -320,7 +320,7 @@ GLimp_DeactivateContext
 =================
 */
 void GLimp_DeactivateContext() {
-  common->DPrintf("TODO: GLimp_DeactivateContext\n");
+  //common->DPrintf("TODO: GLimp_DeactivateContext\n");
 }
 
 /*
