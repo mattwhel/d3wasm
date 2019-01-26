@@ -788,12 +788,16 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
   GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
+  backEnd.currentSpace = NULL;
+
   for ( ; surf; surf = surf->nextOnLight ) {
     // perform setup here that will not change over multiple interaction passes
 
-    float mat[16];
-    myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-    GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+    if ( surf->space != backEnd.currentSpace ) {
+      float mat[16];
+      myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+    }
 
     // set the vertex pointers
     idDrawVert* ac = (idDrawVert*) vertexCache.Position(surf->geo->ambientCache);
@@ -814,6 +818,8 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const int dep
     // this may cause RB_GLSL_DrawInteraction to be exacuted multiple
     // times with different colors and images if the surface or light have multiple layers
     RB_GLSL_CreateSingleDrawInteractions(surf, RB_GLSL_DrawInteraction);
+
+    backEnd.currentSpace = surf->space;
   }
 
   // Disable the Vertex attributes arrays
