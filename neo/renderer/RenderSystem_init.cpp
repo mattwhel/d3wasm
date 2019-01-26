@@ -522,6 +522,10 @@ void GL_CheckErrors( void ) {
 	char	s[64];
 	int		i;
 
+	if (r_ignoreGLErrors.GetBool()) {
+	  return;
+	}
+
 	// check for up to 10 errors pending
 	for ( i = 0 ; i < 10 ; i++ ) {
 		err = qglGetError();
