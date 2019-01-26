@@ -597,6 +597,7 @@ typedef struct {
 	int			faceCulling;
 	int			glStateBits;
 	bool		forceGlState;		// the next GL_State will ignore glStateBits and set everything
+  int     currentTexture;
 
   shaderProgram_s	*currentProgram;
 } glstate_t;

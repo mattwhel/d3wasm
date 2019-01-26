@@ -145,6 +145,9 @@ private:
   vertCache_t deferredFreeList;    // head of doubly linked list
 
   int frameBytes;        // for each of NUM_VERTEX_FRAMES frames
+
+  int currentBoundVBO;
+  int currentBoundVBO_Index;
 };
 
 extern idVertexCache vertexCache;

@@ -72,6 +72,7 @@ void RB_SetDefaultGLState( void ) {
 		qglScissor( 0, 0, glConfig.vidWidth, glConfig.vidHeight );
 	}
 
+  backEnd.glState.currentTexture = -1;  // Force texture unit to be reset
 	for ( i = glConfig.maxTextureUnits - 1 ; i >= 0 ; i-- ) {
 		GL_SelectTexture( i );
     globalImages->BindNull();
@@ -91,7 +92,10 @@ GL_SelectTexture
 ====================
 */
 void GL_SelectTexture( int unit ) {
-	qglActiveTexture( GL_TEXTURE0 + unit );
+  if ( backEnd.glState.currentTexture != unit ) {
+    qglActiveTexture(GL_TEXTURE0 + unit);
+    backEnd.glState.currentTexture = unit;
+  }
 }
 
 /*

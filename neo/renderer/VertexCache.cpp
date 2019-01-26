@@ -118,9 +118,15 @@ void *idVertexCache::Position( vertCache_t *buffer ) {
 			}
 		}
 		if ( buffer->indexBuffer ) {
-			qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, buffer->vbo );
+		  if (buffer->vbo != currentBoundVBO_Index) {
+        qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, buffer->vbo );
+        currentBoundVBO_Index = buffer->vbo;
+		  }
 		} else {
-			qglBindBuffer( GL_ARRAY_BUFFER, buffer->vbo );
+      if (buffer->vbo != currentBoundVBO) {
+        qglBindBuffer(GL_ARRAY_BUFFER, buffer->vbo);
+        currentBoundVBO = buffer->vbo;
+      }
 		}
 		return (void *)buffer->offset;
 }
@@ -136,6 +142,9 @@ void idVertexCache::Init() {
   common->Printf("Init Vertex Cache\n");
 
 	cmdSystem->AddCommand( "listVertexCache", R_ListVertexCache_f, CMD_FL_RENDERER, "lists vertex cache" );
+
+	currentBoundVBO = -1;
+	currentBoundVBO_Index = -1;
 
 	if ( r_vertexBufferMegs.GetInteger() < 8 ) {
 		r_vertexBufferMegs.SetInteger( 8 );
@@ -194,6 +203,9 @@ void idVertexCache::PurgeAll() {
   while( staticIndexHeaders.next != &staticIndexHeaders ) {
     ActuallyFree( staticIndexHeaders.next );
   }
+
+  currentBoundVBO = -1;
+  currentBoundVBO_Index = -1;
 }
 
 /*
@@ -205,6 +217,9 @@ void idVertexCache::Shutdown() {
 //	PurgeAll();	// !@#: also purge the temp buffers
 
 	headerAllocator.Shutdown();
+
+	currentBoundVBO = -1;
+  currentBoundVBO_Index = -1;
 }
 
 /*
@@ -310,15 +325,21 @@ void idVertexCache::Alloc( void *data, int size, vertCache_t **buffer, bool inde
 
 	// copy the data
 		if ( indexBuffer ) {
-			qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, block->vbo );
+      if (block->vbo != currentBoundVBO_Index) {
+        qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, block->vbo);
+        currentBoundVBO_Index = block->vbo;
+      }
 			if ( allocatingTempBuffer ) {
 				qglBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STREAM_DRAW );
 			} else {
 				qglBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
 			}
 		} else {
-			qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
-			if ( allocatingTempBuffer ) {
+      if (block->vbo != currentBoundVBO) {
+        qglBindBuffer(GL_ARRAY_BUFFER, block->vbo);
+        currentBoundVBO = block->vbo;
+      }
+      if ( allocatingTempBuffer ) {
 				qglBufferData( GL_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STREAM_DRAW );
 			} else {
 				qglBufferData( GL_ARRAY_BUFFER, (GLsizeiptr)size, data, GL_STATIC_DRAW );
@@ -511,11 +532,19 @@ vertCache_t	*idVertexCache::AllocFrameTemp( void *data, int size, bool indexBuff
 
   if ( indexBuffer ) {
 		block->vbo = tempIndexBuffers[listNum]->vbo;
-		qglBindBuffer( GL_ELEMENT_ARRAY_BUFFER, block->vbo );
+
+    if (block->vbo != currentBoundVBO_Index) {
+      qglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, block->vbo);
+      currentBoundVBO_Index = block->vbo;
+    }
     qglBufferSubData( GL_ELEMENT_ARRAY_BUFFER, block->offset, (GLsizeiptr)size, data );
   } else {
 		block->vbo = tempBuffers[listNum]->vbo;
-		qglBindBuffer( GL_ARRAY_BUFFER, block->vbo );
+
+    if (block->vbo != currentBoundVBO) {
+      qglBindBuffer(GL_ARRAY_BUFFER, block->vbo);
+      currentBoundVBO = block->vbo;
+    }
     qglBufferSubData( GL_ARRAY_BUFFER, block->offset, (GLsizeiptr)size, data );
   }
 
