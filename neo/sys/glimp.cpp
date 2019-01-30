@@ -271,12 +271,13 @@ void GLimp_SetGamma(unsigned short red[256], unsigned short green[256], unsigned
     return;
   }
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-  if (SDL_SetWindowGammaRamp(window, red, green, blue))
+#ifdef WEBGL
+  // Changing the Gamma is not supported on WebGL. This have to be done differently.
+  return;
 #else
-  if (SDL_SetGammaRamp(red, green, blue))
-#endif
+  if (SDL_SetWindowGammaRamp(window, red, green, blue))
     common->Warning("Couldn't set gamma ramp: %s", SDL_GetError());
+#endif
 }
 
 /*
