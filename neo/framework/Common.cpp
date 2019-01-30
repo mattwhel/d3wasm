@@ -93,7 +93,7 @@ idCVar com_memoryMarker("com_memoryMarker", "-1", CVAR_INTEGER | CVAR_SYSTEM | C
 idCVar com_preciseTic("com_preciseTic", "1", CVAR_BOOL | CVAR_SYSTEM, "run one game tick every async thread update");
 idCVar com_asyncInput("com_asyncInput", "0", CVAR_BOOL | CVAR_SYSTEM, "sample input from the async thread");
 #define ASYNCSOUND_INFO "0: mix sound inline, 1: memory mapped async mix, 2: callback mixing, 3: write async mix"
-idCVar com_asyncSound( "com_asyncSound", "0", CVAR_INTEGER|CVAR_SYSTEM|CVAR_ROM, ASYNCSOUND_INFO );
+idCVar com_asyncSound( "com_asyncSound", "0", CVAR_INTEGER | CVAR_SYSTEM, ASYNCSOUND_INFO );
 idCVar com_forceGenericSIMD("com_forceGenericSIMD", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT,
                             "force generic platform independent SIMD");
 idCVar com_developer("developer", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT, "developer mode");
@@ -1310,11 +1310,6 @@ Com_ExecMachineSpecs_f
 */
 void Com_ExecMachineSpec_f(const idCmdArgs &args) {
 
-#ifdef NOMT
-  cvarSystem->SetCVarInteger( "com_asyncsound", 0, CVAR_ROM );	// No multithreading
-  //cvarSystem->SetCVarInteger( "s_maxSoundsPerShader", 0, CVAR_ARCHIVE );
-#endif
-
 #if 1
   // GAB NOTE Dec 2018: Specific configuration for emscripten
 if ( com_machineSpec.GetInteger() == 4 ) {
@@ -1331,7 +1326,6 @@ cvarSystem->SetCVarInteger( "image_downSizeSpecularLimit", 64, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downSizeBumpLimit", 256, CVAR_ROM );
 cvarSystem->SetCVarInteger( "image_downsize", 0			, CVAR_ROM );
 cvarSystem->SetCVarInteger( "r_multiSamples", 0, CVAR_ROM );
-
 }
 else
 #else
@@ -2405,8 +2399,6 @@ void idCommonLocal::SingleAsyncTic(void) {
     usercmdGen->UsercmdInterrupt();
   }
 
-#ifdef NOMT
-  #else
   switch (com_asyncSound.GetInteger()) {
     case 1:
       soundSystem->AsyncUpdate(stat->milliseconds);
@@ -2415,7 +2407,6 @@ void idCommonLocal::SingleAsyncTic(void) {
       soundSystem->AsyncUpdateWrite(stat->milliseconds);
       break;
   }
-  #endif
 
   // we update com_ticNumber after all the background tasks
   // have completed their work for this tic
