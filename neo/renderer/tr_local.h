@@ -832,7 +832,6 @@ extern idCVar r_skipFrontEnd;			// bypasses all front end work, but 2D gui rende
 extern idCVar r_skipBackEnd;			// don't draw anything
 extern idCVar r_skipCopyTexture;		// do all rendering, but don't actually copyTexSubImage2D
 extern idCVar r_skipRender;				// skip 3D rendering, but pass 2D
-extern idCVar r_skipRenderContext;		// NULL the rendering context during backend 3D rendering
 extern idCVar r_skipTranslucent;		// skip the translucent interaction rendering
 extern idCVar r_skipAmbient;			// bypasses all non-interaction drawing
 extern idCVar r_skipNewAmbient;			// bypasses all vertex/fragment program ambients
@@ -1020,19 +1019,6 @@ void		GLimp_SetGamma( unsigned short red[256],
 // Sets the hardware gamma ramps for gamma and brightness adjustment.
 // These are now taken as 16 bit values, so we can take full advantage
 // of dacs with >8 bits of precision
-
-
-// Returns false if the system only has a single processor
-
-void		GLimp_ActivateContext( void );
-void		GLimp_DeactivateContext( void );
-// These are used for managing SMP handoffs of the OpenGL context
-// between threads, and as a performance tunining aid.  Setting
-// 'r_skipRenderContext 1' will call GLimp_DeactivateContext() before
-// the 3D rendering code, and GLimp_ActivateContext() afterwards.  On
-// most OpenGL implementations, this will result in all OpenGL calls
-// being immediate returns, which lets us guage how much time is
-// being spent inside OpenGL.
 
 const int GRAB_ENABLE		= (1 << 0);
 const int GRAB_REENABLE		= (1 << 1);

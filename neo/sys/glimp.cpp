@@ -281,24 +281,6 @@ void GLimp_SetGamma(unsigned short red[256], unsigned short green[256], unsigned
 }
 
 /*
-=================
-GLimp_ActivateContext
-=================
-*/
-void GLimp_ActivateContext() {
-  //common->DPrintf("TODO: GLimp_ActivateContext\n");
-}
-
-/*
-=================
-GLimp_DeactivateContext
-=================
-*/
-void GLimp_DeactivateContext() {
-  //common->DPrintf("TODO: GLimp_DeactivateContext\n");
-}
-
-/*
 ===================
 GLimp_ExtensionPointer
 ===================
