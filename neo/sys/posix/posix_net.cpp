@@ -273,13 +273,15 @@ NET_InitNetworking
 */
 void Sys_InitNetworking(void)
 {
-#ifdef __EMSCRIPTEN__
-	return;
-#else
-	unsigned int ip, mask;
-	struct ifaddrs *ifap, *ifp;
+  unsigned int ip, mask;
+  struct ifaddrs *ifap, *ifp;
 
-	num_interfaces = 0;
+  num_interfaces = 0;
+
+#ifdef __EMSCRIPTEN__
+  // Networking not supported on Emscripten for now
+  return;
+#else
 
 	if( getifaddrs( &ifap ) < 0 ) {
 		common->FatalError( "InitNetworking: SIOCGIFCONF error - %s\n", strerror( errno ) );
