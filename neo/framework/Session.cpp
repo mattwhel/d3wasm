@@ -2590,13 +2590,9 @@ void idSessionLocal::UpdateScreen(bool outOfSequence) {
 
 bool idSessionLocal::emsessionframe_pre() {
 
-#ifdef NOMT
-  soundSystem->AsyncUpdate(Sys_Milliseconds());
-#else
-  if ( com_asyncSound.GetInteger() == 0 ) {
-    soundSystem->AsyncUpdate(Sys_Milliseconds());
-  }
-#endif
+	if ( com_asyncSound.GetInteger() == 0 ) {
+		soundSystem->AsyncUpdate( Sys_Milliseconds() );
+	}
 
   // Editors that completely take over the game
   if ( com_editorActive && ( com_editors & ( EDITOR_RADIANT | EDITOR_GUI ))) {
