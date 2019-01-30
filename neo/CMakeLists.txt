@@ -1,16 +1,6 @@
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(d3wasm)
 
-# TODO
-
-# osx: place game .dylib's in the bundle (next to the binary)
-# osx: -weak_framework ?
-
-# maybe add these as options:
-# TARGET_MONO
-# SETUP
-# SDK				-D_D3SDK
-
 # don't add these as options, but document them?
 # IDNET_HOST		-DIDNET_HOST=\\"%s\\"' % IDNET_HOST
 # DEBUG_MEMORY		-DID_DEBUG_MEMORY', '-DID_REDIRECT_NEWDELETE
