@@ -45,6 +45,9 @@ static SDL_Window *window = NULL;
 static SDL_GLContext context = NULL;
 
 static void SetSDLIcon() {
+#ifdef __EMSCRIPTEN__
+  // Not needed on Emscripten
+#else
   Uint32 rmask, gmask, bmask, amask;
 
   // ok, the following is pretty stupid.. SDL_CreateRGBSurfaceFrom() pretends to use a void* for the data,
@@ -70,6 +73,7 @@ static void SetSDLIcon() {
   SDL_SetWindowIcon(window, icon);
 
   SDL_FreeSurface(icon);
+#endif
 }
 
 /*
@@ -184,12 +188,8 @@ bool GLimp_Init(glimpParms_t parms) {
 
     context = SDL_GL_CreateContext(window);
 
-#ifdef WEBGL
-    // SwapInterval is not supported on WebGL. Swaps occurs when the code yields to the browser
-#else
     if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
       common->Warning("SDL_GL_SWAP_CONTROL not supported");
-#endif
 
     SDL_GetWindowSize(window, &glConfig.vidWidth, &glConfig.vidHeight);
 
