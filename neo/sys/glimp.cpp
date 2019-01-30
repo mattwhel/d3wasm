@@ -38,14 +38,8 @@ idCVar in_nograb("in_nograb", "0", CVAR_SYSTEM | CVAR_NOCHEAT, "prevents input g
 
 static bool grabbed = false;
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
 static SDL_Window *window = NULL;
 static SDL_GLContext context = NULL;
-#else
-static SDL_Surface *window = NULL;
-#define SDL_WINDOW_OPENGL SDL_OPENGL
-#define SDL_WINDOW_FULLSCREEN SDL_FULLSCREEN
-#endif
 
 static void SetSDLIcon() {
   Uint32 rmask, gmask, bmask, amask;
@@ -70,11 +64,7 @@ static void SetSDLIcon() {
                                                d3_icon.bytes_per_pixel * 8, d3_icon.bytes_per_pixel * d3_icon.width,
                                                rmask, gmask, bmask, amask);
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
   SDL_SetWindowIcon(window, icon);
-#else
-  SDL_WM_SetIcon(icon, NULL);
-#endif
 
   SDL_FreeSurface(icon);
 }
@@ -166,7 +156,6 @@ bool GLimp_Init(glimpParms_t parms) {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, parms.multiSamples ? 1 : 0);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, parms.multiSamples);
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
     window = SDL_CreateWindow(ENGINE_VERSION,
                   SDL_WINDOWPOS_UNDEFINED,
                   SDL_WINDOWPOS_UNDEFINED,
@@ -197,26 +186,6 @@ bool GLimp_Init(glimpParms_t parms) {
     SetSDLIcon(); // for SDL2  this must be done after creating the window
 
     glConfig.isFullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) == SDL_WINDOW_FULLSCREEN;
-#else
-    SDL_WM_SetCaption(ENGINE_VERSION, ENGINE_VERSION);
-
-    SetSDLIcon(); // for SDL1.2  this must be done before creating the window
-
-    if (SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, r_swapInterval.GetInteger()) < 0)
-      common->Warning("SDL_GL_SWAP_CONTROL not supported");
-
-    window = SDL_SetVideoMode(parms.width, parms.height, colorbits, flags);
-    if (!window) {
-      common->DPrintf("Couldn't set GL mode %d/%d/%d: %s",
-                      channelcolorbits, tdepthbits, tstencilbits, SDL_GetError());
-      continue;
-    }
-
-    glConfig.vidWidth = window->w;
-    glConfig.vidHeight = window->h;
-
-    glConfig.isFullscreen = (window->flags & SDL_FULLSCREEN) == SDL_FULLSCREEN;
-#endif
 
     common->Printf("Using %d bits per color channel (RGBA), %d bits depth, %d bits stencil\n",
                    channelcolorbits, tdepthbits, tstencilbits);
@@ -256,7 +225,6 @@ GLimp_Shutdown
 void GLimp_Shutdown() {
   common->Printf("Shutting down OpenGL subsystem\n");
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
   if (context) {
     SDL_GL_DeleteContext(context);
     context = NULL;
@@ -266,7 +234,6 @@ void GLimp_Shutdown() {
     SDL_DestroyWindow(window);
     window = NULL;
   }
-#endif
 }
 
 /*
@@ -278,11 +245,8 @@ void GLimp_SwapBuffers() {
 #ifdef WEBGL
   // SwapBuffer is not supported on WebGL. Swaps occurs when the code yields to the browser
   return;
-#endif
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-  SDL_GL_SwapWindow(window);
 #else
-  SDL_GL_SwapBuffers();
+  SDL_GL_SwapWindow(window);
 #endif
 }
 
@@ -351,12 +315,7 @@ void GLimp_GrabInput(int flags) {
     return;
   }
 
-#if SDL_VERSION_ATLEAST(2, 0, 0)
   SDL_ShowCursor(flags & GRAB_HIDECURSOR ? SDL_DISABLE : SDL_ENABLE);
   SDL_SetRelativeMouseMode((grab && (flags & GRAB_HIDECURSOR)) ? SDL_TRUE : SDL_FALSE);
   SDL_SetWindowGrab(window, grab ? SDL_TRUE : SDL_FALSE);
-#else
-  SDL_ShowCursor(flags & GRAB_HIDECURSOR ? SDL_DISABLE : SDL_ENABLE);
-  SDL_WM_GrabInput(grab ? SDL_GRAB_ON : SDL_GRAB_OFF);
-#endif
 }
