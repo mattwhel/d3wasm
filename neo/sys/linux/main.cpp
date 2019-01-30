@@ -42,6 +42,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include <locale.h>
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"   // emscripten_set_main_loop
+#endif
+
 static char path_argv[MAX_OSPATH];
 
 bool Sys_GetPath(sysPath_t type, idStr &path) {
@@ -280,25 +284,27 @@ void idSysLocal::OpenURL( const char *url, bool quit ) {
 }
 
 #ifdef __EMSCRIPTEN__
-#include "emscripten.h"
+/*
+===============
+emloopcb
 
-// EMTERPRETIFY
+ Main loop callback
+ This function will be called by the Browser at each RequestAnimationFrame()
+
+EMSCRIPTEN Note: This is an EMTERPRETIFY function
+===============
+*/
 extern "C" void emloopcb() {
-	// This function might yields in some very specific cases (during a few GUI events, and if we are loading a level)
-	// Otherwise, the normal path is that it does not yield, and return to browser
+  // Let's do what the typical while(1) { <mainloopcode> } would do: run a single frame of the game
 	common->Frame();
 }
-
-void emmain() {
-  common->Printf("Entering main loop!\n");
-	emscripten_set_main_loop(emloopcb,0,false);
-}
-
 #endif
 
 /*
 ===============
 main
+
+EMSCRIPTEN Note: This is an EMTERPRETIFY function
 ===============
 */
 int main(int argc, char **argv) {
@@ -318,6 +324,9 @@ int main(int argc, char **argv) {
 	// so set $LC_ALL to "C".
 	setenv("LC_ALL", "C", 1);
 
+	// D3WASM: Posix signals are not supported on Emscripten. They have been also disabled on Linux.
+	//Posix_InitSignalHandlers();
+
 	if ( argc > 1 ) {
 		common->Init( argc-1, &argv[1] );
 	} else {
@@ -325,8 +334,15 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef __EMSCRIPTEN__
-	emmain();
+	// On Emscripten, let's transfer the control of the main loop to the Browser.
+	// The emloopcb() callback function will be called by the Browser at each RequestAnimationFrame()
+	emscripten_set_main_loop( emloopcb, 0 , false );
+
+	// Code here will be executed right after the main loop callback have been set, including returning from main().
+	// That's normal and the program will in fact NOT exit (EXIT_RUNTIME=0 in CMakeFile), but the main loop as handled by
+	// the Browser will start instead
 #else
+  // On Linux, we have the control of the main loop.
 	while (1) {
 		common->Frame();
 	}

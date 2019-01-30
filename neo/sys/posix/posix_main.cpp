@@ -62,7 +62,7 @@ static int				history_current = 0;			// goes back in history
 idEditField				history_backup;				// the base edit line
 
 #ifdef __EMSCRIPTEN__
-// Terminal mode not supported on emscripten
+// There is no "Terminal" on Emscripten
 idCVar in_tty( "in_tty", "0", CVAR_BOOL | CVAR_ROM | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
 #else
 idCVar in_tty( "in_tty", "1", CVAR_BOOL | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
@@ -727,9 +727,9 @@ char *Sys_ConsoleInput( void ) {
 		}
 		return NULL;
 	} else {
-		// disabled on OSX. works fine from a terminal, but launching from Finder is causing trouble
-		// I'm pretty sure it could be re-enabled if needed, and just handling the Finder failure case right (TTimo)
 #ifdef __EMSCRIPTEN__
+    // We really need to disable anything related to Terminal on Emscripten
+	  // Otherwise, the browser will ask for input at each game frame!
 #else
 		// no terminal support - read only complete lines
 		int				len;
