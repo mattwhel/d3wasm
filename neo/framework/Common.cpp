@@ -83,6 +83,7 @@ struct version_s {
 } version;
 
 idCVar com_version("si_version", version.string, CVAR_SYSTEM | CVAR_ROM | CVAR_SERVERINFO, "engine version");
+idCVar com_skipRenderer("com_skipRenderer", "0", CVAR_BOOL | CVAR_SYSTEM, "skip the renderer completely");
 idCVar com_machineSpec("com_machineSpec", "-1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_SYSTEM,
                        "hardware classification, -1 = not detected, 0 = low quality, 1 = medium quality, 2 = high quality, 3 = ultra quality");
 idCVar com_purgeAll("com_purgeAll", "0", CVAR_BOOL | CVAR_ARCHIVE | CVAR_SYSTEM,
