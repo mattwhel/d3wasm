@@ -35,6 +35,9 @@ If you have questions concerning this license or the applicable additional terms
 #include "renderer/tr_local.h"
 
 idCVar in_nograb("in_nograb", "0", CVAR_SYSTEM | CVAR_NOCHEAT, "prevents input grabbing");
+#ifndef __EMSCRIPTEN__
+idCVar r_waylandcompat("r_waylandcompat", "0", CVAR_SYSTEM | CVAR_NOCHEAT | CVAR_ARCHIVE, "wayland compatible framebuffer");
+#endif
 
 static bool grabbed = false;
 
@@ -151,7 +154,14 @@ bool GLimp_Init(glimpParms_t parms) {
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, tdepthbits);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, tstencilbits);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, channelcolorbits);
+
+#ifndef __EMSCRIPTEN__
+    // Wayland compatibilty mode disabled on Emscripten
+		if (r_waylandcompat.GetBool())
+			SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+		else
+#endif
+      SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, channelcolorbits);
     SDL_GL_SetAttribute(SDL_GL_STEREO, parms.stereo ? 1 : 0);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, parms.multiSamples ? 1 : 0);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, parms.multiSamples);
@@ -167,7 +177,7 @@ bool GLimp_Init(glimpParms_t parms) {
       continue;
     }
 
-    // Initialize ES 2.0 context profile on emscripten, and do not set any other context flags (it does not work otherwise)
+    // Initialize ES 2.0 context profile, and do not set any other context flags (it does not work otherwise)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
