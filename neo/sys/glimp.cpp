@@ -27,7 +27,6 @@ If you have questions concerning this license or the applicable additional terms
 */
 
 #include <SDL.h>
-#include <SDL_syswm.h>
 
 #include "sys/platform.h"
 #include "framework/Licensee.h"
@@ -47,6 +46,7 @@ static SDL_GLContext context = NULL;
 static void SetSDLIcon() {
 #ifdef __EMSCRIPTEN__
   // Not needed on Emscripten
+  return;
 #else
   Uint32 rmask, gmask, bmask, amask;
 
