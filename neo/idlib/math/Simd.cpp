@@ -1086,7 +1086,7 @@ void TestCompare( void ) {
 
 /*
 ============
-Test
+TestMinMax
 ============
 */
 void TestMinMax( void ) {
@@ -3086,6 +3086,105 @@ void TestGetSpecularTextureCoords( void ) {
 
 /*
 ============
+TestCreateShadowCache
+============
+*/
+void TestCreateShadowCache( void ) {
+	int i, j;
+	TIME_TYPE start, end, bestClocksGeneric, bestClocksSIMD;
+	ALIGN16( idDrawVert drawVerts[COUNT] );
+	ALIGN16( idVec4 vertexCache1[COUNT*2] );
+	ALIGN16( idVec4 vertexCache2[COUNT*2] );
+	ALIGN16( int originalVertRemap[COUNT] );
+	ALIGN16( int vertRemap1[COUNT] );
+	ALIGN16( int vertRemap2[COUNT] );
+	ALIGN16( idVec3 lightOrigin );
+	int numVerts1 = 0, numVerts2 = 0;
+	const char *result;
+
+	idRandom srnd( RANDOM_SEED );
+
+	for ( i = 0; i < COUNT; i++ ) {
+		drawVerts[i].xyz[0] = srnd.CRandomFloat() * 100.0f;
+		drawVerts[i].xyz[1] = srnd.CRandomFloat() * 100.0f;
+		drawVerts[i].xyz[2] = srnd.CRandomFloat() * 100.0f;
+		originalVertRemap[i] = ( srnd.CRandomFloat() > 0.0f ) ? -1 : 0;
+	}
+	lightOrigin[0] = srnd.CRandomFloat() * 100.0f;
+	lightOrigin[1] = srnd.CRandomFloat() * 100.0f;
+	lightOrigin[2] = srnd.CRandomFloat() * 100.0f;
+
+	bestClocksGeneric = 0;
+	for ( i = 0; i < NUMTESTS; i++ ) {
+		for ( j = 0; j < COUNT; j++ ) {
+			vertRemap1[j] = originalVertRemap[j];
+		}
+		StartRecordTime( start );
+		numVerts1 =p_generic->CreateShadowCache( vertexCache1, vertRemap1, lightOrigin, drawVerts, COUNT );
+		StopRecordTime( end );
+		GetBest( start, end, bestClocksGeneric );
+	}
+	PrintClocks( "generic->CreateShadowCache()", COUNT, bestClocksGeneric );
+
+	bestClocksSIMD = 0;
+	for ( i = 0; i < NUMTESTS; i++ ) {
+		for ( j = 0; j < COUNT; j++ ) {
+			vertRemap2[j] = originalVertRemap[j];
+		}
+		StartRecordTime( start );
+		numVerts2 = p_simd->CreateShadowCache( vertexCache2, vertRemap2, lightOrigin, drawVerts, COUNT );
+		StopRecordTime( end );
+		GetBest( start, end, bestClocksSIMD );
+	}
+
+	for ( i = 0; i < COUNT; i++ ) {
+		if ( i < ( numVerts1 / 2 ) ) {
+			if ( !vertexCache1[i*2+0].Compare( vertexCache2[i*2+0], 1e-2f ) ) {
+				break;
+			}
+			if ( !vertexCache1[i*2+1].Compare( vertexCache2[i*2+1], 1e-2f ) ) {
+				break;
+			}
+		}
+		if ( vertRemap1[i] != vertRemap2[i] ) {
+			break;
+		}
+	}
+
+	result = ( i >= COUNT && numVerts1 == numVerts2 ) ? "ok" :  S_COLOR_RED "X";
+	PrintClocks( va( "   simd->CreateShadowCache() %s", result ), COUNT, bestClocksSIMD, bestClocksGeneric );
+
+	bestClocksGeneric = 0;
+	for ( i = 0; i < NUMTESTS; i++ ) {
+		StartRecordTime( start );
+		p_generic->CreateVertexProgramShadowCache( vertexCache1, drawVerts, COUNT );
+		StopRecordTime( end );
+		GetBest( start, end, bestClocksGeneric );
+	}
+	PrintClocks( "generic->CreateVertexProgramShadowCache()", COUNT, bestClocksGeneric );
+
+	bestClocksSIMD = 0;
+	for ( i = 0; i < NUMTESTS; i++ ) {
+		StartRecordTime( start );
+		p_simd->CreateVertexProgramShadowCache( vertexCache2, drawVerts, COUNT );
+		StopRecordTime( end );
+		GetBest( start, end, bestClocksSIMD );
+	}
+
+	for ( i = 0; i < COUNT; i++ ) {
+		if ( !vertexCache1[i*2+0].Compare( vertexCache2[i*2+0], 1e-2f ) ) {
+			break;
+		}
+		if ( !vertexCache1[i*2+1].Compare( vertexCache2[i*2+1], 1e-2f ) ) {
+			break;
+		}
+	}
+	result = ( i >= COUNT ) ? "ok" :  S_COLOR_RED "X";
+	PrintClocks( va( "   simd->CreateVertexProgramShadowCache() %s", result ), COUNT, bestClocksSIMD, bestClocksGeneric );
+}
+
+/*
+============
 TestSoundUpSampling
 ============
 */
@@ -3927,6 +4026,7 @@ idSIMD::Test_f
 	TestNormalizeTangents();
 	TestGetTextureSpaceLightVectors();
 	TestGetSpecularTextureCoords();
+	TestCreateShadowCache();
 
 	idLib::common->Printf("====================================\n" );
 
