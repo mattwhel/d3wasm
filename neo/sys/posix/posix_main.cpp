@@ -61,9 +61,9 @@ static int				history_start = 0;			// current history start
 static int				history_current = 0;			// goes back in history
 idEditField				history_backup;				// the base edit line
 
-// terminal support
 #ifdef __EMSCRIPTEN__
-idCVar in_tty( "in_tty", "0", CVAR_BOOL | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
+// Terminal mode not supported on emscripten
+idCVar in_tty( "in_tty", "0", CVAR_BOOL | CVAR_ROM | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
 #else
 idCVar in_tty( "in_tty", "1", CVAR_BOOL | CVAR_INIT | CVAR_SYSTEM, "terminal tab-completion and history" );
 #endif
@@ -404,7 +404,7 @@ void Posix_InitConsoleInput( void ) {
 		tc.c_cc[VMIN] = 1;
 		tc.c_cc[VTIME] = 0;
 		if ( tcsetattr( 0, TCSADRAIN, &tc ) == -1 ) {
-			Sys_Printf( "tcsetattr failed: %s\n", strerror( errno ) );
+			Sys_Printf( "tcsetattr failed: %s (%d)\n", strerror( errno ), errno );
 			Sys_Printf( "terminal support may not work correctly. Use +set in_tty 0 to disable it\n" );
 		}
 #if 0
