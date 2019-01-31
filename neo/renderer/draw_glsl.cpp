@@ -448,53 +448,6 @@ void R_ReloadGLSLPrograms_f(const idCmdArgs& args) {
 }
 
 /*
-===============
-RB_EnterWeaponDepthHack
-===============
-*/
-static void RB_GLSL_EnterWeaponDepthHack(const drawSurf_t* surf) {
-  qglDepthRangef(0, 0.5);
-
-  float matrix[16];
-  memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
-  matrix[14] *= 0.25;
-
-  float mat[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-}
-
-/*
-===============
-RB_EnterModelDepthHack
-===============
-*/
-static void RB_GLSL_EnterModelDepthHack(const drawSurf_t* surf) {
-  qglDepthRangef(0.0f, 1.0f);
-
-  float matrix[16];
-  memcpy(matrix, backEnd.viewDef->projectionMatrix, sizeof(matrix));
-  matrix[14] -= surf->space->modelDepthHack;
-
-  float mat[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, matrix, mat);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-}
-
-/*
-===============
-RB_LeaveDepthHack
-===============
-*/
-static void RB_GLSL_LeaveDepthHack(const drawSurf_t* surf) {
-  qglDepthRangef(0, 1);
-
-  float mat[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
-}
-
-/*
 ==================
 RB_GLSL_DrawInteraction
 ==================
@@ -619,15 +572,6 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
                backEnd.currentScissor.y2 + 1 - backEnd.currentScissor.y1);
   }
 
-  // hack depth range if needed
-  if ( surf->space->weaponDepthHack ) {
-    RB_GLSL_EnterWeaponDepthHack(surf);
-  }
-
-  if ( surf->space->modelDepthHack != 0 ) {
-    RB_GLSL_EnterModelDepthHack(surf);
-  }
-
   inter.surf = surf;
   inter.lightFalloffImage = vLight->falloffImage;
 
@@ -745,11 +689,6 @@ RB_GLSL_CreateSingleDrawInteractions(const drawSurf_t* surf, void (* DrawInterac
 
     // draw the final interaction
     RB_SubmittInteraction(&inter, DrawInteraction);
-  }
-
-  // unhack depth range if needed
-  if ( surf->space->weaponDepthHack || surf->space->modelDepthHack != 0.0f ) {
-    RB_GLSL_LeaveDepthHack(surf);
   }
 }
 
@@ -954,19 +893,19 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
 
   for ( drawSurf = drawSurfs; drawSurf; drawSurf = drawSurf->nextOnLight ) {
 
-    // change the MVP matrix if needed
+    // Change the MVP matrix if needed
     if ( drawSurf->space != backEnd.currentSpace ) {
-      float mat[16];
-      myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+      float mvp[16];
+      RB_ComputeMVP(drawSurf, mvp);
+      // We can set the uniform now, as the shader is already bound
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mvp);
     }
 
-    if ( drawSurf->space->weaponDepthHack ) {
-      RB_GLSL_EnterWeaponDepthHack(drawSurf);
-    }
-
-    if ( drawSurf->space->modelDepthHack != 0.0f ) {
-      RB_GLSL_EnterModelDepthHack(drawSurf);
+    // Hack Depth Range if necessary
+    bool bNeedRestoreDepthRange = false;
+    if (drawSurf->space->weaponDepthHack && drawSurf->space->modelDepthHack == 0.0f) {
+      qglDepthRangef(0.0f, 0.5f);
+      bNeedRestoreDepthRange = true;
     }
 
     // change the scissor if needed
@@ -986,8 +925,9 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
     // render it
     triFunc_(drawSurf, vLight);
 
-    if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
-      RB_GLSL_LeaveDepthHack(drawSurf);
+    // Restore the Depth Range in case it have been hacked
+    if ( bNeedRestoreDepthRange ) {
+      qglDepthRangef( 0.0f, 1.0f );
     }
 
     backEnd.currentSpace = drawSurf->space;
@@ -1694,20 +1634,19 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     // PolygonOffset: disabled
     // StencilTest: enabled
 
-    // change the MVP matrix if needed
+    // Change the MVP matrix if needed
     if ( drawSurf->space != backEnd.currentSpace ) {
-      float mat[16];
-      myGlMultMatrix(drawSurf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+      float mvp[16];
+      RB_ComputeMVP(drawSurf, mvp);
+      // We can set the uniform now as it shader is already bound
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mvp);
     }
 
-    // Hack the MVP matrix if needed
-    if ( drawSurf->space->weaponDepthHack ) {
-      RB_GLSL_EnterWeaponDepthHack(drawSurf);
-    }
-
-    if ( drawSurf->space->modelDepthHack != 0.0f ) {
-      RB_GLSL_EnterModelDepthHack(drawSurf);
+    // Hack Depth Range if necessary
+    bool bNeedRestoreDepthRange = false;
+    if (drawSurf->space->weaponDepthHack && drawSurf->space->modelDepthHack == 0.0f) {
+      qglDepthRangef(0, 0.5);
+      bNeedRestoreDepthRange = true;
     }
 
     // change the scissor if needed
@@ -1732,13 +1671,8 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     // Restore everything to an acceptable state
     /////////////////////////////////////////////
 
-    // Invariants to match that may have changed:
-    // none
-
-    // Well... restore the MVP matrix from its hacked version if needed
-    // This is in case we don't have changed space at next iteration, but we are no more in depth hack mode
-    if ( drawSurf->space->weaponDepthHack || drawSurf->space->modelDepthHack != 0.0f ) {
-      RB_GLSL_LeaveDepthHack(drawSurf);
+    if (bNeedRestoreDepthRange) {
+      qglDepthRangef(0.0f, 1.0f);
     }
 
     // Let's change space for next iteration
@@ -1781,7 +1715,7 @@ RB_GLSL_T_RenderShaderPasses
 This is also called for the generated 2D rendering
 ==================
 */
-void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
+void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
 
   // global constants
   static const GLfloat zero[1] = { 0 };
@@ -1843,41 +1777,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   // set face culling appropriately
   GL_Cull(shader->GetCullType());
 
-  // Quick and dirty hacks on the depth range
-  // NB: must be restored at end of process
-  if ( surf->space->weaponDepthHack && surf->space->modelDepthHack == 0.0f ) {
-    qglDepthRangef(0, 0.5);
-  }
-
   // Location of vertex attributes data
   const idDrawVert* const ac = (const idDrawVert* const) vertexCache.Position(tri->ambientCache);
 
   // get the expressions for conditionals / color / texcoords
   const float* const regs = surf->shaderRegisters;
 
-  // Additional precomputations that will be reused in the shader stages
-
-  // precompute the projection matrix
-  float localProjectionMatrix[16];
-  memcpy(localProjectionMatrix, backEnd.viewDef->projectionMatrix, sizeof(localProjectionMatrix));
-  const float v = localProjectionMatrix[14];
-
-  // Quick and dirty hacks on the projection marix
-  if ( surf->space->weaponDepthHack ) {
-    localProjectionMatrix[14] = v * 0.25;
-  }
-  if ( surf->space->modelDepthHack != 0.0 ) {
-    localProjectionMatrix[14] = v - surf->space->modelDepthHack;
-  }
-
-  // precompute the MVP
-  float localMVP[16];
-  myGlMultMatrix(surf->space->modelViewMatrix, localProjectionMatrix, localMVP);
-
-  // precompute the local view origin (might be needed for some texgens)
-  idVec4 localViewOrigin;
-  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
-  localViewOrigin.w = 1.0f;
+  // Caches to only set GL State only when needed
+  bool bMVPSet[TG_GLASSWARP-TG_EXPLICIT]; memset(bMVPSet, 0, (TG_GLASSWARP-TG_EXPLICIT)*sizeof(bool));
+  bool bVASet [TG_GLASSWARP-TG_EXPLICIT]; memset(bVASet , 0, (TG_GLASSWARP-TG_EXPLICIT)*sizeof(bool));
 
   ///////////////////////
   // For each stage loop
@@ -1970,6 +1878,11 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
         // This is skybox cube mapping
         GL_UseProgram(&skyboxCubeShader);
 
+        // precompute the local view origin (might be needed for some texgens)
+        idVec4 localViewOrigin;
+        R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
+        localViewOrigin.w = 1.0f;
+
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
@@ -1980,6 +1893,11 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
         // This is skybox cube mapping, with special texture matrix
         GL_UseProgram(&skyboxCubeShader);
+
+        // precompute the local view origin (might be needed for some texgens)
+        idVec4 localViewOrigin;
+        R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
+        localViewOrigin.w = 1.0f;
 
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
@@ -2044,21 +1962,31 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // Now we have a shader, we can setup the uniforms and attribute pointers common to all kind of shaders
       // The specifics have already been done in the shader selection code (see above)
 
-      // Setup the Vertex Attrib pointer
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                             ac->xyz.ToFloatPtr());
+      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
-      // Setup the MVP uniform
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), localMVP);
+      // Non-stage dependent state (per drawsurf, may be done once per GL shader)
+      if(!bVASet[pStage->texture.texgen]) {
+        // Setup the Vertex Attrib pointer
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                               ac->xyz.ToFloatPtr());
+
+        // Setup the Color pointer
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
+                               (void*) &ac->color);
+
+        bVASet[pStage->texture.texgen] = true;
+      }
+
+      if (!bMVPSet[pStage->texture.texgen]) {
+        // Setup the MVP uniform
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mvp);
+        bMVPSet[pStage->texture.texgen] = true;
+      }
+
+      // Stage dependent state
 
       // Setup the Color uniform
       GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
-
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
-
-      // Setup the Color pointer
-      GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                             (void*) &ac->color);
 
       // Setup the Color modulation
       switch ( pStage->vertexColor ) {
@@ -2098,7 +2026,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
       // Restore everything to an acceptable state
       /////////////////////////////////////////////
 
-      // Disable color attributes array
       GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
       // Disable the other attributes array
@@ -2141,11 +2068,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf) {
   // reset polygon offset
   if ( shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
     qglDisable(GL_POLYGON_OFFSET_FILL);
-  }
-
-  // Restore the depth range if it was hacked somehow
-  if ( surf->space->weaponDepthHack ) {
-    qglDepthRangef(0.0f, 1.0f);
   }
 
   // Don't touch the rest, as this will be reset by caller method
@@ -2198,12 +2120,15 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // (ie. common to each surface)
   ////////////////////////////////////////
 
+  // Only texture 0 will be used
   GL_SelectTexture(0);
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
   /////////////////////////
   // For each surface loop
   /////////////////////////
+
+  float mvp[16];
+  backEnd.currentSpace = NULL;
 
   int i;
   for ( i = 0; i < numDrawSurfs; i++ ) {
@@ -2228,31 +2153,42 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
       break;
     }
 
+
+    // Change the MVP matrix if needed
+    if ( drawSurfs[i]->space != backEnd.currentSpace ) {
+      RB_ComputeMVP(drawSurfs[i], mvp);
+      // We can't set the uniform now, as we still don't know which shader to use
+    }
+
+    // Hack Depth Range if necessary
+    bool bNeedRestoreDepthRange = false;
+    if (drawSurfs[i]->space->weaponDepthHack && drawSurfs[i]->space->modelDepthHack == 0.0f) {
+      qglDepthRangef(0.0f, 0.5f);
+      bNeedRestoreDepthRange = true;
+    }
+
     ////////////////////
     // Do the real work
     ////////////////////
-    RB_GLSL_T_RenderShaderPasses(drawSurfs[i]);
+    RB_GLSL_T_RenderShaderPasses(drawSurfs[i], mvp);
+
+    if (bNeedRestoreDepthRange) {
+      qglDepthRangef(0.0f, 1.0f);
+    }
+
+    backEnd.currentSpace = drawSurfs[i]->space;
   }
 
   /////////////////////////////////////////////
   // Restore everything to an acceptable state
   /////////////////////////////////////////////
 
-  // Invariants to match that may have changed:
-  // Tex0 active, and bound to NULL
-  // No shaders active
-  // Culling
-
   // Restore culling
   GL_Cull(CT_FRONT_SIDED);
 
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
-
-  // Bind Tex0 to NULL
-  //globalImages->BindNull();
-
-  // Reset the shader
-  //GL_UseProgram(NULL);
+  // Trashed state:
+  //   Current Program
+  //   Tex0 binding
 
   // Return the counter of drawn surfaces
   return i;
