@@ -825,22 +825,22 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
   GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
   // Cleanup the texture bindings
-  GL_SelectTexture(4);
-  globalImages->BindNull();
+  //GL_SelectTexture(4);
+  //globalImages->BindNull();
 
-  GL_SelectTexture(3);
-  globalImages->BindNull();
+  //GL_SelectTexture(3);
+  //globalImages->BindNull();
 
-  GL_SelectTexture(2);
-  globalImages->BindNull();
+  //GL_SelectTexture(2);
+  //globalImages->BindNull();
 
-  GL_SelectTexture(1);
-  globalImages->BindNull();
+  //GL_SelectTexture(1);
+  //globalImages->BindNull();
 
-  GL_SelectTexture(0);
-  globalImages->BindNull();
+  //GL_SelectTexture(0);
+  //globalImages->BindNull();
 
-  GL_UseProgram(NULL);
+  //GL_UseProgram(NULL);
 }
 
 
@@ -1059,7 +1059,7 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* v
   // We don't care about uniform states
 
   // Desactivate the shader
-  GL_UseProgram(NULL);
+  //GL_UseProgram(NULL);
 }
 
 
@@ -1238,6 +1238,7 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   const float a = ( lightColor[3] <= 1.0 ) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / lightColor[3];
 
   // texture 0 is the falloff image
+  GL_SelectTexture( 0 );
   globalImages->fogImage->Bind();
 
   fogPlanes[0][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[2];
@@ -1253,7 +1254,6 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   // texture 1 is the entering plane fade correction
   GL_SelectTexture(1);
   globalImages->fogEnterImage->Bind();
-  GL_SelectTexture(0);
 
   // T will get a texgen for the fade plane, which is always the "top" plane on unrotated lights
   fogPlanes[2][0] = 0.001f * vLight->fogPlane[0];
@@ -1290,13 +1290,13 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   //
   // We don't care about uniform states, and vertex attributes pointers
 
-  GL_SelectTexture(1);
-  globalImages->BindNull();
-  GL_SelectTexture(0);
+  //GL_SelectTexture(1);
+  //globalImages->BindNull();
+  //GL_SelectTexture(0);
 
-  GL_UseProgram(NULL);
+  //GL_UseProgram(NULL);
 
-  globalImages->BindNull();
+  //globalImages->BindNull();
 }
 
 /*
@@ -1637,6 +1637,7 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     // If no clip planes, just use the regular zfill shader
   else {
     GL_UseProgram(&zfillShader);
+    GL_SelectTexture(0);
   }
 
   // Enable the Vertex attributes arrays
@@ -1759,18 +1760,18 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // No shaders active
 
   // Bind Tex1 to NULL
-  if ( backEnd.viewDef->numClipPlanes ) {
-    GL_SelectTexture(1);
-    globalImages->BindNull();
+  //if ( backEnd.viewDef->numClipPlanes ) {
+    //GL_SelectTexture(1);
+    //globalImages->BindNull();
 
-    GL_SelectTexture(0);
-  }
+    //GL_SelectTexture(0);
+  //}
 
   // Bind Tex0 to NULL
-  globalImages->BindNull();
+  //globalImages->BindNull();
 
   // Reset the shader
-  GL_UseProgram(NULL);
+  //GL_UseProgram(NULL);
 }
 
 /*
@@ -2197,11 +2198,8 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // (ie. common to each surface)
   ////////////////////////////////////////
 
-  // Invariants (each time we are here, these should be satisfied):
-  // No shaders active
-  // Tex0 active, and bound to NULL
-
-  // Actually, no GL shader setup can be done there, as the shader to use is dependent on the surface shader stages
+  GL_SelectTexture(0);
+  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
 
   /////////////////////////
   // For each surface loop
@@ -2248,11 +2246,13 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Restore culling
   GL_Cull(CT_FRONT_SIDED);
 
+  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
+
   // Bind Tex0 to NULL
-  globalImages->BindNull();
+  //globalImages->BindNull();
 
   // Reset the shader
-  GL_UseProgram(NULL);
+  //GL_UseProgram(NULL);
 
   // Return the counter of drawn surfaces
   return i;
