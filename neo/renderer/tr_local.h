@@ -1162,6 +1162,7 @@ void RB_BeginDrawingView (void);
 void RB_FogAllLights( void );
 void RB_GetShaderTextureMatrix(const float* shaderRegisters, const textureStage_t* texture, float matrix[16]);
 void RB_BakeTextureMatrixIntoTexgen( idMat4 & lightProject, const float* textureMatrix);
+void RB_ComputeMVP( const drawSurf_t * const surf, float mvp[16] );
 
 /*
 ============================================================
