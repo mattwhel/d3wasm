@@ -2202,14 +2202,14 @@ EMSCRIPTEN Note: This is an EMTERPRETIFY function
 =================
 */
 void idCommonLocal::GUIFrame(bool execCmd, bool network) {
-  Sys_GenerateEvents();
-  eventLoop->RunEventLoop(execCmd);    // EMTERPRETIFY function (might yields)
-
 #ifdef NOMT
   // In Single Threaded mode manually update the async timer here, as com_ticNumber is used locally
   // This is to try to get things correctly in sync
   common->Async();
 #endif
+
+  Sys_GenerateEvents();
+  eventLoop->RunEventLoop(execCmd);    // EMTERPRETIFY function (might yields)
 
   com_frameTime = com_ticNumber * USERCMD_MSEC;
   if ( network ) {

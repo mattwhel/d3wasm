@@ -37,6 +37,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "framework/Session_local.h"
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"   // emscripten_sleep_with_yield
+#endif
+
 idCVar	idSessionLocal::gui_configServerRate( "gui_configServerRate", "0", CVAR_GUI | CVAR_ARCHIVE | CVAR_ROM | CVAR_INTEGER, "" );
 
 // implements the setup for, and commands from, the main menu
@@ -1336,6 +1340,9 @@ const char* idSessionLocal::MessageBox( msgBoxType_t type, const char *message, 
 		msgIgnoreButtons = false;
 		while ( msgRunning ) {
 			common->GUIFrame( true, network );
+#ifdef __EMSCRIPTEN__
+      emscripten_sleep_with_yield( 1000.0/60.0 );
+#endif
 		}
 		if ( msgRetIndex < 0 ) {
 			// MSG_WAIT and other StopBox calls
@@ -1405,6 +1412,9 @@ void idSessionLocal::DownloadProgressBox( backgroundDownload_t *bgl, const char 
 	while ( 1 ) {
 		while ( msgRunning ) {
 			common->GUIFrame( true, false );
+#ifdef __EMSCRIPTEN__
+      emscripten_sleep_with_yield( 1000.0/60.0 );
+#endif
 			if ( bgl->completed ) {
 				guiActive = guiMsgRestore;
 				guiMsgRestore = NULL;

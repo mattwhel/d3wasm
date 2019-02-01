@@ -539,7 +539,7 @@ void idSessionLocal::CompleteWipe() {
 #endif
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(1000.0/60);   // Yields to the browser so that the screen updated at each tic
+    emscripten_sleep_with_yield(1000.0/60.0);   // Yields to the browser so that the screen updated at each tic
 #endif
 #ifdef NOMT
     common->Async();                          // com_ticNumber is used locally, be sure to run the timer to make things move on
@@ -569,7 +569,7 @@ void idSessionLocal::ShowLoadingGui() {
     session->Frame();
     session->UpdateScreen(false);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(1000.0/60);   // Yields to the browser so that the screen updated at each tic
+    emscripten_sleep_with_yield(1000.0/60.0);   // Yields to the browser so that the screen updated at each tic
 #endif
   }
 }
@@ -2683,36 +2683,6 @@ bool idSessionLocal::emsessionframe_pre() {
 
 void idSessionLocal::emsessionframe_last() {
 
-  if ( authEmitTimeout ) {
-    // waiting for a game auth
-    if ( Sys_Milliseconds() > authEmitTimeout ) {
-      // expired with no reply
-      // means that if a firewall is blocking the master, we will let through
-      common->DPrintf("no reply from auth\n");
-      if ( authWaitBox ) {
-        // close the wait box
-        StopBox();
-        authWaitBox = false;
-      }
-      if ( cdkey_state == CDKEY_CHECKING ) {
-        cdkey_state = CDKEY_OK;
-      }
-      if ( xpkey_state == CDKEY_CHECKING ) {
-        xpkey_state = CDKEY_OK;
-      }
-      // maintain this empty as it's set by auth denials
-      authMsg.Empty();
-      authEmitTimeout = 0;
-      SetCDKeyGuiVars();
-    }
-  }
-
-  // advance demos
-  if ( readDemo ) {
-    AdvanceRenderDemo(false);
-    return;
-  }
-
   //------------ single player game tics --------------
 
   if ( !mapSpawned || guiActive ) {
@@ -2797,7 +2767,7 @@ void idSessionLocal::emsessionframe_last() {
   int gameTicsToRun = latchedTicNumber - lastGameTic;
   int i;
   for ( i = 0; i < gameTicsToRun; i++ ) {
-    bool b = RunGameTic();                         // This function might yields (ie. inline loading screen update). Needs to be handled
+    bool b = RunGameTic();
     if ( !mapSpawned || !b ) {
       // exited game play
       break;
@@ -2822,6 +2792,36 @@ void idSessionLocal::Frame() {
   }
 
   GuiFrameEvents();                       // This function might yields (ie. inline loading screen update)
+
+  if ( authEmitTimeout ) {
+    // waiting for a game auth
+    if ( Sys_Milliseconds() > authEmitTimeout ) {
+      // expired with no reply
+      // means that if a firewall is blocking the master, we will let through
+      common->DPrintf("no reply from auth\n");
+      if ( authWaitBox ) {
+        // close the wait box
+        StopBox();
+        authWaitBox = false;
+      }
+      if ( cdkey_state == CDKEY_CHECKING ) {
+        cdkey_state = CDKEY_OK;
+      }
+      if ( xpkey_state == CDKEY_CHECKING ) {
+        xpkey_state = CDKEY_OK;
+      }
+      // maintain this empty as it's set by auth denials
+      authMsg.Empty();
+      authEmitTimeout = 0;
+      SetCDKeyGuiVars();
+    }
+  }
+
+  // advance demos
+  if ( readDemo ) {
+    AdvanceRenderDemo(false);
+    return;
+  }
 
   emsessionframe_last();
 }
