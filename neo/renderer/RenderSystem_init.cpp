@@ -995,14 +995,14 @@ void idRenderSystemLocal::TakeScreenshot( int width, int height, const char *fil
 
 	int	pix = width * height;
 
-	buffer = (byte *)R_StaticAlloc(pix*3 + 18);
+	buffer = (byte *)R_StaticAlloc(pix*4 + 18);
 	memset (buffer, 0, 18);
 
 	if ( blends <= 1 ) {
 		R_ReadTiledPixels( width, height, buffer + 18, ref );
 	} else {
-		unsigned short *shortBuffer = (unsigned short *)R_StaticAlloc(pix*2*3);
-		memset (shortBuffer, 0, pix*2*3);
+		unsigned short *shortBuffer = (unsigned short *)R_StaticAlloc(pix*2*4);
+		memset (shortBuffer, 0, pix*2*4);
 
 		// enable anti-aliasing jitter
 		r_jitter.SetBool( true );
@@ -1010,13 +1010,13 @@ void idRenderSystemLocal::TakeScreenshot( int width, int height, const char *fil
 		for ( i = 0 ; i < blends ; i++ ) {
 			R_ReadTiledPixels( width, height, buffer + 18, ref );
 
-			for ( j = 0 ; j < pix*3 ; j++ ) {
+			for ( j = 0 ; j < pix*4 ; j++ ) {
 				shortBuffer[j] += buffer[18+j];
 			}
 		}
 
 		// divide back to bytes
-		for ( i = 0 ; i < pix*3 ; i++ ) {
+		for ( i = 0 ; i < pix*4 ; i++ ) {
 			buffer[18+i] = shortBuffer[i] / blends;
 		}
 
@@ -1033,8 +1033,8 @@ void idRenderSystemLocal::TakeScreenshot( int width, int height, const char *fil
 	buffer[16] = 24;	// pixel size
 
 	// swap rgb to bgr
-	c = 18 + width * height * 3;
-	for (i=18 ; i<c ; i+=3) {
+	c = 18 + width * height * 4;
+	for (i=18 ; i<c ; i+=4) {
 		temp = buffer[i];
 		buffer[i] = buffer[i+2];
 		buffer[i+2] = temp;
