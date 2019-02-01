@@ -3412,24 +3412,21 @@ int BackgroundDownloadThread( void *pexit ) {
 	if (!(*exit)) {
 #else
 	while (!(*exit)) {
-		Sys_EnterCriticalSection();
 #endif
+    Sys_EnterCriticalSection();
 		backgroundDownload_t	*bgl = fileSystemLocal.backgroundDownloads;
 		if ( !bgl ) {
+      Sys_LeaveCriticalSection();
+      Sys_WaitForEvent();
 #ifdef NOMT
-		    return 0;
+      return 0;
 #else
-			Sys_LeaveCriticalSection();
-			Sys_WaitForEvent();
 			continue;
 #endif
 		}
 		// remove this from the list
 		fileSystemLocal.backgroundDownloads = bgl->next;
-#ifdef NOMT
-#else
 		Sys_LeaveCriticalSection();
-#endif
 
 		bgl->next = NULL;
 
@@ -3477,17 +3474,11 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 	if ( bgl->opcode == DLTYPE_FILE ) {
 		if ( dynamic_cast<idFile_Permanent *>(bgl->f) ) {
 			// add the bgl to the background download list
-#ifdef NOMT
-#else
 			Sys_EnterCriticalSection();
-#endif
 			bgl->next = backgroundDownloads;
 			backgroundDownloads = bgl;
-#ifdef NOMT
-#else
 			Sys_TriggerEvent();
 			Sys_LeaveCriticalSection();
-#endif
 		} else {
 			// read zipped file directly
 			bgl->f->Seek( bgl->file.position, FS_SEEK_SET );
@@ -3495,17 +3486,11 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 			bgl->completed = true;
 		}
 	} else {
-#ifdef NOMT
-#else
 		Sys_EnterCriticalSection();
-#endif
 		bgl->next = backgroundDownloads;
 		backgroundDownloads = bgl;
-#ifdef NOMT
-#else
 		Sys_TriggerEvent();
 		Sys_LeaveCriticalSection();
-#endif
 	}
 }
 

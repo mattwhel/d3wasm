@@ -2255,10 +2255,7 @@ int lastTicMsec;
 void idCommonLocal::SingleAsyncTic(void) {
   // main thread code can prevent this from happening while modifying
   // critical data structures
-#ifdef NOMT
-#else
   Sys_EnterCriticalSection();
-#endif
 
   asyncStats_t* stat = &com_asyncStats[com_ticNumber & ( MAX_ASYNC_STATS - 1 )];
   memset(stat, 0, sizeof(*stat));
@@ -2284,10 +2281,7 @@ void idCommonLocal::SingleAsyncTic(void) {
 
   stat->timeConsumed = Sys_Milliseconds() - stat->milliseconds;
 
-#ifdef NOMT
-#else
   Sys_LeaveCriticalSection();
-#endif
 }
 
 /*
