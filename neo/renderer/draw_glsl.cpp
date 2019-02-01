@@ -99,7 +99,7 @@ GL_EnableVertexAttribArray
 ====================
 */
 void GL_EnableVertexAttribArray(GLuint index) {
-  qglEnableVertexAttribArray(*( GLint * )((char*) backEnd.glState.currentProgram + index));
+  qglEnableVertexAttribArray(index);
 }
 
 /*
@@ -108,7 +108,7 @@ GL_DisableVertexAttribArray
 ====================
 */
 void GL_DisableVertexAttribArray(GLuint index) {
-  qglDisableVertexAttribArray(*( GLint * )((char*) backEnd.glState.currentProgram + index));
+  qglDisableVertexAttribArray(index);
 }
 
 /*
@@ -171,9 +171,13 @@ static bool R_LinkGLSLShader(shaderProgram_t* shaderProgram, const char* name) {
   qglAttachShader(shaderProgram->program, shaderProgram->vertexShader);
   qglAttachShader(shaderProgram->program, shaderProgram->fragmentShader);
 
-  // Always prebind attribute 0, which is a mandatory requirement for WebGL
-  // Let the rest be decided by GL
-  qglBindAttribLocation(shaderProgram->program, 0, "attr_Vertex");
+  // Bind attributes locations
+  qglBindAttribLocation(shaderProgram->program, ATTR_VERTEX, "attr_Vertex");
+  qglBindAttribLocation(shaderProgram->program, ATTR_COLOR, "attr_Color");
+  qglBindAttribLocation(shaderProgram->program, ATTR_TEXCOORD, "attr_TexCoord");
+  qglBindAttribLocation(shaderProgram->program, ATTR_NORMAL, "attr_Normal");
+  qglBindAttribLocation(shaderProgram->program, ATTR_TANGENT, "attr_Tangent");
+  qglBindAttribLocation(shaderProgram->program, ATTR_BITANGENT, "attr_Bitangent");
 
   qglLinkProgram(shaderProgram->program);
 
@@ -270,8 +274,19 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
   shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
 
-  // Always enable the vertex attribute array
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Vertex));
+  // Init default values
+  if (shader->textureMatrix >= 0) {
+    common->Printf("textureMatrix %d\n", shader->textureMatrix);
+    // Load identity matrix for Texture marix
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+  }
+
+  if (shader->alphaTest >= 0) {
+    common->Printf("alphaTest %d\n", shader->alphaTest);
+    // Alpha test always pass by default
+    static const GLfloat one[1] = { 1 };
+    GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
+  }
 
   GL_CheckErrors();
 
@@ -516,7 +531,7 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   // set the textures
 
   // texture 0 will be the per-surface bump map
-  GL_SelectTexture(0);
+  // NB: Texture 0 is expected to be active at this point
   din->bumpImage->Bind();
 
   // texture 1 will be the light falloff texture
@@ -534,6 +549,9 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   // texture 4 is the per-surface specular map
   GL_SelectTexture(4);
   din->specularImage->Bind();
+
+  // Be sure to activate Texture 0 for next interaction, or next pass
+  GL_SelectTexture(0);
 
   // draw it
   RB_DrawElementsWithCounters(din->surf->geo);
@@ -714,13 +732,14 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
     GL_UseProgram(&interactionShader);
   }
 
-  // Enable the Vertex attributes arrays
-  // Vertex attrib is already enabled
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
+  // Setup attributes arrays
+  // Vertex attribute is always enabled
+  // Color attribute is always enabled
+  // Enable the rest
+  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
+  GL_EnableVertexAttribArray(ATTR_TANGENT);
+  GL_EnableVertexAttribArray(ATTR_BITANGENT);
+  GL_EnableVertexAttribArray(ATTR_NORMAL);
 
   backEnd.currentSpace = NULL;
 
@@ -756,30 +775,16 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
     backEnd.currentSpace = surf->space;
   }
 
-  // Disable the Vertex attributes arrays
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Tangent));
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Bitangent));
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
+  backEnd.currentSpace = NULL;
 
-  // Cleanup the texture bindings
-  //GL_SelectTexture(4);
-  //globalImages->BindNull();
-
-  //GL_SelectTexture(3);
-  //globalImages->BindNull();
-
-  //GL_SelectTexture(2);
-  //globalImages->BindNull();
-
-  //GL_SelectTexture(1);
-  //globalImages->BindNull();
-
-  //GL_SelectTexture(0);
-  //globalImages->BindNull();
-
-  //GL_UseProgram(NULL);
+  // Restore attributes arrays
+  // Vertex attribute is always enabled
+  // Color attribute is always enabled
+  // Disable the rest
+  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
+  GL_DisableVertexAttribArray(ATTR_TANGENT);
+  GL_DisableVertexAttribArray(ATTR_BITANGENT);
+  GL_DisableVertexAttribArray(ATTR_NORMAL);
 }
 
 
@@ -854,7 +859,6 @@ static void RB_T_GLSL_Shadow(const drawSurf_t* surf, const viewLight_t* vLight) 
     qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_FRONT : GL_BACK, GL_KEEP, GL_KEEP, GL_INCR);
     qglStencilOpSeparate(backEnd.viewDef->isMirror ? GL_BACK : GL_FRONT, GL_KEEP, GL_KEEP, GL_DECR);
   }
-  GL_Cull(CT_TWO_SIDED);
   RB_DrawShadowElementsWithCounters(tri, numIndexes);
 
   // patent-free work around
@@ -960,15 +964,17 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* v
   // Setup GL state
   //////////////////
 
-  // Initial expected GL state:
-  // Texture 0 is active, and bound to NULL
-  // No shaders active
+  // Expected client GL state:
+  // Vertex attribute enabled
+  // Color attribute enabled
 
   // Use the stencil shadow shader
   GL_UseProgram(&stencilShadowShader);
 
-  // Enable the Vertex attributes arrays
-  // NB: Vertex attrib is already enabled
+  // Setup attributes arrays
+  // Vertex attribute is always enabled
+  // Disable Color attribute (as it is enabled by default)
+  GL_DisableVertexAttribArray(ATTR_COLOR);
 
   // don't write to the color buffer, just the stencil buffer
   GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
@@ -980,8 +986,12 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* v
 
   qglStencilFunc(GL_ALWAYS, 1, 255);
 
+  // Culling will be done two side for shadows
+  GL_Cull(CT_TWO_SIDED);
+
   RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_Shadow, vLight);
 
+  // Restore culling
   GL_Cull(CT_FRONT_SIDED);
 
   if ( r_shadowPolygonFactor.GetFloat() || r_shadowPolygonOffset.GetFloat()) {
@@ -991,17 +1001,12 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* v
   qglStencilFunc(GL_GEQUAL, 128, 255);
   qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-  // Restore GL State that might have been changed locally:
-  // Shader set to NULL
-  //
-  // This pass does not use any vertex attribute (other than vertexes obviously), and no textures
-  //
-  // We don't care about uniform states
 
-  // Desactivate the shader
-  //GL_UseProgram(NULL);
+  // Restore attributes arrays
+  // Vertex attribute is always enabled
+  // Re-enable Color attribute (as it is enabled by default)
+  GL_EnableVertexAttribArray(ATTR_COLOR);
 }
-
 
 /*
 ==================
@@ -1153,6 +1158,11 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
 
   GL_UseProgram(&fogShader);
 
+  // Setup attributes arrays
+  // Vertex attribute is always enabled
+  // Disable Color attribute (as it is enabled by default)
+  GL_DisableVertexAttribArray(ATTR_COLOR);
+
   memset(&ds, 0, sizeof(ds));
   ds.space = &backEnd.viewDef->worldSpace;
   ds.geo = frustumTris;
@@ -1178,7 +1188,7 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   const float a = ( lightColor[3] <= 1.0 ) ? -0.5f / DEFAULT_FOG_DISTANCE : -0.5f / lightColor[3];
 
   // texture 0 is the falloff image
-  GL_SelectTexture( 0 );
+  // It is expected to be already active
   globalImages->fogImage->Bind();
 
   fogPlanes[0][0] = a * backEnd.viewDef->worldSpace.modelViewMatrix[2];
@@ -1194,6 +1204,8 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   // texture 1 is the entering plane fade correction
   GL_SelectTexture(1);
   globalImages->fogEnterImage->Bind();
+  // reactive texture 0 for next passes
+  GL_SelectTexture(0);
 
   // T will get a texgen for the fade plane, which is always the "top" plane on unrotated lights
   fogPlanes[2][0] = 0.001f * vLight->fogPlane[0];
@@ -1218,36 +1230,14 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   GL_State(GLS_DEPTHMASK | GLS_SRCBLEND_SRC_ALPHA | GLS_DSTBLEND_ONE_MINUS_SRC_ALPHA | GLS_DEPTHFUNC_LESS);
   GL_Cull(CT_BACK_SIDED);
   RB_GLSL_RenderDrawSurfChainWithFunction(&ds, RB_T_GLSL_BasicFog, vLight);
+  // Restore culling
   GL_Cull(CT_FRONT_SIDED);
   GL_State(GLS_DEPTHMASK | GLS_DEPTHFUNC_EQUAL); // Restore DepthFunc
 
-  // Restore GL State that might have been changed locally:
-  // Tex1 image set to NULL
-  // Shader set to NULL
-  //
-  // Restore GL State that have been changed in submethods:
-  // Tex0 image set to NULL
-  //
-  // We don't care about uniform states, and vertex attributes pointers
-
-  //GL_SelectTexture(1);
-  //globalImages->BindNull();
-  //GL_SelectTexture(0);
-
-  //GL_UseProgram(NULL);
-
-  //globalImages->BindNull();
-}
-
-/*
-======================
-RB_GLSL_LoadShaderTextureMatrix
-======================
-*/
-void RB_GLSL_LoadShaderTextureMatrix(const float* shaderRegisters, const textureStage_t* texture) {
-  float matrix[16];
-  RB_GetShaderTextureMatrix(shaderRegisters, texture, matrix);
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
+  // Restore attributes arrays
+  // Vertex attribute is always enabled
+  // Re-enable Color attribute (as it is enabled by default)
+  GL_EnableVertexAttribArray(ATTR_COLOR);
 }
 
 /*
@@ -1305,23 +1295,6 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
   ///////////////////////////////////////////
   // GL Shader setup for the current surface
   ///////////////////////////////////////////
-
-  // Invariants (each time we are here, these should be satisfied):
-  // Active shader: zfill or zfillClip
-  // Tex0: active, and bound to whiteImage
-  // Tex1: if zfillClip shader, bound to alphaNotchImage
-  // Texture matrix: identity
-  // Alpha test: always pass
-  // DepthFunc: LESS
-  // PolygonOffset: disabled
-  // StencilTest: enabled
-  // MVP: properly set
-  // Blend mode
-
-  // Varying (they will change, and we don't care):
-  // Clip plane
-  // VertexAttribPointer
-  // TexCoordAttribPointer
 
   // update the clip plane if needed
   if ( backEnd.viewDef->numClipPlanes && surf->space != backEnd.currentSpace ) {
@@ -1413,23 +1386,6 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
       // GL Setup for the stage
       //////////////////////////
 
-      // Invariants (each time we are here, these should be satisfied):
-      // Active shader: zfill or zfillClip
-      // Tex0: active
-      // Tex1: if zfillClip shader, bound to alphaNotchImage
-      // Texture matrix: identity
-      // DepthFunc: LESS
-      // PolygonOffset: disabled
-      // StencilTest: enabled
-      // MVP: properly set
-      // Clip plane
-      // VertexAttribPointer
-      // TexCoordAttribPointer
-      // Blend mode
-
-      // Varying (they will change, and we don't care):
-      // Tex0 binding, color, alphatest
-
       // Color
       // alpha testing
       GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
@@ -1441,7 +1397,9 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
       // Setup the texture matrix if needed
       // NB: will be restored to identity
       if ( pStage->texture.hasMatrix ) {
-        RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
+        float matrix[16];
+        RB_GetShaderTextureMatrix(surf->shaderRegisters, &pStage->texture, matrix);
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
       }
 
       ///////////
@@ -1452,9 +1410,6 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
       ////////////////////////////////////////////////////////////
       // Restore everything to an acceptable state for next stage
       ////////////////////////////////////////////////////////////
-
-      // Invariants to mach that may have changed:
-      // Texture Matrix
 
       // Restore identity matrix
       if ( pStage->texture.hasMatrix ) {
@@ -1470,12 +1425,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
     // Restore everything to an acceptable state for next step
     ///////////////////////////////////////////////////////////
 
-    // Invariants to match that may have changed:
-    // Color
-    // Alpha esting
-    // Tex0 binding
-
-    // Restore color alpha
+    // Restore color alpha to opaque
     color[3] = 1;
     GL_Uniform4fv(offsetof(shaderProgram_t, glColor), color);
 
@@ -1491,20 +1441,6 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
   // Normal surfaces case (non perforated)
   ////////////////////////////////////////
 
-  // Invariants (each time we are here, these should be satisfied):
-  // Active shader: zfill or zfillClip
-  // Tex0: active and bound to white image
-  // Tex1: if zfillClip shader, bound to alphaNotchImage
-  // Texture matrix: identity
-  // DepthFunc: LESS
-  // PolygonOffset: disabled
-  // StencilTest: enabled
-  // MVP: properly set
-  // Clip plane
-  // VertexAttribPointer
-  // TexCoordAttribPointer
-  // Color
-
   // draw the entire surface solid
   if ( drawSolid ) {
     ///////////
@@ -1516,10 +1452,6 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
   /////////////////////////////////////////////
   // Restore everything to an acceptable state
   /////////////////////////////////////////////
-
-  // Invariants to mach that may have changed
-  // Polygon offset
-  // Blending mode
 
   // reset polygon offset
   if ( shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
@@ -1556,10 +1488,12 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // (ie. common to each surface)
   ////////////////////////////////////////
 
-  // Invariants (each time we are here, these should be satisfied):
-  // No shaders active
-  // Tex0 active, and bound to NULL
-  // Tex1 bound to NULL
+  // Expected client GL State at this point
+  // Tex0 active
+  // Vertex attribute enabled
+  // Color attribute enabled
+  // Shader AlphaTest is one
+  // Shader Texture Matrix is Identity
 
   // If clip planes are enabled in the view, use he "Clip" version of zfill shader
   // and enable the second texture for mirror plane clipping if needed
@@ -1577,27 +1511,22 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     // If no clip planes, just use the regular zfill shader
   else {
     GL_UseProgram(&zfillShader);
-    GL_SelectTexture(0);
   }
 
-  // Enable the Vertex attributes arrays
+  // Setup attributes arrays
   // Vertex attribute is always enabled
-  // TexCoords
-  GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  // Disable Color attribute (as it is enabled by default)
+  GL_DisableVertexAttribArray(ATTR_COLOR);
+  // Enable TexCoord attribute
+  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 
   // Texture 0 will be used for alpha tested surfaces. It should be already active.
   // Bind it to white image by default
   globalImages->whiteImage->Bind();
 
-  // Load identity matrix for Texture marix
-  GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
-
-  // Alpha test always pass by default
-  static const GLfloat one[1] = { 1 };
-  GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
-
   // Decal surfaces may enable polygon offset
-  qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
+  // GAB Note: Looks like it is not needed, because in case of offsetted surface we will use the offset value of the surface
+  // qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat());
 
   // Depth func to LESS
   GL_State(GLS_DEPTHFUNC_LESS);
@@ -1622,17 +1551,6 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
     ///////////////////////////////////////////
     // GL shader setup for the current surface
     ///////////////////////////////////////////
-
-    // Invariants (each time we are here, these should be satisfied):
-    // Active shader: zfill or zfillClip
-    // Tex0: active, and bound to whiteImage
-    // Tex1: if zfillClip shader, bound to alphaNotchImage
-    // Attributes arrays enabled: Vertex, TexCoord
-    // Texture matrix: identity
-    // Alpha test: always pass
-    // DepthFunc: LESS
-    // PolygonOffset: disabled
-    // StencilTest: enabled
 
     // Change the MVP matrix if needed
     if ( drawSurf->space != backEnd.currentSpace ) {
@@ -1685,27 +1603,13 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Restore current space to NULL
   backEnd.currentSpace = NULL;
 
-  // Disable TexCoord array
-  GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+  // Restore attributes arrays
+  // Vertex attribute is always enabled
+  // Re-enable Color attribute (as it is enabled by default)
+  GL_EnableVertexAttribArray(ATTR_COLOR);
+  // Disable TexCoord attribute
+  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
 
-  // Invariants to match that may have changed:
-  // Tex1 bound to NULL
-  // Tex0 active, and bound to NULL
-  // No shaders active
-
-  // Bind Tex1 to NULL
-  //if ( backEnd.viewDef->numClipPlanes ) {
-    //GL_SelectTexture(1);
-    //globalImages->BindNull();
-
-    //GL_SelectTexture(0);
-  //}
-
-  // Bind Tex0 to NULL
-  //globalImages->BindNull();
-
-  // Reset the shader
-  //GL_UseProgram(NULL);
 }
 
 /*
@@ -1866,13 +1770,12 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         // Possible that normals should be transformed by a normal matrix in the shader ? I am not sure...
 
         // Setup normal array
-        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+        GL_EnableVertexAttribArray(ATTR_NORMAL);
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
 
-        // Setup the texture matrix to identity
+        // Texture matrix is identity
         // Note: not sure, in original D3 it looks like having diffuse cube with texture matrix other than identity is a possible case.
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
         // This is skybox cube mapping
@@ -1886,9 +1789,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
-        // Setup the texture matrix to identity
-        // Note: not sure, in original D3 it looks like having skyboxes with texture matrix other than identity is a possible case.
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+        // Texture matrix is identity
+        // Note: not sure, in original D3 it looks like having diffuse cube with texture matrix other than identity is a possible case.
       }
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
         // This is skybox cube mapping, with special texture matrix
@@ -1924,7 +1826,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         // NB: in original D3, if the surface had a bump map it would lead to the "Bumpy reflection cubemaping" shader being used.
         // This is not implemented for now, we only do standard reflection cubemaping. Visual difference is really minor.
 
-        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+        GL_EnableVertexAttribArray(ATTR_NORMAL);
 
         // Setup the normals
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
@@ -1943,7 +1845,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         // Otherwise, this is just regular surface shader with explicit texcoords
         GL_UseProgram(&defaultSurfaceShader);
 
-        GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+        GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 
         // Setup the TexCoord pointer
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
@@ -1951,21 +1853,18 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
 
         // Setup the texture matrix
         if ( pStage->texture.hasMatrix ) {
-          RB_GLSL_LoadShaderTextureMatrix(surf->shaderRegisters, &pStage->texture);
-        }
-        else {
-          // Use identity
-          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+          float matrix[16];
+          RB_GetShaderTextureMatrix(surf->shaderRegisters, &pStage->texture, matrix);
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
         }
       }
 
       // Now we have a shader, we can setup the uniforms and attribute pointers common to all kind of shaders
       // The specifics have already been done in the shader selection code (see above)
 
-      GL_EnableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
-
       // Non-stage dependent state (per drawsurf, may be done once per GL shader)
       if(!bVASet[pStage->texture.texgen]) {
+
         // Setup the Vertex Attrib pointer
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->xyz.ToFloatPtr());
@@ -2026,11 +1925,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       // Restore everything to an acceptable state
       /////////////////////////////////////////////
 
-      GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Color));
-
       // Disable the other attributes array
       if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
-        GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+        GL_DisableVertexAttribArray(ATTR_NORMAL);
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
       }
@@ -2043,10 +1940,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       else if ( pStage->texture.texgen == TG_GLASSWARP ) {
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
-        GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_Normal));
+        GL_DisableVertexAttribArray(ATTR_NORMAL);
       }
       else {
-        GL_DisableVertexAttribArray(offsetof(shaderProgram_t, attr_TexCoord));
+        GL_DisableVertexAttribArray(ATTR_TEXCOORD);
+
+        // Restore identity to the texture matrix
+        if ( pStage->texture.hasMatrix ) {
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+        }
       }
 
       // unset privatePolygonOffset if necessary
@@ -2070,12 +1972,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
     qglDisable(GL_POLYGON_OFFSET_FILL);
   }
 
-  // Don't touch the rest, as this will be reset by caller method
-
-  // CAUTION: potentially trashed GL state with the call to GL_State(pStage->drawStateBits) in the stages
-  // loop. But seems ok actually
-
-  return; // pheww....
+  return;
 }
 
 /*
@@ -2120,8 +2017,11 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // (ie. common to each surface)
   ////////////////////////////////////////
 
-  // Only texture 0 will be used
-  GL_SelectTexture(0);
+  // Texture 0 is expected to be active
+
+  // Setup attributes arrays
+  // Vertex attribute is always enabled
+  // Color attribute is always enabled
 
   /////////////////////////
   // For each surface loop
@@ -2183,8 +2083,14 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Restore everything to an acceptable state
   /////////////////////////////////////////////
 
+  backEnd.currentSpace = NULL;
+
   // Restore culling
   GL_Cull(CT_FRONT_SIDED);
+
+  // Restore attributes arrays
+  // Vertex attribute is always enabled
+  // Color attribute is always enabled
 
   // Trashed state:
   //   Current Program

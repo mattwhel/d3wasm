@@ -49,7 +49,11 @@ void RB_SetDefaultGLState( void ) {
 	// No shaders set by default
 	GL_UseProgram(NULL);
 
-	// make sure our GL state vector is set correctly
+  // Always enable the vertex and color attributes arrays
+  GL_EnableVertexAttribArray(ATTR_VERTEX);
+  GL_EnableVertexAttribArray(ATTR_COLOR);
+
+  // make sure our GL state vector is set correctly
 	//
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
 	backEnd.glState.forceGlState = true;

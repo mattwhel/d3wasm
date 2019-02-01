@@ -1220,6 +1220,13 @@ typedef struct shaderProgram_s {
   GLint		u_fragmentCubeMap[MAX_FRAGMENT_IMAGES];
 } shaderProgram_t;
 
+#define ATTR_VERTEX     0   // Don't change this, as WebGL require the vertex attrib 0 to be always bound
+#define ATTR_COLOR      1
+#define ATTR_TEXCOORD   2
+#define ATTR_NORMAL     3
+#define ATTR_TANGENT    4
+#define ATTR_BITANGENT  5
+
 void GL_UseProgram(shaderProgram_t *program);
 void GL_EnableVertexAttribArray(GLuint index);
 void GL_DisableVertexAttribArray(GLuint index);
