@@ -1327,7 +1327,7 @@ void Com_ExecMachineSpec_f(const idCmdArgs& args) {
     cvarSystem->SetCVarInteger("image_anisotropy", 8, CVAR_ARCHIVE);
     cvarSystem->SetCVarInteger("image_preload", 1, CVAR_ARCHIVE);
     cvarSystem->SetCVarString("image_filter", "GL_LINEAR_MIPMAP_LINEAR", CVAR_ARCHIVE);
-    cvarSystem->SetCVarInteger("r_mode", 4, CVAR_ARCHIVE);
+    cvarSystem->SetCVarInteger("r_mode", 5, CVAR_ARCHIVE);
 // These CVAR are read only
     cvarSystem->SetCVarInteger("image_forceDownSize", 0, CVAR_ROM);
     cvarSystem->SetCVarInteger("image_roundDown", 0, CVAR_ROM);
