@@ -63,11 +63,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #define assertmem( x, y )
 
-#ifdef __GNUC__
 #define id_attribute(x) __attribute__(x)
-#else
-#define id_attribute(x)
-#endif
 
 #include <inttypes.h>
 #include <stdio.h>
