@@ -188,8 +188,10 @@ bool GLimp_Init(glimpParms_t parms) {
 
     context = SDL_GL_CreateContext(window);
 
+  #ifndef WEBGL
     if (SDL_GL_SetSwapInterval(r_swapInterval.GetInteger()) < 0)
       common->Warning("SDL_GL_SWAP_CONTROL not supported");
+  #endif
 
     SDL_GetWindowSize(window, &glConfig.vidWidth, &glConfig.vidHeight);
 
