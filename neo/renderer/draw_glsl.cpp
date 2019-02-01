@@ -288,6 +288,18 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
     GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
   }
 
+  if (shader->colorModulate >= 0) {
+    static const GLfloat oneScaled[1] = { 1 / 255.0f };
+    common->Printf("colorModulate %d\n", shader->colorModulate);
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+  }
+
+  if (shader->colorAdd >= 0) {
+    static const GLfloat zero[1] = { 0 };
+    common->Printf("colorAdd %d\n", shader->colorAdd);
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+  }
+
   GL_CheckErrors();
 
   GL_UseProgram(NULL);
@@ -485,16 +497,15 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   GL_Uniform4fv(offsetof(shaderProgram_t, specularMatrixT), din->specularMatrix[1].ToFloatPtr());
 
   switch ( din->vertexColor ) {
+    default:
     case SVC_MODULATE:
-      GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
-      GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+      // Default values already set (oneScaled, zero), as it is the most common case
       break;
     case SVC_INVERSE_MODULATE:
       GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), negOneScaled);
       GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
       break;
     case SVC_IGNORE:
-    default:
       GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
       GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
       break;
@@ -503,30 +514,6 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   // set the constant colors
   GL_Uniform4fv(offsetof(shaderProgram_t, diffuseColor), din->diffuseColor.ToFloatPtr());
   GL_Uniform4fv(offsetof(shaderProgram_t, specularColor), din->specularColor.ToFloatPtr());
-
-  // material may be NULL for shadow volumes
-  if ( r_usePhong.GetBool()) {
-    float f;
-    switch ( din->surf->material->GetSurfaceType()) {
-      case SURFTYPE_METAL:
-      case SURFTYPE_RICOCHET:
-        f = r_specularExponent.GetFloat();  // Maybe this should be adjusted
-        break;
-      case SURFTYPE_STONE:
-      case SURFTYPE_FLESH:
-      case SURFTYPE_WOOD:
-      case SURFTYPE_CARDBOARD:
-      case SURFTYPE_LIQUID:
-      case SURFTYPE_GLASS:
-      case SURFTYPE_PLASTIC:
-      case SURFTYPE_NONE:
-      default:
-        f = r_specularExponent.GetFloat();
-        break;
-    }
-    GL_Uniform1fv(offsetof(shaderProgram_t, specularExponent), &f);
-
-  }
 
   // set the textures
 
@@ -555,6 +542,12 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
 
   // draw it
   RB_DrawElementsWithCounters(din->surf->geo);
+
+  // Restore color modulation state to default values
+  if ( din->vertexColor != SVC_MODULATE ) {
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+  }
 }
 
 /*
@@ -727,6 +720,10 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
   // bind the vertex and fragment shader
   if ( r_usePhong.GetBool()) {
     GL_UseProgram(&interactionPhongShader);
+
+    // Set the specular exponent now (NB: it could be cached instead)
+    const float f = r_specularExponent.GetFloat();
+    GL_Uniform1fv(offsetof(shaderProgram_t, specularExponent), &f);
   }
   else {
     GL_UseProgram(&interactionShader);
@@ -1889,16 +1886,15 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
 
       // Setup the Color modulation
       switch ( pStage->vertexColor ) {
+        default:
         case SVC_MODULATE:
-          GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
-          GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+          // This is already the default values
           break;
         case SVC_INVERSE_MODULATE:
           GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), negOneScaled);
           GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
         case SVC_IGNORE:
-        default:
           GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
           GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
@@ -1957,6 +1953,12 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       }
       else if ( pStage->privatePolygonOffset && surf->material->TestMaterialFlag(MF_POLYGONOFFSET)) {
         qglPolygonOffset(r_offsetFactor.GetFloat(), r_offsetUnits.GetFloat() * shader->GetPolygonOffset());
+      }
+
+      // Restore color modulation state to default values
+      if ( pStage->vertexColor != SVC_MODULATE ) {
+        GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+        GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
       }
 
       // Don't touch the rest, as this will either reset by the next stage, or handled by end of this method
