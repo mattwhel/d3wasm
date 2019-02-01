@@ -220,6 +220,8 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s USE_ZLIB=1")
   set(ldflags "${ldflags} -s USE_VORBIS=1")
   set(ldflags "${ldflags} -s USE_OGG=1")
+  set(ldflags "${ldflags} -lopenal")
+  #set(ldflags "${ldflags} -lsockfs.js")
   #set(ldflags "${ldflags} -s STRICT=1")
 endif ()
 
