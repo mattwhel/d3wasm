@@ -170,19 +170,13 @@ int idWaveFile::OpenOGG( const char* strFileName, waveformatex_t *pwfx ) {
 		return -1;
 	}
 
-#ifdef NOMT
-#else
 	Sys_EnterCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 
 	ov = new OggVorbis_File;
 
 	if( ov_openFile( mhmmio, ov ) < 0 ) {
 		delete ov;
-#ifdef NOMT
-#else
 		Sys_LeaveCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 		fileSystem->CloseFile( mhmmio );
 		mhmmio = NULL;
 		return -1;
@@ -219,10 +213,7 @@ int idWaveFile::OpenOGG( const char* strFileName, waveformatex_t *pwfx ) {
 
 	memcpy( pwfx, &mpwfx, sizeof( waveformatex_t ) );
 
-#ifdef NOMT
-#else
 	Sys_LeaveCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 
 	isOgg = true;
 
@@ -268,16 +259,10 @@ idWaveFile::CloseOGG
 int idWaveFile::CloseOGG( void ) {
 	OggVorbis_File *ov = (OggVorbis_File *) ogg;
 	if ( ov != NULL ) {
-#ifdef NOMT
-#else
 		Sys_EnterCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 		ov_clear( ov );
 		delete ov;
-#ifdef NOMT
-#else
 		Sys_LeaveCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 		fileSystem->CloseFile( mhmmio );
 		mhmmio = NULL;
 		ogg = NULL;
@@ -399,10 +384,8 @@ idSampleDecoderLocal::ClearDecoder
 ====================
 */
 void idSampleDecoderLocal::ClearDecoder( void ) {
-#ifdef NOMT
-#else
 	Sys_EnterCriticalSection( CRITICAL_SECTION_ONE );
-#endif
+
 	switch( lastFormat ) {
 		case WAVE_FORMAT_TAG_PCM: {
 			break;
@@ -416,10 +399,7 @@ void idSampleDecoderLocal::ClearDecoder( void ) {
 
 	Clear();
 
-#ifdef NOMT
-#else
 	Sys_LeaveCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 }
 
 /*
@@ -460,10 +440,7 @@ void idSampleDecoderLocal::Decode( idSoundSample *sample, int sampleOffset44k, i
 	}
 
 	// samples can be decoded both from the sound thread and the main thread for shakes
-#ifdef NOMT
-#else
 	Sys_EnterCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 
 	switch( sample->objectInfo.wFormatTag ) {
 		case WAVE_FORMAT_TAG_PCM: {
@@ -480,10 +457,7 @@ void idSampleDecoderLocal::Decode( idSoundSample *sample, int sampleOffset44k, i
 		}
 	}
 
-#ifdef NOMT
-#else
 	Sys_LeaveCriticalSection( CRITICAL_SECTION_ONE );
-#endif
 
 	if ( readSamples44k < sampleCount44k ) {
 		memset( dest + readSamples44k, 0, ( sampleCount44k - readSamples44k ) * sizeof( dest[0] ) );

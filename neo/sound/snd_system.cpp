@@ -690,11 +690,7 @@ int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	}
 
 	if ( nextWriteBlock != dwCurrentBlock ) {
-#ifdef NOMT
-  #else
 		Sys_Printf( "missed %d sound updates\n", dwCurrentBlock - nextWriteBlock );
-  #endif
-
 	}
 
 	int sampleTime = dwCurrentBlock * MIXBUFFER_SAMPLES;
@@ -749,10 +745,7 @@ cinData_t idSoundSystemLocal::ImageForTime( const int milliseconds, const bool w
 		return ret;
 	}
 
-#ifdef NOMT
-#else
 	Sys_EnterCriticalSection();
-#endif
 
 	if ( !graph ) {
 		graph = (dword *)Mem_Alloc( 256*128 * 4);
@@ -891,10 +884,7 @@ cinData_t idSoundSystemLocal::ImageForTime( const int milliseconds, const bool w
 	ret.imageWidth = 256;
 	ret.image = (unsigned char *)graph;
 
-#ifdef NOMT
-#else
 	Sys_LeaveCriticalSection();
-#endif
 
 	return ret;
 }

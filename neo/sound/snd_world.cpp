@@ -176,10 +176,7 @@ idSoundWorldLocal::ClearAllSoundEmitters
 void idSoundWorldLocal::ClearAllSoundEmitters() {
 	int i;
 
-#ifdef NOMT
-#else
 	Sys_EnterCriticalSection();
-#endif
 
 	AVIClose();
 
@@ -189,10 +186,7 @@ void idSoundWorldLocal::ClearAllSoundEmitters() {
 	}
 	localSound = NULL;
 
-#ifdef NOMT
-#else
 	Sys_LeaveCriticalSection();
-#endif
 }
 
 /*
@@ -226,15 +220,10 @@ idSoundEmitterLocal *idSoundWorldLocal::AllocLocalSoundEmitter() {
 		def = new idSoundEmitterLocal;
 
 		// we need to protect this from the async thread
-#ifdef NOMT
-#else
 		Sys_EnterCriticalSection();
-#endif
 		index = emitters.Append( def );
-#ifdef NOMT
-#else
 		Sys_LeaveCriticalSection();
-#endif
+
 		if ( idSoundSystemLocal::s_showStartSound.GetInteger() ) {
 			common->Printf( "sound: appended new sound def %d\n", index );
 		}
@@ -324,15 +313,11 @@ void idSoundWorldLocal::ProcessDemoCommand( idDemoFile *readDemo ) {
 		// we need to protect this from the async thread
 		// other instances of calling idSoundWorldLocal::ReadFromSaveGame do this while the sound code is muted
 		// setting muted and going right in may not be good enough here, as we async thread may already be in an async tick (in which case we could still race to it)
-#ifdef NOMT
-#else
+
 		Sys_EnterCriticalSection();
-#endif
 		ReadFromSaveGame( readDemo );
-#ifdef NOMT
-#else
 		Sys_LeaveCriticalSection();
-#endif
+
 		UnPause();
 		break;
 	case SCMD_PLACE_LISTENER:
@@ -1019,10 +1004,7 @@ void idSoundWorldLocal::ForegroundUpdate( int current44kHzTime ) {
 		return;
 	}
 
-#ifdef NOMT
-#else
 	Sys_EnterCriticalSection();
-#endif
 
 	// if we are recording an AVI demo, don't use hardware time
 	if ( fpa[0] ) {
@@ -1097,10 +1079,7 @@ void idSoundWorldLocal::ForegroundUpdate( int current44kHzTime ) {
 		}
 	}
 
-#ifdef NOMT
-#else
 	Sys_LeaveCriticalSection();
-#endif
 
 	//
 	// the sound meter
