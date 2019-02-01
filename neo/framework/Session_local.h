@@ -334,7 +334,7 @@ public:
 	void				HandleMsgCommands( const char *menuCommand );
 	void				HandleNoteCommands( const char *menuCommand );
 	void				GetSaveGameList( idStrList &fileList, idList<fileTIME_T> &fileTimes );
-	void				TakeNotes( const char * p, bool extended = false );
+	//void				TakeNotes( const char * p, bool extended = false );
 	void				UpdateMPLevelShot( void );
 
 	void				SetSaveGameGuiVars( void );
