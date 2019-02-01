@@ -33,7 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 
 ===============================================================================
 */
-#define GAME_NAME						"DOOM 3"		// appears on window titles and errors
+#define GAME_NAME						"d3wasm"		// appears on window titles and errors
 
 #define ENGINE_VERSION					"d3wasm 0.2"	// printed in console
 

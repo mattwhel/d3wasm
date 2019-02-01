@@ -54,7 +54,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Session_local.h" // DG: For FT_IsDemo/isDemo() hack
 
 #ifdef __EMSCRIPTEN__
-#include "emscripten.h"
+#include "emscripten.h"   // emscripten_sleep_with_yield, EM_ASM
 #endif
 
 #define  MAX_PRINT_MSG_SIZE  4096
@@ -129,7 +129,6 @@ int com_frameNumber;        // variable frame number
 volatile int com_ticNumber;            // 60 hz tics
 int com_editors;            // currently opened editor(s)
 bool com_editorActive;        //  true if an editor has focus
-
 
 #ifdef __DOOM_DLL__
 idGame *		game = NULL;
@@ -311,6 +310,7 @@ private:
 #endif
 
 #ifdef NOMT
+  // No async_timer in Single-Threaded mode. Tic updates are done in the main thread.
 #else
   SDL_TimerID async_timer;
 #endif
@@ -342,6 +342,7 @@ idCommonLocal::idCommonLocal(void) {
 #endif
 
 #ifdef NOMT
+  // No async_timer in Single-Threaded mode. Tic updates are done in the main thread.
 #else
   async_timer = 0;
 #endif
@@ -800,14 +801,14 @@ void idCommonLocal::Quit(void) {
   }
 
 #ifdef __EMSCRIPTEN__
+  // Sync IDBFS so that changes in the memory filesystem are updated to the IndexedDB store
+
   EM_ASM(
     console.info('Syncing user home to IDBFS....');
     FS.syncfs(false, function(err) {
       console.info("Syncing done.");
     });
   );
-
-  emscripten_cancel_main_loop();
 #endif
 
   Sys_Quit();
@@ -1097,7 +1098,7 @@ void idCommonLocal::WriteConfiguration(void) {
   cvarSystem->ClearModifiedFlags(CVAR_ARCHIVE);
 
   // disable printing out the "Writing to:" message
-  const bool developer = com_developer.GetBool();
+	bool developer = com_developer.GetBool();
   com_developer.SetBool(false);
 
   WriteConfigToFile(CONFIG_FILE);
@@ -1106,7 +1107,10 @@ void idCommonLocal::WriteConfiguration(void) {
   // restore the developer cvar
   com_developer.SetBool(developer);
 
-#if defined __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
+  // If there is some configuration file changes, sync IDBFS so that changes
+  // in the memory filesystem are updated to the IndexedDB store
+
   EM_ASM(
       console.info('Syncing user home to IDBFS....');
       FS.syncfs(false, function(err) {
@@ -2017,184 +2021,6 @@ void Com_LocalizeGuis_f(const idCmdArgs& args) {
   strTable.Save(filename);
 }
 
-/*void Com_LocalizeGuiParmsTest_f(const idCmdArgs &args) {
-
-  common->SetRefreshOnPrint(true);
-
-  idFile *localizeFile = fileSystem->OpenFileWrite("gui_parm_localize.csv");
-  idFile *noLocalizeFile = fileSystem->OpenFileWrite("gui_parm_nolocalize.csv");
-
-  idStrList excludeList;
-  LoadGuiParmExcludeList(excludeList);
-
-  idStrList files;
-  GetFileList("z:/d3xp/d3xp/maps/game", "*.map", files);
-
-  for (int i = 0; i < files.Num(); i++) {
-
-    common->Printf("Testing Map '%s'\n", files[i].c_str());
-    idMapFile map;
-
-    idStr file = fileSystem->OSPathToRelativePath(files[i]);
-    if (map.Parse(file, false, false)) {
-      int count = map.GetNumEntities();
-      for (int j = 0; j < count; j++) {
-        idMapEntity *ent = map.GetEntity(j);
-        if (ent) {
-          const idKeyValue *kv = ent->epairs.MatchPrefix("gui_parm");
-          while (kv) {
-            if (TestGuiParm(kv->GetKey(), kv->GetValue(), excludeList)) {
-              idStr out = va("%s,%s,%s\r\n", kv->GetValue().c_str(), kv->GetKey().c_str(), file.c_str());
-              localizeFile->Write(out.c_str(), out.Length());
-            } else {
-              idStr out = va("%s,%s,%s\r\n", kv->GetValue().c_str(), kv->GetKey().c_str(), file.c_str());
-              noLocalizeFile->Write(out.c_str(), out.Length());
-            }
-            kv = ent->epairs.MatchPrefix("gui_parm", kv);
-          }
-        }
-      }
-    }
-  }
-
-  fileSystem->CloseFile(localizeFile);
-  fileSystem->CloseFile(noLocalizeFile);
-
-  common->SetRefreshOnPrint(false);
-}
-
-
-void Com_LocalizeMapsTest_f(const idCmdArgs &args) {
-
-  ListHash listHash;
-  LoadMapLocalizeData(listHash);
-
-
-  common->SetRefreshOnPrint(true);
-
-  idFile *localizeFile = fileSystem->OpenFileWrite("map_localize.csv");
-
-  idStrList files;
-  GetFileList("z:/d3xp/d3xp/maps/game", "*.map", files);
-
-  for (int i = 0; i < files.Num(); i++) {
-
-    common->Printf("Testing Map '%s'\n", files[i].c_str());
-    idMapFile map;
-
-    idStr file = fileSystem->OSPathToRelativePath(files[i]);
-    if (map.Parse(file, false, false)) {
-      int count = map.GetNumEntities();
-      for (int j = 0; j < count; j++) {
-        idMapEntity *ent = map.GetEntity(j);
-        if (ent) {
-
-          //Temp code to get a list of all entity key value pairs
-*/          /*idStr classname = ent->epairs.GetString("classname");
-if(classname == "worldspawn" || classname == "func_static" || classname == "light" || classname == "speaker" || classname.Left(8) == "trigger_") {
-  continue;
-}
-for( int i = 0; i < ent->epairs.GetNumKeyVals(); i++) {
-  const idKeyValue* kv = ent->epairs.GetKeyVal(i);
-  idStr out = va("%s,%s,%s,%s\r\n", classname.c_str(), kv->GetKey().c_str(), kv->GetValue().c_str(), file.c_str());
-  localizeFile->Write( out.c_str(), out.Length() );
-}*/
-
-/*          idStr classname = ent->epairs.GetString("classname");
-
-          //Hack: for info_location
-          bool hasLocation = false;
-
-          idStrList *list;
-          listHash.Get(classname, &list);
-          if (list) {
-
-            for (int k = 0; k < list->Num(); k++) {
-
-              idStr val = ent->epairs.GetString((*list)[k], "");
-
-              if (classname == "info_location" && (*list)[k] == "location") {
-                hasLocation = true;
-              }
-
-              if (val.Length() && TestMapVal(val)) {
-
-                if (!hasLocation || (*list)[k] == "location") {
-                  idStr out = va("%s,%s,%s\r\n", val.c_str(), (*list)[k].c_str(), file.c_str());
-                  localizeFile->Write(out.c_str(), out.Length());
-                }
-              }
-            }
-          }
-
-          listHash.Get("all", &list);
-          if (list) {
-            for (int k = 0; k < list->Num(); k++) {
-              idStr val = ent->epairs.GetString((*list)[k], "");
-              if (val.Length() && TestMapVal(val)) {
-                idStr out = va("%s,%s,%s\r\n", val.c_str(), (*list)[k].c_str(), file.c_str());
-                localizeFile->Write(out.c_str(), out.Length());
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  fileSystem->CloseFile(localizeFile);
-
-  common->SetRefreshOnPrint(false);
-}*/
-
-/*
-=================
-Com_StartBuild_f
-=================
-*/
-void Com_StartBuild_f(const idCmdArgs& args) {
-  globalImages->StartBuild();
-}
-
-/*
-=================
-Com_FinishBuild_f
-=================
-*/
-void Com_FinishBuild_f(const idCmdArgs& args) {
-  if ( game ) {
-    game->CacheDictionaryMedia(NULL);
-  }
-  globalImages->FinishBuild(( args.Argc() > 1 ));
-}
-
-/*
-==============
-Com_Help_f
-==============
-*/
-void Com_Help_f(const idCmdArgs& args) {
-  common->Printf("\nCommonly used commands:\n");
-  common->Printf("  spawnServer      - start the server.\n");
-  common->Printf("  disconnect       - shut down the server.\n");
-  common->Printf("  listCmds         - list all console commands.\n");
-  common->Printf("  listCVars        - list all console variables.\n");
-  common->Printf("  kick             - kick a client by number.\n");
-  common->Printf("  gameKick         - kick a client by name.\n");
-  common->Printf("  serverNextMap    - immediately load next map.\n");
-  common->Printf("  serverMapRestart - restart the current map.\n");
-  common->Printf("  serverForceReady - force all players to ready status.\n");
-  common->Printf("\nCommonly used variables:\n");
-  common->Printf("  si_name          - server name (change requires a restart to see)\n");
-  common->Printf("  si_gametype      - type of game.\n");
-  common->Printf("  si_fragLimit     - max kills to win (or lives in Last Man Standing).\n");
-  common->Printf("  si_timeLimit     - maximum time a game will last.\n");
-  common->Printf("  si_warmup        - do pre-game warmup.\n");
-  common->Printf("  si_pure          - pure server.\n");
-  common->Printf("  g_mapCycle       - name of .scriptcfg file for cycling maps.\n");
-  common->Printf("See mapcycle.scriptcfg for an example of a mapcyle script.\n\n");
-}
-
 /*
 =================
 idCommonLocal::InitCommands
@@ -2228,22 +2054,16 @@ void idCommonLocal::InitCommands(void) {
                         "lists all keys used by dictionaries");
   cmdSystem->AddCommand("listDictValues", idDict::ListValues_f, CMD_FL_SYSTEM | CMD_FL_CHEAT,
                         "lists all values used by dictionaries");
-  //cmdSystem->AddCommand("testSIMD", idSIMD::Test_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "test SIMD code");
+#ifdef __EMSCRIPTEN__
+  // SIMD code not supported on emscripten for now
+#else
+  cmdSystem->AddCommand("testSIMD", idSIMD::Test_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "test SIMD code");
+#endif
 
   // localization
   cmdSystem->AddCommand("localizeGuis", Com_LocalizeGuis_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "localize guis");
   cmdSystem->AddCommand("localizeMaps", Com_LocalizeMaps_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "localize maps");
   cmdSystem->AddCommand("reloadLanguage", Com_ReloadLanguage_f, CMD_FL_SYSTEM, "reload language dict");
-
-  //D3XP Localization
-  //cmdSystem->AddCommand("localizeGuiParmsTest", Com_LocalizeGuiParmsTest_f, CMD_FL_SYSTEM,
-  //                     "Create test files that show gui parms localized and ignored.");
-  //cmdSystem->AddCommand("localizeMapsTest", Com_LocalizeMapsTest_f, CMD_FL_SYSTEM,
-  //                      "Create test files that shows which strings will be localized.");
-
-  // build helpers
-  cmdSystem->AddCommand("startBuild", Com_StartBuild_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "prepares to make a build");
-  cmdSystem->AddCommand("finishBuild", Com_FinishBuild_f, CMD_FL_SYSTEM | CMD_FL_CHEAT, "finishes the build process");
 }
 
 /*
@@ -2263,6 +2083,8 @@ void idCommonLocal::InitRenderSystem(void) {
 /*
 =================
 idCommonLocal::PrintLoadingMessage
+
+EMSCRITPEN Note: This is an EMTERPRETIFY function
 =================
 */
 void idCommonLocal::PrintLoadingMessage(const char* msg) {
@@ -2270,14 +2092,13 @@ void idCommonLocal::PrintLoadingMessage(const char* msg) {
     return;
   }
   renderSystem->BeginFrame(renderSystem->GetScreenWidth(), renderSystem->GetScreenHeight());
-  renderSystem->DrawStretchPic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1,
-                               declManager->FindMaterial("splashScreen"));
-  int len = strlen(msg);
-  renderSystem->DrawSmallStringExt(( 640 - len * SMALLCHAR_WIDTH ) / 2, 410, msg, idVec4(0.0f, 0.81f, 0.94f, 1.0f),
-                                   true, declManager->FindMaterial("textures/bigchars"));
+  renderSystem->DrawStretchPic(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 1, 1, declManager->FindMaterial("splashScreen"));
+	int len = strlen( msg );
+  renderSystem->DrawSmallStringExt(( 640 - len * SMALLCHAR_WIDTH ) / 2, 410, msg, idVec4(0.0f, 0.81f, 0.94f, 1.0f), true, declManager->FindMaterial("textures/bigchars"));
   renderSystem->EndFrame(NULL, NULL);
 
 #ifdef __EMSCRIPTEN__
+  // Yields to the browser immediately so that the Loading Screen can be displayed on the canvas
   emscripten_sleep_with_yield(0);
 #endif
 }
@@ -2295,14 +2116,24 @@ void idCommonLocal::InitSIMD(void) {
 /*
 =================
 idCommonLocal::Frame
+
+EMSCRIPTEN Note: This is an EMTERPRETIFY function
 =================
 */
-// EMTERPRETIFY
 void idCommonLocal::Frame(void) {
+#ifdef __EMSCRIPTEN__
+// Exceptions are disabled on Emscripten
+#else
+  try {
+#endif
 
+#ifdef NOMT
+  // In single threaded mode, manually call the async timer update code at each frame
   common->Async();
-  // Disable background download thread for now (not really used)
+
+  // D3WASM: Disable background download thread for now (not really used)
   //fileSystem->RunThread();
+#endif
 
   // pump all the events
   Sys_GenerateEvents();
@@ -2310,13 +2141,16 @@ void idCommonLocal::Frame(void) {
   // write config file if anything changed
   WriteConfiguration();
 
-  // Not needed on EMSCRIPTEN for now, SIMD intrinsics not used
+#ifdef __EMSCRIPTEN__
+  // No SIMD support in emscripten, no need change SIMD backend
+#else
   // change SIMD implementation if required
-  //if ( com_forceGenericSIMD.IsModified() ) {
-  //    InitSIMD();
-  //}
+  if ( com_forceGenericSIMD.IsModified() ) {
+    InitSIMD();
+  }
+#endif
 
-  eventLoop->RunEventLoop();               // This function might occasionally yields (= EMTERPRETIFY)
+  eventLoop->RunEventLoop();               // EMTERPRETIFY function (might yields)
 
   com_frameTime = com_ticNumber * USERCMD_MSEC;
 
@@ -2324,12 +2158,12 @@ void idCommonLocal::Frame(void) {
 
   if ( idAsyncNetwork::IsActive()) {
     //if (idAsyncNetwork::serverDedicated.GetInteger() != 1) {
-    session->GuiFrameEvents();          // This function might yields (ie. Level load => inline loading screen update)
+    session->GuiFrameEvents();            // EMTERPRETIFY function (might yields)
     session->UpdateScreen(false);
     //}
   }
   else {
-    session->Frame();                     // This function might occasionally yields (= EMTERPRETIFY)
+    session->Frame();                     // EMTERPRETIFY function (might yields)
     session->UpdateScreen(false);
   }
 
@@ -2349,19 +2183,32 @@ void idCommonLocal::Frame(void) {
 
   // set idLib frame number for frame based memory dumps
   idLib::frameNumber = com_frameNumber;
+
+#ifdef __EMSCRIPTEN__
+// Exceptions are disabled on Emscripten
+#else
+  }
+	catch( idException & ) {
+		return;			// an ERP_DROP was thrown
+	}
+#endif
 }
 
 /*
 =================
 idCommonLocal::GUIFrame
+
+EMSCRIPTEN Note: This is an EMTERPRETIFY function
 =================
 */
 void idCommonLocal::GUIFrame(bool execCmd, bool network) {
   Sys_GenerateEvents();
-  eventLoop->RunEventLoop(execCmd);    // This function might yields (ie. Level load => inline loading screen update)
+  eventLoop->RunEventLoop(execCmd);    // EMTERPRETIFY function (might yields)
 
 #ifdef NOMT
-  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
+  // In Single Threaded mode manually update the async timer here, as com_ticNumber is used locally
+  // This is to try to get things correctly in sync
+  common->Async();
 #endif
 
   com_frameTime = com_ticNumber * USERCMD_MSEC;
@@ -2655,25 +2502,22 @@ void idCommonLocal::SetMachineSpec(void) {
 //  }
 }
 
+#ifdef NOMT
+#else
+static unsigned int AsyncTimer(unsigned int interval, void *) {
+  common->Async();
+  Sys_TriggerEvent(TRIGGER_EVENT_ONE);
 
-static bool checkForHelp(int argc, char** argv) {
-  const char* helpArgs[] = { "--help", "-h", "-help", "-?", "/?" };
-  const int numHelpArgs = sizeof(helpArgs) / sizeof(helpArgs[0]);
+  // calculate the next interval to get as close to 60fps as possible
+  unsigned int now = SDL_GetTicks();
+  unsigned int tick = com_ticNumber * USERCMD_MSEC;
 
-  for ( int i = 0; i < argc; ++i ) {
-    const char* arg = argv[i];
-    for ( int h = 0; h < numHelpArgs; ++h ) {
-      if ( idStr::Icmp(arg, helpArgs[h]) == 0 ) {
-        // write it to stdout
-#define WriteString(s) fputs(s, stdout);
-#undef WriteString
+  if (now >= tick)
+    return 1;
 
-        return true;
-      }
-    }
-  }
-  return false;
+  return tick - now;
 }
+#endif
 
 /*
 =================
@@ -2681,11 +2525,6 @@ idCommonLocal::Init
 =================
 */
 void idCommonLocal::Init(int argc, char** argv) {
-
-  if ( checkForHelp(argc, argv)) {
-    // game has been started with --help (or similar), usage message has been shown => quit
-    exit(1);
-  }
 
 #ifdef __EMSCRIPTEN__
   if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_VIDEO ))
@@ -2898,10 +2737,14 @@ void idCommonLocal::InitGame(void) {
   // initialize the renderSystem data structures, but don't start OpenGL yet
   renderSystem->Init();
 
+  // D3WASM: Well, in fact let's start OpenGL now as VBO cache system must be initialized in order
+  // to display something on the screen (eg. Loading Screens)
+  InitRenderSystem();
+
   // initialize string database right off so we can use it for loading messages
   InitLanguageDict();
 
-  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04344"));
+  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04344"));
 
   // load the font, etc
   console->LoadGraphics();
@@ -2909,7 +2752,7 @@ void idCommonLocal::InitGame(void) {
   // init journalling, etc
   eventLoop->Init();
 
-  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04345"));
+  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04345"));
 
   // exec the startup scripts
   cmdSystem->BufferCommandText(CMD_EXEC_APPEND, "exec editor.cfg\n");
@@ -2938,18 +2781,15 @@ void idCommonLocal::InitGame(void) {
   // init the user command input code
   usercmdGen->Init();
 
-  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04346"));
+  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04346"));
 
   // start the sound system, but don't do any hardware operations yet
   soundSystem->Init();
 
-  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04347"));
+  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04347"));
 
   // init async network
   idAsyncNetwork::Init();
-
-  // init OpenGL, which will open a window and connect sound and input hardware
-  InitRenderSystem();
 
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04349"));
 
@@ -3109,11 +2949,10 @@ static bool isDemo(void) {
 // returns true if that function is available in this version of dhewm3
 // *out_fnptr will be the function (you'll have to cast it probably)
 // *out_userArg will be an argument you have to pass to the function, if appropriate (else NULL)
-bool idCommonLocal::GetAdditionalFunction(idCommon::FunctionType ft, idCommon::FunctionPointer* out_fnptr,
-                                          void** out_userArg) {
-  if ( out_userArg != NULL ) {
+bool idCommonLocal::GetAdditionalFunction(idCommon::FunctionType ft, idCommon::FunctionPointer* out_fnptr, void** out_userArg)
+{
+	if(out_userArg != NULL)
     *out_userArg = NULL;
-  }
 
   if ( out_fnptr == NULL ) {
     Warning("Called idCommon::GetAdditionalFunction() with out_fnptr == NULL!\n");
