@@ -38,25 +38,11 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "sys/sys_public.h"
 
-#ifdef NO_CPUID
-#undef NO_CPUID
-#endif
-
-#if defined(__GNUC__)
-#define NO_CPUID
-#else
-#error unsupported compiler
-#endif
-
-#ifdef NO_CPUID
 void Sys_FPU_SetDAZ(bool enable) {
 }
 
 void Sys_FPU_SetFTZ(bool enable) {
 }
-#else
-#error unsupported compiler
-#endif
 
 /*
 ================
