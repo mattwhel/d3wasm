@@ -744,9 +744,16 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
     // perform setup here that will not change over multiple interaction passes
 
     if ( surf->space != backEnd.currentSpace ) {
-      float mat[16];
-      myGlMultMatrix(surf->space->modelViewMatrix, backEnd.viewDef->projectionMatrix, mat);
-      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mat);
+      float mvp[16];
+      RB_ComputeMVP(surf, mvp);
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mvp);
+    }
+
+    // Hack Depth Range if necessary
+    bool bNeedRestoreDepthRange = false;
+    if (surf->space->weaponDepthHack && surf->space->modelDepthHack == 0.0f) {
+      qglDepthRangef(0.0f, 0.5f);
+      bNeedRestoreDepthRange = true;
     }
 
     // set the vertex pointers
@@ -768,6 +775,11 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
     // this may cause RB_GLSL_DrawInteraction to be exacuted multiple
     // times with different colors and images if the surface or light have multiple layers
     RB_GLSL_CreateSingleDrawInteractions(surf, RB_GLSL_DrawInteraction, vLight);
+
+    // Restore the Depth Range in case it have been hacked
+    if ( bNeedRestoreDepthRange ) {
+      qglDepthRangef( 0.0f, 1.0f );
+    }
 
     backEnd.currentSpace = surf->space;
   }
@@ -933,6 +945,8 @@ void RB_GLSL_RenderDrawSurfChainWithFunction(const drawSurf_t* drawSurfs,
 
     backEnd.currentSpace = drawSurf->space;
   }
+
+  backEnd.currentSpace = NULL;
 }
 
 /*
