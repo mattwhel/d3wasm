@@ -348,11 +348,17 @@ static int IPSocket( const char *net_interface, int port, netadr_t *bound_to = N
 	}
 	// make it non-blocking
 	int on = 1;
+#ifdef __EMSCRIPTEN__
+  common->Printf( "ERROR: IPSocket: ioctl FIONBIO:%s\n",
+				   strerror( errno ) );
+	return 0;
+#else
 	if ( ioctl( newsocket, FIONBIO, &on ) == -1 ) {
 		common->Printf( "ERROR: IPSocket: ioctl FIONBIO:%s\n",
 				   strerror( errno ) );
 		return 0;
 	}
+#endif
 	// make it broadcast capable
 	if ( setsockopt( newsocket, SOL_SOCKET, SO_BROADCAST, (char *) &i, sizeof(i) ) == -1 ) {
 		common->Printf( "ERROR: IPSocket: setsockopt SO_BROADCAST:%s\n", strerror( errno ) );
