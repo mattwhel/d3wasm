@@ -934,11 +934,6 @@ void idAnim::CallFrameCommands( idEntity *ent, int from, int to ) const {
 					break;
 				}
 				case FC_AVIGAME: {
-					if ( command.string ) {
-						cmdSystem->BufferCommandText( CMD_EXEC_NOW, va( "aviGame %s", command.string->c_str() ) );
-					} else {
-						cmdSystem->BufferCommandText( CMD_EXEC_NOW, "aviGame" );
-					}
 					break;
 				}
 			}

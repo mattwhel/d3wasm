@@ -88,7 +88,6 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 	gameMsec = 0;
 	game44kHz = 0;
 	pause44kHz = -1;
-	lastAVI44kHz = 0;
 
 	for ( int i = 0 ; i < SOUND_MAX_CLASSES ; i++ ) {
 		soundClassFade[i].Clear();
@@ -97,11 +96,6 @@ void idSoundWorldLocal::Init( idRenderWorld *renderWorld ) {
 	// fill in the 0 index spot
 	idSoundEmitterLocal	*placeHolder = new idSoundEmitterLocal;
 	emitters.Append( placeHolder );
-
-	fpa[0] = fpa[1] = fpa[2] = fpa[3] = fpa[4] = fpa[5] = NULL;
-
-	aviDemoPath = "";
-	aviDemoName = "";
 
 	localSound = NULL;
 
@@ -141,8 +135,6 @@ void idSoundWorldLocal::Shutdown() {
 		soundSystemLocal.currentSoundWorld = NULL;
 	}
 
-	AVIClose();
-
 #ifdef NOEFX
 #else
 	if (idSoundSystemLocal::useEFXReverb) {
@@ -177,8 +169,6 @@ void idSoundWorldLocal::ClearAllSoundEmitters() {
 	int i;
 
 	Sys_EnterCriticalSection();
-
-	AVIClose();
 
 	for ( i = 0; i < emitters.Num(); i++ ) {
 		idSoundEmitterLocal *sound = emitters[i];
@@ -468,8 +458,7 @@ Sum all sound contributions into finalMixBuffer, an unclamped float buffer holdi
 all output channels.  MIXBUFFER_SAMPLES samples will be created, with each sample consisting
 of 2 or 6 floats depending on numSpeakers.
 
-this is normally called from the sound thread, but also from the main thread
-for AVIdemo writing
+this is normally called from the sound thread
 ===================
 */
 void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *finalMixBuffer ) {
@@ -577,178 +566,6 @@ void idSoundWorldLocal::MixLoop( int current44kHz, int numSpeakers, float *final
 	if ( false && enviroSuitActive ) {
 		soundSystemLocal.DoEnviroSuit( finalMixBuffer, MIXBUFFER_SAMPLES, numSpeakers );
 	}
-}
-
-//==============================================================================
-
-/*
-===================
-idSoundWorldLocal::AVIOpen
-
-	this is called by the main thread
-===================
-*/
-void idSoundWorldLocal::AVIOpen( const char *path, const char *name ) {
-	aviDemoPath = path;
-	aviDemoName = name;
-
-	lastAVI44kHz = game44kHz - game44kHz % MIXBUFFER_SAMPLES;
-
-	if ( idSoundSystemLocal::s_numberOfSpeakers.GetInteger() == 6 ) {
-		fpa[0] = fileSystem->OpenFileWrite( aviDemoPath + "channel_51_left.raw" );
-		fpa[1] = fileSystem->OpenFileWrite( aviDemoPath + "channel_51_right.raw" );
-		fpa[2] = fileSystem->OpenFileWrite( aviDemoPath + "channel_51_center.raw" );
-		fpa[3] = fileSystem->OpenFileWrite( aviDemoPath + "channel_51_lfe.raw" );
-		fpa[4] = fileSystem->OpenFileWrite( aviDemoPath + "channel_51_backleft.raw" );
-		fpa[5] = fileSystem->OpenFileWrite( aviDemoPath + "channel_51_backright.raw" );
-	} else {
-		fpa[0] = fileSystem->OpenFileWrite( aviDemoPath + "channel_left.raw" );
-		fpa[1] = fileSystem->OpenFileWrite( aviDemoPath + "channel_right.raw" );
-	}
-
-	soundSystemLocal.SetMute( true );
-}
-
-/*
-===================
-idSoundWorldLocal::AVIUpdate
-
-this is called by the main thread
-writes one block of sound samples if enough time has passed
-This can be used to write wave files even if no sound hardware exists
-===================
-*/
-void idSoundWorldLocal::AVIUpdate() {
-	int		numSpeakers;
-
-	if ( game44kHz - lastAVI44kHz < MIXBUFFER_SAMPLES ) {
-		return;
-	}
-
-	numSpeakers = idSoundSystemLocal::s_numberOfSpeakers.GetInteger();
-
-	float	mix[MIXBUFFER_SAMPLES*6+16];
-	float	*mix_p = (float *)((( intptr_t)mix + 15 ) & ~15);	// SIMD align
-
-	SIMDProcessor->Memset( mix_p, 0, MIXBUFFER_SAMPLES*sizeof(float)*numSpeakers );
-
-	MixLoop( lastAVI44kHz, numSpeakers, mix_p );
-
-	for ( int i = 0; i < numSpeakers; i++ ) {
-		short outD[MIXBUFFER_SAMPLES];
-
-		for( int j = 0; j < MIXBUFFER_SAMPLES; j++ ) {
-			float s = mix_p[ j*numSpeakers + i];
-			if ( s < -32768.0f ) {
-				outD[j] = -32768;
-			} else if ( s > 32767.0f ) {
-				outD[j] = 32767;
-			} else {
-				outD[j] = idMath::FtoiFast( s );
-			}
-		}
-		// write to file
-		fpa[i]->Write( outD, MIXBUFFER_SAMPLES*sizeof(short) );
-	}
-
-	lastAVI44kHz += MIXBUFFER_SAMPLES;
-
-	return;
-}
-
-/*
-===================
-idSoundWorldLocal::AVIClose
-===================
-*/
-void idSoundWorldLocal::AVIClose( void ) {
-	int i;
-
-	if ( !fpa[0] ) {
-		return;
-	}
-
-	// make sure the final block is written
-	game44kHz += MIXBUFFER_SAMPLES;
-	AVIUpdate();
-	game44kHz -= MIXBUFFER_SAMPLES;
-
-	for ( i = 0; i < 6; i++ ) {
-		if ( fpa[i] != NULL ) {
-			fileSystem->CloseFile( fpa[i] );
-			fpa[i] = NULL;
-		}
-	}
-	if ( idSoundSystemLocal::s_numberOfSpeakers.GetInteger() == 2 ) {
-		// convert it to a wave file
-		idFile *rL, *lL, *wO;
-		idStr	name;
-
-		name = aviDemoPath + aviDemoName + ".wav";
-		wO = fileSystem->OpenFileWrite( name );
-		if ( !wO ) {
-			common->Error( "Couldn't write %s", name.c_str() );
-		}
-
-		name = aviDemoPath + "channel_right.raw";
-		rL = fileSystem->OpenFileRead( name );
-		if ( !rL ) {
-			common->Error( "Couldn't open %s", name.c_str() );
-		}
-
-		name = aviDemoPath + "channel_left.raw";
-		lL = fileSystem->OpenFileRead( name );
-		if ( !lL ) {
-			common->Error( "Couldn't open %s", name.c_str() );
-		}
-
-		int numSamples = rL->Length()/2;
-		mminfo_t	info;
-		pcmwaveformat_t format;
-
-		info.ckid = fourcc_riff;
-		info.fccType = mmioFOURCC( 'W', 'A', 'V', 'E' );
-		info.cksize = (rL->Length()*2) - 8 + 4 + 16 + 8 + 8;
-		info.dwDataOffset = 12;
-
-		wO->Write( &info, 12 );
-
-		info.ckid = mmioFOURCC( 'f', 'm', 't', ' ' );
-		info.cksize = 16;
-
-		wO->Write( &info, 8 );
-
-		format.wBitsPerSample = 16;
-		format.wf.nAvgBytesPerSec = 44100*4;		// sample rate * block align
-		format.wf.nChannels = 2;
-		format.wf.nSamplesPerSec = 44100;
-		format.wf.wFormatTag = WAVE_FORMAT_TAG_PCM;
-		format.wf.nBlockAlign = 4;					// channels * bits/sample / 8
-
-		wO->Write( &format, 16 );
-
-		info.ckid = mmioFOURCC( 'd', 'a', 't', 'a' );
-		info.cksize = rL->Length() * 2;
-
-		wO->Write( &info, 8 );
-
-		short s0, s1;
-		for( i = 0; i < numSamples; i++ ) {
-			lL->Read( &s0, 2 );
-			rL->Read( &s1, 2 );
-			wO->Write( &s0, 2 );
-			wO->Write( &s1, 2 );
-		}
-
-		fileSystem->CloseFile( wO );
-		fileSystem->CloseFile( lL );
-		fileSystem->CloseFile( rL );
-
-		fileSystem->RemoveFile( aviDemoPath + "channel_right.raw" );
-		fileSystem->RemoveFile( aviDemoPath + "channel_left.raw" );
-	}
-
-	soundSystemLocal.SetMute( false );
 }
 
 //==============================================================================
@@ -962,13 +779,9 @@ void idSoundWorldLocal::PlaceListener( const idVec3& origin, const idMat3& axis,
 	}
 
 	gameMsec = gameTime;
-	if ( fpa[0] ) {
-		// exactly 30 fps so the wave file can be used for exact video frames
-		game44kHz = idMath::FtoiFast( gameMsec * ( ( 1000.0f / 60.0f ) / 16.0f ) * 0.001f * 44100.0f );
-	} else {
-		// the normal 16 msec / frame
-		game44kHz = idMath::FtoiFast( gameMsec * 0.001f * 44100.0f );
-	}
+	// the normal 16 msec / frame
+	game44kHz = idMath::FtoiFast( gameMsec * 0.001f * 44100.0f );
+
 
 	listenerPrivateId = listenerId;
 
@@ -1005,11 +818,6 @@ void idSoundWorldLocal::ForegroundUpdate( int current44kHzTime ) {
 	}
 
 	Sys_EnterCriticalSection();
-
-	// if we are recording an AVI demo, don't use hardware time
-	if ( fpa[0] ) {
-		current44kHzTime = lastAVI44kHz;
-	}
 
 	//
 	// check to see if each sound is visible or not
@@ -1092,13 +900,6 @@ void idSoundWorldLocal::ForegroundUpdate( int current44kHzTime ) {
 				((shaderStage_t *)foo)->texture.cinematic = new idSndWindow;
 			}
 		}
-	}
-
-	//
-	// optionally dump out the generated sound
-	//
-	if ( fpa[0] ) {
-		AVIUpdate();
 	}
 }
 
@@ -2154,12 +1955,7 @@ void	idSoundWorldLocal::FadeSoundClasses( const int soundClass, const float to, 
 
 	int	start44kHz;
 
-	if ( fpa[0] ) {
-		// if we are recording an AVI demo, don't use hardware time
-		start44kHz = lastAVI44kHz + MIXBUFFER_SAMPLES;
-	} else {
-		start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
-	}
+	start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
 
 	// fade it
 	fade->fadeStartVolume = fade->FadeDbAt44kHz( start44kHz );

@@ -195,7 +195,6 @@ public:
 	// if the pointers are not NULL, timing info will be returned
 	virtual void			EndFrame( int *frontEndMsec, int *backEndMsec ) = 0;
 
-	// aviDemo uses this.
 	// Will automatically tile render large screen shots if necessary
 	// Samples is the number of jittered frames for anti-aliasing
 	// If ref == NULL, session->updateScreen will be used

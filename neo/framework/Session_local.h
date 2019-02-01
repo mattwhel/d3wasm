@@ -175,10 +175,6 @@ public:
 	static idCVar		com_fixedTic;
 	static idCVar		com_showDemo;
 	static idCVar		com_skipGameDraw;
-	static idCVar		com_aviDemoWidth;
-	static idCVar		com_aviDemoHeight;
-	static idCVar		com_aviDemoSamples;
-	static idCVar		com_aviDemoTics;
 	static idCVar		com_wipeSeconds;
 	static idCVar		com_guid;
 
@@ -225,12 +221,6 @@ public:
 	int					lastDemoTic;
 	bool				syncNextGameFrame;
 
-
-	bool				aviCaptureMode;		// if true, screenshots will be taken and sound captured
-	idStr				aviDemoShortName;	//
-	float				aviDemoFrameCount;
-	int					aviTicStart;
-
 	timeDemo_t			timeDemo;
 	int					timeDemoStartTime;
 	int					numDemoFrames;		// for timeDemo and demoShot
@@ -250,8 +240,6 @@ public:
 	idUserInterface *	guiLoading;
 	idUserInterface *	guiIntro;
 	idUserInterface *	guiGameOver;
-	idUserInterface *	guiTest;
-	idUserInterface *	guiTakeNotes;
 
 	idUserInterface *	guiMsg;
 	idUserInterface *	guiMsgRestore;				// store the calling GUI for restore
@@ -290,11 +278,6 @@ public:
 	void				StopPlayingRenderDemo();
 	void				CompressDemoFile( const char *scheme, const char *name );
 	void				TimeRenderDemo( const char *name, bool twice = false );
-	void				AVIRenderDemo( const char *name );
-	void				AVICmdDemo( const char *name );
-	void				AVIGame( const char *name );
-	void				BeginAVICapture( const char *name );
-	void				EndAVICapture();
 
 	void				AdvanceRenderDemo( bool singleFrameOnly );
 	bool				RunGameTic();
@@ -303,8 +286,6 @@ public:
 	void				LoadLoadingGui(const char *mapName);
 
 	void				DemoShot( const char *name );
-
-	void				TestGUI( const char *name );
 
 	int					GetBytesNeededForMapLoad( const char *mapName );
 	void				SetBytesNeededForMapLoad( const char *mapName, int bytesNeeded );

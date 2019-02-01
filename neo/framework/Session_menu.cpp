@@ -1185,9 +1185,7 @@ void idSessionLocal::GuiFrameEvents() {
 		usercmdGen->InhibitUsercmd( INHIBIT_SESSION, false );
 	}
 
-	if ( guiTest ) {
-		gui = guiTest;
-	} else if ( guiActive ) {
+	if ( guiActive ) {
 		gui = guiActive;
 	} else {
 		return;

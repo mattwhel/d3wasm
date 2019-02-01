@@ -532,10 +532,6 @@ public:
 	virtual void			UnPause( void );
 	virtual bool			IsPaused( void );
 
-	// avidump
-	virtual void			AVIOpen( const char *path, const char *name );
-	virtual void			AVIClose( void );
-
 	// SaveGame Support
 	virtual void			WriteToSaveGame( idFile *savefile );
 	virtual void			ReadFromSaveGame( idFile *savefile );
@@ -565,7 +561,6 @@ public:
 	void					AddChannelContribution( idSoundEmitterLocal *sound, idSoundChannel *chan,
 												int current44kHz, int numSpeakers, float *finalMixBuffer );
 	void					MixLoop( int current44kHz, int numSpeakers, float *finalMixBuffer );
-	void					AVIUpdate( void );
 	void					ResolveOrigin( const int stackDepth, const soundPortalTrace_t *prevStack, const int soundArea, const float dist, const idVec3& soundOrigin, idSoundEmitterLocal *def );
 	float					FindAmplitude( idSoundEmitterLocal *sound, const int localTime, const idVec3 *listenerPosition, const s_channelType channel, bool shakesOnly );
 
@@ -587,16 +582,9 @@ public:
 	int						gameMsec;
 	int						game44kHz;
 	int						pause44kHz;
-	int						lastAVI44kHz;		// determine when we need to mix and write another block
-
 	idList<idSoundEmitterLocal *>emitters;
 
 	idSoundFade				soundClassFade[SOUND_MAX_CLASSES];	// for global sound fading
-
-	// avi stuff
-	idFile *				fpa[6];
-	idStr					aviDemoPath;
-	idStr					aviDemoName;
 
 	idSoundEmitterLocal *	localSound;		// just for playShaderDirectly()
 

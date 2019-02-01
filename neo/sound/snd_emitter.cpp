@@ -684,12 +684,7 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 	// this is the sample time it will be first mixed
 	int start44kHz;
 
-	if ( soundWorld->fpa[0] ) {
-		// if we are recording an AVI demo, don't use hardware time
-		start44kHz = soundWorld->lastAVI44kHz + MIXBUFFER_SAMPLES;
-	} else {
-		start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
-	}
+	start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
 
 	//
 	// pick which sound to play from the shader
@@ -806,9 +801,7 @@ int idSoundEmitterLocal::StartSound( const idSoundShader *shader, const s_channe
 		int		end = Sys_Milliseconds();
 		session->TimeHitch( end - start );
 		// recalculate start44kHz, because loading may have taken a fair amount of time
-		if ( !soundWorld->fpa[0] ) {
-			start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
-		}
+		start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
 	}
 
 	if ( idSoundSystemLocal::s_showStartSound.GetInteger() ) {
@@ -984,12 +977,7 @@ void idSoundEmitterLocal::FadeSound( const s_channelType channel, float to, floa
 
 	int	start44kHz;
 
-	if ( soundWorld->fpa[0] ) {
-		// if we are recording an AVI demo, don't use hardware time
-		start44kHz = soundWorld->lastAVI44kHz + MIXBUFFER_SAMPLES;
-	} else {
-		start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
-	}
+	start44kHz = soundSystemLocal.GetCurrent44kHzTime() + MIXBUFFER_SAMPLES;
 
 	int	length44kHz = soundSystemLocal.MillisecondsToSamples( over * 1000 );
 

@@ -579,7 +579,7 @@ int idSoundSystemLocal::AsyncMix( int soundTime, float *mixBuffer ) {
 	numSpeakers = s_numberOfSpeakers.GetInteger();
 
 	// let the active sound world mix all the channels in unless muted or avi demo recording
-	if ( !muted && currentSoundWorld && !currentSoundWorld->fpa[0] ) {
+	if ( !muted && currentSoundWorld ) {
 		currentSoundWorld->MixLoop( soundTime, numSpeakers, mixBuffer );
 	}
 
@@ -651,7 +651,7 @@ int idSoundSystemLocal::AsyncUpdate( int inTime ) {
 	alcSuspendContext( openalContext );
 
 	// let the active sound world mix all the channels in unless muted or avi demo recording
-	if ( !muted && currentSoundWorld && !currentSoundWorld->fpa[0] ) {
+	if ( !muted && currentSoundWorld ) {
 		currentSoundWorld->MixLoop( newSoundTime, numSpeakers, finalMixBuffer );
 	}
 
@@ -700,7 +700,7 @@ int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	alcSuspendContext( openalContext );
 
 	// let the active sound world mix all the channels in unless muted or avi demo recording
-	if ( !muted && currentSoundWorld && !currentSoundWorld->fpa[0] ) {
+	if ( !muted && currentSoundWorld ) {
 		currentSoundWorld->MixLoop( sampleTime, numSpeakers, finalMixBuffer );
 	}
 
