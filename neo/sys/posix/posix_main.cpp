@@ -48,6 +48,10 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "sys/posix/posix_public.h"
 
+#ifdef __EMSCRIPTEN__
+  #include "emscripten.h"   // emscritpen_cancel_main_loop
+#endif
+
 #define					COMMAND_HISTORY 64
 
 static int				input_hide = 0;
@@ -150,6 +154,11 @@ Sys_Quit
 ================
 */
 void Sys_Quit(void) {
+#ifdef __EMSCRIPTEN__
+  // Cancel the main loop callback
+  emscripten_cancel_main_loop();
+#endif
+
 	Posix_Exit( EXIT_SUCCESS );
 }
 
