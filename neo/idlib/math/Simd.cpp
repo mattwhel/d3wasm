@@ -3931,13 +3931,15 @@ void TestNegate( void ) {
 	PrintClocks( va( "   simd->Negate16( float[] ) %s", result ), COUNT, bestClocksSIMD, bestClocksGeneric );
 }
 
-
+#ifdef __EMSCRIPTEN__
+// SIMD code not supported on emscripten for now
+#else
 /*
 ============
 idSIMD::Test_f
 ============
 */
-/*void idSIMD::Test_f( const idCmdArgs &args ) {
+void idSIMD::Test_f( const idCmdArgs &args ) {
 
 	p_simd = processor;
 	p_generic = generic;
@@ -4041,4 +4043,5 @@ idSIMD::Test_f
 	p_simd = NULL;
 	p_generic = NULL;
 
-}*/
+}
+#endif
