@@ -2728,8 +2728,8 @@ void idFileSystemLocal::Shutdown( bool reloading ) {
 #ifdef NOMT
 	// Emscripten: if we do usual code, this will restart the background thread code
 #else
-	Sys_TriggerEvent();
-	Sys_DestroyThread(backgroundThread);
+  Sys_TriggerEvent();
+  Sys_DestroyThread(backgroundThread);
 	backgroundThread_exit = false;
 #endif
 	gameFolder.Clear();
@@ -3417,10 +3417,10 @@ int BackgroundDownloadThread( void *pexit ) {
 		backgroundDownload_t	*bgl = fileSystemLocal.backgroundDownloads;
 		if ( !bgl ) {
       Sys_LeaveCriticalSection();
-      Sys_WaitForEvent();
 #ifdef NOMT
       return 0;
 #else
+      Sys_WaitForEvent();
 			continue;
 #endif
 		}
@@ -3477,7 +3477,10 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 			Sys_EnterCriticalSection();
 			bgl->next = backgroundDownloads;
 			backgroundDownloads = bgl;
-			Sys_TriggerEvent();
+#ifdef __NOMT__
+#else
+      Sys_TriggerEvent();
+#endif
 			Sys_LeaveCriticalSection();
 		} else {
 			// read zipped file directly
@@ -3489,7 +3492,10 @@ void idFileSystemLocal::BackgroundDownload( backgroundDownload_t *bgl ) {
 		Sys_EnterCriticalSection();
 		bgl->next = backgroundDownloads;
 		backgroundDownloads = bgl;
-		Sys_TriggerEvent();
+#ifdef __NOMT__
+#else
+    Sys_TriggerEvent();
+#endif
 		Sys_LeaveCriticalSection();
 	}
 }

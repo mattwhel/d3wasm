@@ -2460,8 +2460,9 @@ bool idSessionLocal::emsessionframe_pre() {
       // In case we have not reached the required ticNumber for next Frame, run the timer again
       common->Async();
     }
+#else
+    Sys_WaitForEvent( TRIGGER_EVENT_ONE );
 #endif
-
   }
 
   return true;
