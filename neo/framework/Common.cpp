@@ -2731,14 +2731,10 @@ void idCommonLocal::InitGame(void) {
   // initialize the renderSystem data structures, but don't start OpenGL yet
   renderSystem->Init();
 
-  // D3WASM: Well, in fact let's start OpenGL now as VBO cache system must be initialized in order
-  // to display something on the screen (eg. Loading Screens)
-  InitRenderSystem();
-
   // initialize string database right off so we can use it for loading messages
   InitLanguageDict();
 
-  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04344"));
+  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04344"));
 
   // load the font, etc
   console->LoadGraphics();
@@ -2746,7 +2742,7 @@ void idCommonLocal::InitGame(void) {
   // init journalling, etc
   eventLoop->Init();
 
-  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04345"));
+  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04345"));
 
   // exec the startup scripts
   cmdSystem->BufferCommandText(CMD_EXEC_APPEND, "exec editor.cfg\n");
@@ -2775,15 +2771,18 @@ void idCommonLocal::InitGame(void) {
   // init the user command input code
   usercmdGen->Init();
 
-  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04346"));
+  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04346"));
 
   // start the sound system, but don't do any hardware operations yet
   soundSystem->Init();
 
-  PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04347"));
+  //PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04347"));
 
   // init async network
   idAsyncNetwork::Init();
+
+  // Init rendersystem
+  InitRenderSystem();
 
   PrintLoadingMessage(common->GetLanguageDict()->GetString("#str_04349"));
 
