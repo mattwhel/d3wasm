@@ -245,6 +245,14 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
   shader->fogMatrix = qglGetUniformLocation(shader->program, "u_fogMatrix");
 
+  shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
+  shader->attr_Tangent = qglGetAttribLocation(shader->program, "attr_Tangent");
+  shader->attr_Bitangent = qglGetAttribLocation(shader->program, "attr_Bitangent");
+  shader->attr_Normal = qglGetAttribLocation(shader->program, "attr_Normal");
+  shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
+  shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
+
+  // Init default values
   for ( i = 0; i < MAX_FRAGMENT_IMAGES; i++ ) {
     idStr::snPrintf(buffer, sizeof(buffer), "u_fragmentMap%d", i);
     shader->u_fragmentMap[i] = qglGetUniformLocation(shader->program, buffer);
@@ -257,22 +265,12 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
     qglUniform1i(shader->u_fragmentCubeMap[i], i);
   }
 
-  shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
-  shader->attr_Tangent = qglGetAttribLocation(shader->program, "attr_Tangent");
-  shader->attr_Bitangent = qglGetAttribLocation(shader->program, "attr_Bitangent");
-  shader->attr_Normal = qglGetAttribLocation(shader->program, "attr_Normal");
-  shader->attr_Vertex = qglGetAttribLocation(shader->program, "attr_Vertex");
-  shader->attr_Color = qglGetAttribLocation(shader->program, "attr_Color");
-
-  // Init default values
   if (shader->textureMatrix >= 0) {
-    common->Printf("textureMatrix %d\n", shader->textureMatrix);
     // Load identity matrix for Texture marix
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
   }
 
   if (shader->alphaTest >= 0) {
-    common->Printf("alphaTest %d\n", shader->alphaTest);
     // Alpha test always pass by default
     static const GLfloat one[1] = { 1 };
     GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
@@ -280,13 +278,11 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
 
   if (shader->colorModulate >= 0) {
     static const GLfloat oneScaled[1] = { 1 / 255.0f };
-    common->Printf("colorModulate %d\n", shader->colorModulate);
     GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
   }
 
   if (shader->colorAdd >= 0) {
     static const GLfloat zero[1] = { 0 };
-    common->Printf("colorAdd %d\n", shader->colorAdd);
     GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
   }
 
