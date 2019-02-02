@@ -26,6 +26,17 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+/*
+===========================================================================
+ * Portions of this file are part of the D3wasm project (http://www.continuation-labs.com/projects/d3wasm)
+ * Copyright (c) 2019 Gabriel Cuvillier.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+===========================================================================
+*/
+
 #include "sys/platform.h"
 #include "framework/Common.h"
 #include "renderer/tr_local.h"

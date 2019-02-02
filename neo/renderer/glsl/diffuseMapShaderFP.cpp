@@ -1,5 +1,5 @@
 /*
- * All files of this folder are part of the D3wasm project (http://www.continuation-labs.com/projects/d3wasm)
+ * This file is part of the D3wasm project (http://www.continuation-labs.com/projects/d3wasm)
  * Copyright (c) 2019 Gabriel Cuvillier.
  *
  * This program is free software: you can redistribute it and/or modify
@@ -14,3 +14,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include "glsl_shaders.h"
+
+const char * const diffuseMapShaderFP = R"(
+#version 100
+precision mediump float;
+  
+uniform sampler2D u_fragmentMap0;
+uniform lowp vec4 u_glColor;
+  
+varying vec4 var_TexCoord;
+varying lowp vec4 var_Color;
+  
+void main(void)
+{
+  gl_FragColor = texture2D(u_fragmentMap0, var_TexCoord.xy / var_TexCoord.w) * u_glColor * var_Color;
+}
+)";

@@ -26,6 +26,17 @@ If you have questions concerning this license or the applicable additional terms
 ===========================================================================
 */
 
+/*
+===========================================================================
+ * Portions of this file are part of the D3wasm project (http://www.continuation-labs.com/projects/d3wasm)
+ * Copyright (c) 2019 Gabriel Cuvillier.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+===========================================================================
+*/
+
 #include "sys/platform.h"
 #include "renderer/VertexCache.h"
 
@@ -73,6 +84,14 @@ void RB_BakeTextureMatrixIntoTexgen( idMat4 & lightProject, const float *texture
 	lightProject[1][3] = final[13];
 }
 
+
+/*
+=================
+RB_ComputeMVP
+
+Compute the model view matrix, with eventually required projection matrix depth hacks
+=================
+*/
 void RB_ComputeMVP( const drawSurf_t * const surf, float mvp[16] )
 {
   // Get the projection matrix
