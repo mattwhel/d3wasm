@@ -432,7 +432,7 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&blendLightShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(blendLightShaderVP, &blendLightShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(blendLightShaderFP, &blendLightShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(fogShaderFP, &blendLightShader, GL_FRAGMENT_SHADER);       // Reuse the common "FogShaderFP"
 
   if ( !R_LinkGLSLShader(&blendLightShader, "blendLight") && !R_ValidateGLSLProgram(&blendLightShader)) {
     return false;

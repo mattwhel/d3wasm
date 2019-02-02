@@ -30,19 +30,22 @@ uniform mat4 u_fogMatrix;
 
 // Out
 // gl_Position
-varying vec4 var_TexCoord0;
-varying vec2 var_TexCoord1;
+varying vec2 var_TexFog;
+varying vec2 var_TexFogEnter;
 
 void main(void)
 {
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 
-  var_TexCoord0.x = dot( u_fogMatrix[0], attr_Vertex );
-  var_TexCoord0.y = dot( u_fogMatrix[1], attr_Vertex );
-  var_TexCoord0.z = 0.0;
-  var_TexCoord0.w = dot( u_fogMatrix[2], attr_Vertex );
+  vec4 tc;
+  tc.x = dot( u_fogMatrix[0], attr_Vertex );
+  tc.y = dot( u_fogMatrix[1], attr_Vertex );
+  tc.z = 0.0;
+  tc.w = dot( u_fogMatrix[2], attr_Vertex );
 
-  var_TexCoord1.x = dot( u_fogMatrix[3], attr_Vertex );
-  var_TexCoord1.y = 0.5;
+  var_TexFog.xy = tc.xy / tc.w;
+
+  var_TexFogEnter.x = dot( u_fogMatrix[3], attr_Vertex );
+  var_TexFogEnter.y = 0.5;
 }
 )";
