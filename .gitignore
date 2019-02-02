@@ -7,4 +7,3 @@
 .settings/
 .idea/
 neo/renderer/libjpeg/
-neo/cmake*
