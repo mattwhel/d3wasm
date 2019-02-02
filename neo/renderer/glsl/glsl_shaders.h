@@ -26,8 +26,12 @@ extern const char* const interactionShaderFP;
 extern const char* const interactionPhongShaderVP;
 extern const char* const interactionPhongShaderFP;
 // Fog
+  // Standard Fog
 extern const char* const fogShaderVP;
 extern const char* const fogShaderFP;
+  // Blend Light
+extern const char* const blendLightShaderVP;
+extern const char* const blendLightShaderFP;
 // Depth Buffer
   // no clip planes
 extern const char* const zfillShaderVP;

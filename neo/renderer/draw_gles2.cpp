@@ -25,6 +25,7 @@
 shaderProgram_t interactionShader;
 shaderProgram_t interactionPhongShader;
 shaderProgram_t fogShader;
+shaderProgram_t blendLightShader;
 shaderProgram_t zfillShader;
 shaderProgram_t zfillClipShader;
 shaderProgram_t diffuseMapShader;
@@ -346,9 +347,9 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&skyboxCubeShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(skyboxCubeShaderVP, &skyboxCubeShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(cubeMapShaderFP, &skyboxCubeShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP, &skyboxCubeShader, GL_FRAGMENT_SHADER);   // Use the common "cubeMapShaderFP"
 
-  if ( !R_LinkGLSLShader(&skyboxCubeShader, "skyboxCubeShader") && !R_ValidateGLSLProgram(&skyboxCubeShader)) {
+  if ( !R_LinkGLSLShader(&skyboxCubeShader, "skyboxCube") && !R_ValidateGLSLProgram(&skyboxCubeShader)) {
     return false;
   }
   else {
@@ -360,9 +361,9 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&reflectionCubeShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(reflectionCubeShaderVP, &reflectionCubeShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(cubeMapShaderFP, &reflectionCubeShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP, &reflectionCubeShader, GL_FRAGMENT_SHADER); // Use the common "cubeMapShaderFP"
 
-  if ( !R_LinkGLSLShader(&reflectionCubeShader, "reflectionCubeShader") &&
+  if ( !R_LinkGLSLShader(&reflectionCubeShader, "reflectionCube") &&
        !R_ValidateGLSLProgram(&reflectionCubeShader)) {
     return false;
   }
@@ -375,9 +376,9 @@ static bool RB_GLSL_InitShaders(void) {
   memset(&diffuseCubeShader, 0, sizeof(shaderProgram_t));
 
   R_LoadGLSLShader(diffuseCubeShaderVP, &diffuseCubeShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(cubeMapShaderFP, &diffuseCubeShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(cubeMapShaderFP, &diffuseCubeShader, GL_FRAGMENT_SHADER); // Use the common "cubeMapShaderFP"
 
-  if ( !R_LinkGLSLShader(&diffuseCubeShader, "diffuseCubeShader") && !R_ValidateGLSLProgram(&diffuseCubeShader)) {
+  if ( !R_LinkGLSLShader(&diffuseCubeShader, "diffuseCube") && !R_ValidateGLSLProgram(&diffuseCubeShader)) {
     return false;
   }
   else {
@@ -405,7 +406,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(zfillClipShaderVP, &zfillClipShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(zfillClipShaderFP, &zfillClipShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&zfillClipShader, "zfillclip") && !R_ValidateGLSLProgram(&zfillClipShader)) {
+  if ( !R_LinkGLSLShader(&zfillClipShader, "zfillClip") && !R_ValidateGLSLProgram(&zfillClipShader)) {
     return false;
   }
   else {
@@ -426,7 +427,19 @@ static bool RB_GLSL_InitShaders(void) {
     RB_GLSL_GetUniformLocations(&fogShader);
   }
 
+  // BlendLight shader
   common->Printf("Loading BlendLight shader\n");
+  memset(&blendLightShader, 0, sizeof(shaderProgram_t));
+
+  R_LoadGLSLShader(blendLightShaderVP, &blendLightShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(blendLightShaderFP, &blendLightShader, GL_FRAGMENT_SHADER);
+
+  if ( !R_LinkGLSLShader(&blendLightShader, "blendLight") && !R_ValidateGLSLProgram(&blendLightShader)) {
+    return false;
+  }
+  else {
+    RB_GLSL_GetUniformLocations(&blendLightShader);
+  }
 
   // Stencil shadow shader
   common->Printf("Loading Stencil shadow shader\n");
@@ -435,7 +448,7 @@ static bool RB_GLSL_InitShaders(void) {
   R_LoadGLSLShader(stencilShadowShaderVP, &stencilShadowShader, GL_VERTEX_SHADER);
   R_LoadGLSLShader(stencilShadowShaderFP, &stencilShadowShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&stencilShadowShader, "shadow") && !R_ValidateGLSLProgram(&stencilShadowShader)) {
+  if ( !R_LinkGLSLShader(&stencilShadowShader, "stencilShadow") && !R_ValidateGLSLProgram(&stencilShadowShader)) {
     return false;
   }
   else {

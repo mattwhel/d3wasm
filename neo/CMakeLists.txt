@@ -272,6 +272,8 @@ set(src_renderer_glsl
     renderer/glsl/diffuseMapShaderFP.cpp
     renderer/glsl/fogShaderFP.cpp
     renderer/glsl/fogShaderVP.cpp
+    renderer/glsl/blendLightShaderFP.cpp
+    renderer/glsl/blendLightShaderVP.cpp
     renderer/glsl/interactionPhongShaderFP.cpp
     renderer/glsl/interactionPhongShaderVP.cpp
     renderer/glsl/interactionShaderFP.cpp

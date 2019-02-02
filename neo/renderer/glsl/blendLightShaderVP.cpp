@@ -17,23 +17,32 @@
 
 #include "glsl_shaders.h"
 
-const char * const diffuseMapShaderFP = R"(
+const char * const blendLightShaderVP = R"(
 #version 100
 precision mediump float;
 
 // In
-varying vec4 var_TexCoord;
-varying lowp vec4 var_Color;
+attribute highp vec4 attr_Vertex;
 
 // Uniforms
-uniform sampler2D u_fragmentMap0;
-uniform lowp vec4 u_glColor;
+uniform highp mat4 u_modelViewProjectionMatrix;
+uniform mat4 u_fogMatrix;
 
 // Out
-// gl_FragCoord
+// gl_Position
+varying vec4 var_TexCoord0;
+varying vec2 var_TexCoord1;
 
 void main(void)
 {
-  gl_FragColor = texture2D(u_fragmentMap0, var_TexCoord.xy / var_TexCoord.w) * u_glColor * var_Color;
+  gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
+
+  var_TexCoord0.x = dot( u_fogMatrix[0], attr_Vertex );
+  var_TexCoord0.y = dot( u_fogMatrix[1], attr_Vertex );
+  var_TexCoord0.z = 0.0;
+  var_TexCoord0.w = dot( u_fogMatrix[2], attr_Vertex );
+
+  var_TexCoord1.x = dot( u_fogMatrix[3], attr_Vertex );
+  var_TexCoord1.y = 0.5;
 }
 )";
