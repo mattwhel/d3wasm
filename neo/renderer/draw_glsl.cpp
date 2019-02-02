@@ -37,7 +37,7 @@ shaderProgram_t interactionPhongShader;
 shaderProgram_t fogShader;
 shaderProgram_t zfillShader;
 shaderProgram_t zfillClipShader;
-shaderProgram_t defaultSurfaceShader;
+shaderProgram_t diffuseMapShader;
 shaderProgram_t diffuseCubeShader;
 shaderProgram_t skyboxCubeShader;
 shaderProgram_t reflectionCubeShader;
@@ -341,18 +341,18 @@ static bool RB_GLSL_InitShaders(void) {
     RB_GLSL_GetUniformLocations(&interactionPhongShader);
   }
 
-  // default surface shader
-  common->Printf("Loading default surface shader\n");
-  memset(&defaultSurfaceShader, 0, sizeof(shaderProgram_t));
+  // default diffuse shader
+  common->Printf("Loading default diffuse shader\n");
+  memset(&diffuseMapShader, 0, sizeof(shaderProgram_t));
 
-  R_LoadGLSLShader(defaultSurfaceShaderVP, &defaultSurfaceShader, GL_VERTEX_SHADER);
-  R_LoadGLSLShader(diffuseMapShaderFP, &defaultSurfaceShader, GL_FRAGMENT_SHADER);
+  R_LoadGLSLShader(diffuseMapShaderVP, &diffuseMapShader, GL_VERTEX_SHADER);
+  R_LoadGLSLShader(diffuseMapShaderFP, &diffuseMapShader, GL_FRAGMENT_SHADER);
 
-  if ( !R_LinkGLSLShader(&defaultSurfaceShader, "defaultSurface") && !R_ValidateGLSLProgram(&defaultSurfaceShader)) {
+  if ( !R_LinkGLSLShader(&diffuseMapShader, "diffuseMap") && !R_ValidateGLSLProgram(&diffuseMapShader)) {
     return false;
   }
   else {
-    RB_GLSL_GetUniformLocations(&defaultSurfaceShader);
+    RB_GLSL_GetUniformLocations(&diffuseMapShader);
   }
 
   // Skybox cubemap shader
@@ -1854,7 +1854,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       }
       else {  // TG_EXPLICIT
         // Otherwise, this is just regular surface shader with explicit texcoords
-        GL_UseProgram(&defaultSurfaceShader);
+        GL_UseProgram(&diffuseMapShader);
 
         GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 

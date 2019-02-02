@@ -23,6 +23,12 @@ set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
 
 set(D3WASMBINARY "d3wasm")
 
+# custom "generate_inline_glsl" build target
+# used to generate the CPP version of GLSL files
+# it is MANDATORY to run this target at least once to build the project
+# and to run it each time you change a glsl file
+add_custom_target(generate_inline_glsl COMMAND ${CMAKE_COMMAND} -DGLSLDIR=${CMAKE_SOURCE_DIR}/renderer/glsl -P ${CMAKE_SOURCE_DIR}/renderer/glsl/GenerateInlineGLSL.cmake)
+
 include(CheckCXXCompilerFlag)
 include(GNUInstallDirs OPTIONAL RESULT_VARIABLE GNUINSTALLDIRS)
 
@@ -46,6 +52,8 @@ else ()
   set(NODLL ON)      # only one single binary with core+base game
   set(WEBGL OFF)
 endif ()
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 if (WEBGL)
   add_compile_options("-DWEBGL")
@@ -263,6 +271,28 @@ if (NOT EMSCRIPTEN)
   message(STATUS "  Data directory:    ${datadir}")
 endif ()
 
+set(src_renderer_glsl
+    renderer/glsl/glsl_shaders.h
+    renderer/glsl/generated/cubeMapShaderFP.cpp
+    renderer/glsl/generated/diffuseMapShaderVP.cpp
+    renderer/glsl/generated/diffuseCubeShaderVP.cpp
+    renderer/glsl/generated/diffuseMapShaderFP.cpp
+    renderer/glsl/generated/fogShaderFP.cpp
+    renderer/glsl/generated/fogShaderVP.cpp
+    renderer/glsl/generated/interactionPhongShaderFP.cpp
+    renderer/glsl/generated/interactionPhongShaderVP.cpp
+    renderer/glsl/generated/interactionShaderFP.cpp
+    renderer/glsl/generated/interactionShaderVP.cpp
+    renderer/glsl/generated/reflectionCubeShaderVP.cpp
+    renderer/glsl/generated/skyboxCubeShaderVP.cpp
+    renderer/glsl/generated/stencilShadowShaderFP.cpp
+    renderer/glsl/generated/stencilShadowShaderVP.cpp
+    renderer/glsl/generated/zfillClipShaderFP.cpp
+    renderer/glsl/generated/zfillClipShaderVP.cpp
+    renderer/glsl/generated/zfillShaderFP.cpp
+    renderer/glsl/generated/zfillShaderVP.cpp
+)
+
 set(src_renderer
     renderer/Cinematic.cpp
     renderer/GuiModel.cpp
@@ -296,7 +326,6 @@ set(src_renderer
     renderer/RenderWorld_portals.cpp
     renderer/VertexCache.cpp
     renderer/draw_glsl.cpp
-    renderer/glsl/glsl_shaders.c
     renderer/draw_common.cpp
     renderer/tr_backend.cpp
     renderer/tr_deform.cpp
@@ -314,6 +343,7 @@ set(src_renderer
     renderer/tr_trace.cpp
     renderer/tr_trisurf.cpp
     renderer/tr_turboshadow.cpp
+    ${src_renderer_glsl}
     )
 
 # globs all the headers from ${PATHPREFIX}/ and adds them to ${SRCLIST}
