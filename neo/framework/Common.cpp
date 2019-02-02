@@ -92,7 +92,7 @@ idCVar com_memoryMarker("com_memoryMarker", "-1", CVAR_INTEGER | CVAR_SYSTEM | C
                         "used as a marker for memory stats");
 idCVar com_preciseTic("com_preciseTic", "1", CVAR_BOOL | CVAR_SYSTEM, "run one game tick every async thread update");
 idCVar com_asyncInput("com_asyncInput", "0", CVAR_BOOL | CVAR_SYSTEM, "sample input from the async thread");
-idCVar com_asyncSound("com_asyncSound", "0", CVAR_INTEGER | CVAR_SYSTEM,
+idCVar com_asyncSound("com_asyncSound", "3", CVAR_INTEGER | CVAR_SYSTEM,
                       "0: mix sound inline, 1: memory mapped async mix, 2: callback mixing, 3: write async mix");
 idCVar com_forceGenericSIMD("com_forceGenericSIMD", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT,
                             "force generic platform independent SIMD");
