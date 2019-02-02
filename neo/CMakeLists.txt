@@ -208,7 +208,7 @@ if (EMSCRIPTEN)
   #set(ldflags "${ldflags} --closure 1")
   #set(ldflags "${ldflags} --llvm-lto 3")
   set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=js")
-  set(ldflags "${ldflags} -s TOTAL_MEMORY=268435456") # 256MB. I think below it would start to fail.
+  set(ldflags "${ldflags} -s TOTAL_MEMORY=335544320") # 320MB. Going below 300MB lead to crashes after a couple of levels played.
   set(ldflags "${ldflags} -s EMTERPRETIFY=1")
   set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
   set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=d3wasm.embin")
