@@ -731,8 +731,8 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
   // Setup attributes arrays
   // Vertex attribute is always enabled
   // Color attribute is always enabled
+  // TexCoord attribute is always enabled
   // Enable the rest
-  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
   GL_EnableVertexAttribArray(ATTR_TANGENT);
   GL_EnableVertexAttribArray(ATTR_BITANGENT);
   GL_EnableVertexAttribArray(ATTR_NORMAL);
@@ -788,8 +788,7 @@ static void RB_GLSL_CreateDrawInteractions(const drawSurf_t* surf, const viewLig
   // Restore attributes arrays
   // Vertex attribute is always enabled
   // Color attribute is always enabled
-  // Disable the rest
-  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
+  // TexCoord attribute is always enabled
   GL_DisableVertexAttribArray(ATTR_TANGENT);
   GL_DisableVertexAttribArray(ATTR_BITANGENT);
   GL_DisableVertexAttribArray(ATTR_NORMAL);
@@ -984,7 +983,9 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* v
   // Setup attributes arrays
   // Vertex attribute is always enabled
   // Disable Color attribute (as it is enabled by default)
+  // Disable TexCoord attribute (as it is enabled by default)
   GL_DisableVertexAttribArray(ATTR_COLOR);
+  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
 
   // don't write to the color buffer, just the stencil buffer
   GL_State(GLS_DEPTHMASK | GLS_COLORMASK | GLS_ALPHAMASK | GLS_DEPTHFUNC_LESS);
@@ -1015,7 +1016,9 @@ void RB_GLSL_StencilShadowPass(const drawSurf_t* drawSurfs, const viewLight_t* v
   // Restore attributes arrays
   // Vertex attribute is always enabled
   // Re-enable Color attribute (as it is enabled by default)
+  // Re-enable TexCoord attribute (as it is enabled by default)
   GL_EnableVertexAttribArray(ATTR_COLOR);
+  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 }
 
 /*
@@ -1171,7 +1174,9 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   // Setup attributes arrays
   // Vertex attribute is always enabled
   // Disable Color attribute (as it is enabled by default)
+  // Disable TexCoord attribute (as it is enabled by default)
   GL_DisableVertexAttribArray(ATTR_COLOR);
+  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
 
   memset(&ds, 0, sizeof(ds));
   ds.space = &backEnd.viewDef->worldSpace;
@@ -1247,7 +1252,9 @@ void RB_GLSL_FogPass(const drawSurf_t* drawSurfs, const drawSurf_t* drawSurfs2, 
   // Restore attributes arrays
   // Vertex attribute is always enabled
   // Re-enable Color attribute (as it is enabled by default)
+  // Re-enable TexCoord attribute (as it is enabled by default)
   GL_EnableVertexAttribArray(ATTR_COLOR);
+  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 }
 
 /*
@@ -1525,10 +1532,9 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
 
   // Setup attributes arrays
   // Vertex attribute is always enabled
+  // TexCoord attribute is always enabled
   // Disable Color attribute (as it is enabled by default)
   GL_DisableVertexAttribArray(ATTR_COLOR);
-  // Enable TexCoord attribute
-  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 
   // Texture 0 will be used for alpha tested surfaces. It should be already active.
   // Bind it to white image by default
@@ -1615,11 +1621,9 @@ void RB_GLSL_FillDepthBuffer(drawSurf_t** drawSurfs, int numDrawSurfs) {
 
   // Restore attributes arrays
   // Vertex attribute is always enabled
+  // TexCoord attribute is always enabled
   // Re-enable Color attribute (as it is enabled by default)
   GL_EnableVertexAttribArray(ATTR_COLOR);
-  // Disable TexCoord attribute
-  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
-
 }
 
 /*
@@ -1784,9 +1788,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
 
         // Possible that normals should be transformed by a normal matrix in the shader ? I am not sure...
 
-        // Setup normal array
-        GL_EnableVertexAttribArray(ATTR_NORMAL);
-        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
+        // Setup texcoord array to use the normals
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
 
         // Setup the texture matrix
@@ -1799,6 +1802,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
         // This is skybox cube mapping
         GL_UseProgram(&skyboxCubeShader);
+
+        // Disable TexCoord attribute
+        GL_DisableVertexAttribArray(ATTR_TEXCOORD);
 
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
@@ -1813,6 +1819,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
         // This is skybox cube mapping, with special texture matrix
         GL_UseProgram(&skyboxCubeShader);
+
+        // Disable TexCoord attribute
+        GL_DisableVertexAttribArray(ATTR_TEXCOORD);
 
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
@@ -1849,10 +1858,8 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         // NB: in original D3, if the surface had a bump map it would lead to the "Bumpy reflection cubemaping" shader being used.
         // This is not implemented for now, we only do standard reflection cubemaping. Visual difference is really minor.
 
-        GL_EnableVertexAttribArray(ATTR_NORMAL);
-
-        // Setup the normals
-        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
+        // Setup texcoord array to use the normals
+        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
 
         // Setup the modelViewMatrix, we will need it to compute the reflection
@@ -1867,8 +1874,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       else {  // TG_EXPLICIT
         // Otherwise, this is just regular surface shader with explicit texcoords
         GL_UseProgram(&diffuseMapShader);
-
-        GL_EnableVertexAttribArray(ATTR_TEXCOORD);
 
         // Setup the TexCoord pointer
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_TexCoord), 2, GL_FLOAT, false, sizeof(idDrawVert),
@@ -1953,20 +1958,24 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
 
       // Disable the other attributes array
       if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
-        GL_DisableVertexAttribArray(ATTR_NORMAL);
-
         // Restore identity to the texture matrix
         if ( pStage->texture.hasMatrix) {
           GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
         }
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
+        // Reenable TexCoord attribute
+        GL_EnableVertexAttribArray(ATTR_TEXCOORD);
+
         // Restore identity to the texture matrix
         if ( pStage->texture.hasMatrix) {
           GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
         }
       }
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
+        // Reenable TexCoord attribute
+        GL_EnableVertexAttribArray(ATTR_TEXCOORD);
+
         // Restore identity to the texture matrix (shall be done each time, as there is the wobblesky transform combined inside)
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
@@ -1977,16 +1986,10 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       else if ( pStage->texture.texgen == TG_GLASSWARP ) {
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
-        GL_DisableVertexAttribArray(ATTR_NORMAL);
-        // Restore the custom texturematrix
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
-
         // Restore identity to the texture matrix (shall be done each time)
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else {
-        GL_DisableVertexAttribArray(ATTR_TEXCOORD);
-
         // Restore identity to the texture matrix
         if ( pStage->texture.hasMatrix) {
           GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
@@ -2019,8 +2022,6 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
   if ( shader->TestMaterialFlag(MF_POLYGONOFFSET)) {
     qglDisable(GL_POLYGON_OFFSET_FILL);
   }
-
-  return;
 }
 
 /*
@@ -2070,6 +2071,7 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Setup attributes arrays
   // Vertex attribute is always enabled
   // Color attribute is always enabled
+  // Texcoord attribute is always enabled
 
   /////////////////////////
   // For each surface loop
@@ -2139,6 +2141,7 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
   // Restore attributes arrays
   // Vertex attribute is always enabled
   // Color attribute is always enabled
+  // Texcoord attribute is always enabled
 
   // Trashed state:
   //   Current Program
