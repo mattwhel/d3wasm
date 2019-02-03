@@ -1204,7 +1204,7 @@ typedef struct shaderProgram_s {
 
   GLint		fogMatrix;
 
-	GLint		texGen0S;
+	GLint		clipPlane;
 
 	/* gl_... */
 	GLint		attr_TexCoord;

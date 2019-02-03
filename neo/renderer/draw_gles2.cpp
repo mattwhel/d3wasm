@@ -250,7 +250,7 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
   shader->modelViewProjectionMatrix = qglGetUniformLocation(shader->program, "u_modelViewProjectionMatrix");
   shader->modelViewMatrix = qglGetUniformLocation(shader->program, "u_modelViewMatrix");
   shader->textureMatrix = qglGetUniformLocation(shader->program, "u_textureMatrix");
-  shader->texGen0S = qglGetUniformLocation(shader->program, "u_texGen0S");
+  shader->clipPlane = qglGetUniformLocation(shader->program, "u_clipPlane");
   shader->fogMatrix = qglGetUniformLocation(shader->program, "u_fogMatrix");
 
   shader->attr_TexCoord = qglGetAttribLocation(shader->program, "attr_TexCoord");
@@ -1352,7 +1352,7 @@ void RB_T_GLSL_FillDepthBuffer(const drawSurf_t* surf) {
     R_GlobalPlaneToLocal(surf->space->modelMatrix, backEnd.viewDef->clipPlanes[0], plane);
     plane[3] += 0.5;  // the notch is in the middle
 
-    GL_Uniform4fv(offsetof(shaderProgram_t, texGen0S), plane.ToFloatPtr());
+    GL_Uniform4fv(offsetof(shaderProgram_t, clipPlane), plane.ToFloatPtr());
   }
 
   // set polygon offset if necessary
