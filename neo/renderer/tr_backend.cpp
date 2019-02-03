@@ -46,20 +46,7 @@ void RB_SetDefaultGLState( void ) {
 	// Clear value for the Depth buffer
 	qglClearDepthf(1.0f);
 
-	// No shaders set by default
-	GL_UseProgram(NULL);
-
-  // Always enable the vertex, color and texcoord attributes arrays
-  GL_EnableVertexAttribArray(ATTR_VERTEX);
-  GL_EnableVertexAttribArray(ATTR_COLOR);
-  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
-  // Disable the other arrays
-  GL_DisableVertexAttribArray(ATTR_NORMAL);
-  GL_DisableVertexAttribArray(ATTR_TANGENT);
-  GL_DisableVertexAttribArray(ATTR_BITANGENT);
-
   // make sure our GL state vector is set correctly
-	//
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
 	backEnd.glState.forceGlState = true;
 
@@ -88,13 +75,6 @@ void RB_SetDefaultGLState( void ) {
 	}
 	// Last active texture is Tex0
 }
-
-
-
-
-//=============================================================================
-
-
 
 /*
 ====================

@@ -34,6 +34,13 @@ shaderProgram_t skyboxCubeShader;
 shaderProgram_t reflectionCubeShader;
 shaderProgram_t stencilShadowShader;
 
+#define ATTR_VERTEX     0   // Don't change this, as WebGL require the vertex attrib 0 to be always bound
+#define ATTR_COLOR      1
+#define ATTR_TEXCOORD   2
+#define ATTR_NORMAL     3
+#define ATTR_TANGENT    4
+#define ATTR_BITANGENT  5
+
 /*
 ====================
 GL_UseProgram
@@ -471,6 +478,31 @@ void R_ReloadGLSLPrograms_f(const idCmdArgs& args) {
   }
 
   common->Printf("-------------------------------\n");
+}
+
+/*
+=================
+RB_ComputeMVP
+
+Compute the model view matrix, with eventually required projection matrix depth hacks
+=================
+*/
+void RB_ComputeMVP( const drawSurf_t * const surf, float mvp[16] )
+{
+  // Get the projection matrix
+  float localProjectionMatrix[16];
+  memcpy(localProjectionMatrix, backEnd.viewDef->projectionMatrix, sizeof(localProjectionMatrix));
+
+  // Quick and dirty hacks on the projection matrix
+  if ( surf->space->weaponDepthHack ) {
+    localProjectionMatrix[14] = backEnd.viewDef->projectionMatrix[14] * 0.25;
+  }
+  if ( surf->space->modelDepthHack != 0.0 ) {
+    localProjectionMatrix[14] = backEnd.viewDef->projectionMatrix[14] - surf->space->modelDepthHack;
+  }
+
+  // precompute the MVP
+  myGlMultMatrix(surf->space->modelViewMatrix, localProjectionMatrix, mvp);
 }
 
 /*
@@ -2149,4 +2181,246 @@ int RB_GLSL_DrawShaderPasses(drawSurf_t** drawSurfs, int numDrawSurfs) {
 
   // Return the counter of drawn surfaces
   return i;
+}
+
+/*
+=====================
+RB_T_BlendLight
+
+=====================
+*/
+static void RB_T_GLSL_BlendLight(const drawSurf_t *surf, const viewLight_t* vLight) {
+  const srfTriangles_t *tri = surf->geo;
+
+  ////////////
+  // GL setup
+  ////////////
+
+  // Shader uniforms
+
+  // Setup the fogMatrix as being the local Light Projection
+  // Only do this once per space
+  if (backEnd.currentSpace != surf->space) {
+    idPlane lightProject[4];
+
+    int i;
+    for (i = 0; i < 4; i++) {
+      R_GlobalPlaneToLocal(surf->space->modelMatrix, vLight->lightProject[i], lightProject[i]);
+    }
+
+    idMat4 fogMatrix;
+    fogMatrix[0] = lightProject[0].ToVec4();
+    fogMatrix[1] = lightProject[1].ToVec4();
+    fogMatrix[2] = lightProject[2].ToVec4();
+    fogMatrix[3] = lightProject[3].ToVec4();
+    GL_UniformMatrix4fv(offsetof(shaderProgram_t, fogMatrix), fogMatrix.ToFloatPtr());
+  }
+
+  // Attributes pointers
+
+  // This gets used for both blend lights and shadow draws
+  if (tri->ambientCache) {
+    idDrawVert *ac = (idDrawVert *) vertexCache.Position(tri->ambientCache);
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert), ac->xyz.ToFloatPtr());
+  } else if (tri->shadowCache) {
+    shadowCache_t *sc = (shadowCache_t *) vertexCache.Position(tri->shadowCache);
+    GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert), sc->xyz.ToFloatPtr());
+  }
+
+  ////////////////////
+  // Draw the surface
+  ////////////////////
+  RB_DrawElementsWithCounters(tri);
+}
+
+/*
+=====================
+RB_GLSL BlendLight
+
+Dual texture together the falloff and projection texture with a blend
+mode to the framebuffer, instead of interacting with the surface texture
+=====================
+*/
+void RB_GLSL_BlendLight(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2, const viewLight_t* vLight) {
+  const idMaterial * const lightShader = vLight->lightShader;
+  const float * const regs = vLight->shaderRegisters;
+
+  //////////////
+  // Skip Cases
+  //////////////
+
+  if (!drawSurfs) {
+    return;
+  }
+
+  if (r_skipBlendLights.GetBool()) {
+    return;
+  }
+
+  ////////////////////////////////////
+  // GL setup for the current pass
+  // (ie. common to all Light Stages)
+  ////////////////////////////////////
+
+  // Use blendLight shader
+  GL_UseProgram(&blendLightShader);
+
+  // Texture 1 will get the falloff texture
+  GL_SelectTexture(1);
+  vLight->falloffImage->Bind();
+
+  // Texture 0 will get the projected texture
+  GL_SelectTexture(0);
+
+  ////////////////////////
+  // For each Light Stage
+  ////////////////////////
+
+  int i;
+  for (i = 0; i < lightShader->GetNumStages(); i++) {
+    const shaderStage_t *stage = lightShader->GetStage(i);
+
+    //////////////
+    // Skip Cases
+    //////////////
+
+    if (!regs[stage->conditionRegister]) {
+      continue;
+    }
+
+    ////////////////////////////////////////
+    // GL setup for the current Light Stage
+    // (ie. common to all surfaces)
+    ////////////////////////////////////////
+
+    // Global GL state
+
+    // Setup the drawState
+    GL_State(GLS_DEPTHMASK | stage->drawStateBits | GLS_DEPTHFUNC_EQUAL);
+
+    // Bind the projected texture
+    stage->texture.image->Bind();
+
+    // Shader Uniforms
+
+    // Setup the texture matrix
+    if ( stage->texture.hasMatrix ) {
+      float matrix[16];
+      RB_GetShaderTextureMatrix(regs, &stage->texture, matrix);
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
+    }
+
+    // Setup the Fog Color
+    float lightColor[4];
+    lightColor[0] = regs[stage->color.registers[0]];
+    lightColor[1] = regs[stage->color.registers[1]];
+    lightColor[2] = regs[stage->color.registers[2]];
+    lightColor[3] = regs[stage->color.registers[3]];
+    GL_Uniform4fv(offsetof(shaderProgram_t, fogColor), lightColor);
+
+    ////////////////////
+    // Do the Real Work
+    ////////////////////
+
+    RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs, RB_T_GLSL_BlendLight, vLight);
+    RB_GLSL_RenderDrawSurfChainWithFunction(drawSurfs2, RB_T_GLSL_BlendLight, vLight);
+
+    ////////////////////
+    // GL state restore
+    ////////////////////
+
+    // Restore texture matrix to identity
+    if (stage->texture.hasMatrix) {
+      GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+    }
+  }
+}
+
+/*
+==================
+RB_FogAllLights
+==================
+*/
+void RB_GLSL_FogAllLights(void) {
+
+  //////////////
+  // Skip Cases
+  //////////////
+
+  if (r_skipFogLights.GetBool() || backEnd.viewDef->isXraySubview /* dont fog in xray mode*/ ) {
+    return;
+  }
+
+  /////////////////////////////////////////////
+  // GL setup for the current pass
+  // (ie. common to both fog and blend lights)
+  /////////////////////////////////////////////
+
+  // Disable Stencil Test
+  qglDisable(GL_STENCIL_TEST);
+
+  // Disable TexCoord array
+  // Disable Color array
+  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
+  GL_DisableVertexAttribArray(ATTR_COLOR);
+
+  //////////////////
+  // For each Light
+  //////////////////
+
+  const viewLight_t *vLight;
+  for (vLight = backEnd.viewDef->viewLights; vLight; vLight = vLight->next) {
+
+    //////////////
+    // Skip Cases
+    //////////////
+
+    // We are only interested in Fog and Blend lights
+    if (!vLight->lightShader->IsFogLight() && !vLight->lightShader->IsBlendLight()) {
+      continue;
+    }
+
+    ///////////////////////
+    // Do the Light passes
+    ///////////////////////
+
+    if (vLight->lightShader->IsFogLight()) {
+      RB_GLSL_FogPass(vLight->globalInteractions, vLight->localInteractions, vLight);
+    } else if (vLight->lightShader->IsBlendLight()) {
+      RB_GLSL_BlendLight(vLight->globalInteractions, vLight->localInteractions, vLight);
+    }
+  }
+
+  ////////////////////
+  // GL state restore
+  ////////////////////
+
+  // Re-enable TexCoord array
+  // Re-enable Color array
+  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
+  GL_DisableVertexAttribArray(ATTR_COLOR);
+
+  // Re-enable Stencil Test
+  qglEnable(GL_STENCIL_TEST);
+}
+
+
+/*
+=================
+RB_BeginGLSLShaderPasses
+=================
+*/
+void RB_GLSL_PrepareShaders(void) {
+
+  // No shaders set by default
+  GL_UseProgram(NULL);
+
+  // Always enable the vertex, color and texcoord attributes arrays
+  GL_EnableVertexAttribArray(ATTR_VERTEX);
+  GL_EnableVertexAttribArray(ATTR_COLOR);
+  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
+  // Disable the other arrays
+  GL_DisableVertexAttribArray(ATTR_NORMAL);
+  GL_DisableVertexAttribArray(ATTR_TANGENT);
+  GL_DisableVertexAttribArray(ATTR_BITANGENT);
 }

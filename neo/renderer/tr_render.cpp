@@ -175,7 +175,7 @@ to actually render the visible surfaces for this view
 */
 void RB_BeginDrawingView (void) {
 
-	// set the window clipping
+  // set the window clipping
 	qglViewport( tr.viewportOffset[0] + backEnd.viewDef->viewport.x1,
 		tr.viewportOffset[1] + backEnd.viewDef->viewport.y1,
 		backEnd.viewDef->viewport.x2 + 1 - backEnd.viewDef->viewport.x1,

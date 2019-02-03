@@ -1159,10 +1159,8 @@ void RB_SubmittInteraction( drawInteraction_t *din, void (*DrawInteraction)(cons
 void RB_SetDrawInteraction( const shaderStage_t *surfaceStage, const float *surfaceRegs, idImage **image, idVec4 matrix[2], float color[4] );
 void RB_BindVariableStageImage( const textureStage_t *texture, const float *shaderRegisters );
 void RB_BeginDrawingView (void);
-void RB_FogAllLights( void );
 void RB_GetShaderTextureMatrix(const float* shaderRegisters, const textureStage_t* texture, float matrix[16]);
 void RB_BakeTextureMatrixIntoTexgen( idMat4 & lightProject, const float* textureMatrix);
-void RB_ComputeMVP( const drawSurf_t * const surf, float mvp[16] );
 
 /*
 ============================================================
@@ -1220,22 +1218,13 @@ typedef struct shaderProgram_s {
   GLint		u_fragmentCubeMap[MAX_FRAGMENT_IMAGES];
 } shaderProgram_t;
 
-#define ATTR_VERTEX     0   // Don't change this, as WebGL require the vertex attrib 0 to be always bound
-#define ATTR_COLOR      1
-#define ATTR_TEXCOORD   2
-#define ATTR_NORMAL     3
-#define ATTR_TANGENT    4
-#define ATTR_BITANGENT  5
-
-void GL_UseProgram(shaderProgram_t *program);
-void GL_EnableVertexAttribArray(GLuint index);
-void GL_DisableVertexAttribArray(GLuint index);
-
 void R_ReloadGLSLPrograms_f(const idCmdArgs &args);
-void RB_GLSL_DrawInteractions(void);
-void RB_GLSL_FogPass(const drawSurf_t *drawSurfs, const drawSurf_t *drawSurfs2, const viewLight_t* vLight);
+
+void RB_GLSL_PrepareShaders(void);
 void RB_GLSL_FillDepthBuffer(drawSurf_t **drawSurfs, int numDrawSurfs);
+void RB_GLSL_DrawInteractions(void);
 int  RB_GLSL_DrawShaderPasses(drawSurf_t **drawSurfs, int numDrawSurfs);
+void RB_GLSL_FogAllLights(void);
 
 /*
 ============================================================
