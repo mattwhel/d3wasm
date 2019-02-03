@@ -1697,9 +1697,14 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
   // get the expressions for conditionals / color / texcoords
   const float* const regs = surf->shaderRegisters;
 
-  // Caches to only set GL State only when needed
+  // Caches to set per surface shader GL state only when necessary
   bool bMVPSet[TG_GLASSWARP-TG_EXPLICIT]; memset(bMVPSet, 0, (TG_GLASSWARP-TG_EXPLICIT)*sizeof(bool));
   bool bVASet [TG_GLASSWARP-TG_EXPLICIT]; memset(bVASet , 0, (TG_GLASSWARP-TG_EXPLICIT)*sizeof(bool));
+
+  // precompute the local view origin (might be needed for some texgens)
+  idVec4 localViewOrigin;
+  R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
+  localViewOrigin.w = 1.0f;
 
   ///////////////////////
   // For each stage loop
@@ -1784,38 +1789,46 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Normal), 3, GL_FLOAT, false, sizeof(idDrawVert),
                                ac->normal.ToFloatPtr());
 
-        // Texture matrix is identity
-        // Note: not sure, in original D3 it looks like having diffuse cube with texture matrix other than identity is a possible case.
+        // Setup the texture matrix
+        if ( pStage->texture.hasMatrix ) {
+          float matrix[16];
+          RB_GetShaderTextureMatrix(surf->shaderRegisters, &pStage->texture, matrix);
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
+        }
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
         // This is skybox cube mapping
         GL_UseProgram(&skyboxCubeShader);
 
-        // precompute the local view origin (might be needed for some texgens)
-        idVec4 localViewOrigin;
-        R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
-        localViewOrigin.w = 1.0f;
-
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
-        // Texture matrix is identity
-        // Note: not sure, in original D3 it looks like having diffuse cube with texture matrix other than identity is a possible case.
+        // Setup the texture matrix
+        if ( pStage->texture.hasMatrix ) {
+          float matrix[16];
+          RB_GetShaderTextureMatrix(surf->shaderRegisters, &pStage->texture, matrix);
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), matrix);
+        }
       }
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
         // This is skybox cube mapping, with special texture matrix
         GL_UseProgram(&skyboxCubeShader);
 
-        // precompute the local view origin (might be needed for some texgens)
-        idVec4 localViewOrigin;
-        R_GlobalPointToLocal(surf->space->modelMatrix, backEnd.viewDef->renderView.vieworg, localViewOrigin.ToVec3());
-        localViewOrigin.w = 1.0f;
-
         // Setup the local view origin uniform
         GL_Uniform4fv(offsetof(shaderProgram_t, localViewOrigin), localViewOrigin.ToFloatPtr());
 
-        // Setup the specific texture matrix for the wobblesky
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), surf->wobbleTransform);
+        // Setup the texture matrix
+        // Note: here, we combine the shader texturematrix and precomputed wobblesky matrix
+        if ( pStage->texture.hasMatrix ) {
+          float texturematrix[16];
+          RB_GetShaderTextureMatrix(surf->shaderRegisters, &pStage->texture, texturematrix);
+          float finalmatrix[16];
+          myGlMultMatrix(texturematrix, surf->wobbleTransform, finalmatrix);
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), finalmatrix);
+        }
+        else {
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), surf->wobbleTransform);
+        }
       }
       else if ( pStage->texture.texgen == TG_SCREEN ) {
         // Not used in game, so not implemented
@@ -1845,7 +1858,7 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
         // Setup the modelViewMatrix, we will need it to compute the reflection
         GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewMatrix), surf->space->modelViewMatrix);
 
-        // Setup the texture matrix like original D3 code does: using the transpose modelViewMatrix
+        // Setup the texture matrix like original D3 code does: using the transpose modelViewMatrix of the view
         // NB: this is curious, not sure why this is done like this....
         float mat[16];
         R_TransposeGLMatrix(backEnd.viewDef->worldSpace.modelViewMatrix, mat);
@@ -1873,23 +1886,27 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       // The specifics have already been done in the shader selection code (see above)
 
       // Non-stage dependent state (per drawsurf, may be done once per GL shader)
-      if(!bVASet[pStage->texture.texgen]) {
+      {
+        // Vertex Attributes
+        if ( !bVASet[pStage->texture.texgen] ) {
 
-        // Setup the Vertex Attrib pointer
-        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
-                               ac->xyz.ToFloatPtr());
+          // Setup the Vertex Attrib pointer
+          GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Vertex), 3, GL_FLOAT, false, sizeof(idDrawVert),
+                                 ac->xyz.ToFloatPtr());
 
-        // Setup the Color pointer
-        GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
-                               (void*) &ac->color);
+          // Setup the Color pointer
+          GL_VertexAttribPointer(offsetof(shaderProgram_t, attr_Color), 4, GL_UNSIGNED_BYTE, false, sizeof(idDrawVert),
+                                 (void*) &ac->color);
 
-        bVASet[pStage->texture.texgen] = true;
-      }
+          bVASet[pStage->texture.texgen] = true;
+        }
 
-      if (!bMVPSet[pStage->texture.texgen]) {
-        // Setup the MVP uniform
-        GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mvp);
-        bMVPSet[pStage->texture.texgen] = true;
+        // MVP
+        if ( !bMVPSet[pStage->texture.texgen] ) {
+          // Setup the MVP uniform
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, modelViewProjectionMatrix), mvp);
+          bMVPSet[pStage->texture.texgen] = true;
+        }
       }
 
       // Stage dependent state
@@ -1937,10 +1954,21 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       // Disable the other attributes array
       if ( pStage->texture.texgen == TG_DIFFUSE_CUBE ) {
         GL_DisableVertexAttribArray(ATTR_NORMAL);
+
+        // Restore identity to the texture matrix
+        if ( pStage->texture.hasMatrix) {
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+        }
       }
       else if ( pStage->texture.texgen == TG_SKYBOX_CUBE ) {
+        // Restore identity to the texture matrix
+        if ( pStage->texture.hasMatrix) {
+          GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+        }
       }
       else if ( pStage->texture.texgen == TG_WOBBLESKY_CUBE ) {
+        // Restore identity to the texture matrix (shall be done each time, as there is the wobblesky transform combined inside)
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else if ( pStage->texture.texgen == TG_SCREEN ) {
       }
@@ -1950,12 +1978,17 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       }
       else if ( pStage->texture.texgen == TG_REFLECT_CUBE ) {
         GL_DisableVertexAttribArray(ATTR_NORMAL);
+        // Restore the custom texturematrix
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
+
+        // Restore identity to the texture matrix (shall be done each time)
+        GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
       }
       else {
         GL_DisableVertexAttribArray(ATTR_TEXCOORD);
 
         // Restore identity to the texture matrix
-        if ( pStage->texture.hasMatrix ) {
+        if ( pStage->texture.hasMatrix) {
           GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
         }
       }
