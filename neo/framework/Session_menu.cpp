@@ -590,7 +590,10 @@ void idSessionLocal::HandleMainMenuCommands( const char *menuCommand ) {
 			// need to do this here to make sure com_frameTime is correct or the gui activates with a time that
 			// is "however long map load took" time in the past
 			common->GUIFrame( false, false );
-			SetGUI( guiIntro, NULL );
+#ifdef __EMSCRIPTEN__
+      emscripten_sleep_with_yield( 0 );
+#endif
+      SetGUI( guiIntro, NULL );
 			guiIntro->StateChanged( com_frameTime, true );
 			// stop playing the game sounds
 			soundSystem->SetPlayingSoundWorld( menuSoundWorld );
@@ -1335,10 +1338,14 @@ const char* idSessionLocal::MessageBox( msgBoxType_t type, const char *message, 
 		// play one frame ignoring events so we don't get confused by parasite button releases
 		msgIgnoreButtons = true;
 		common->GUIFrame( true, network );
-		msgIgnoreButtons = false;
+#ifdef __EMSCRIPTEN__
+    emscripten_sleep_with_yield( 0 );
+#endif
+    msgIgnoreButtons = false;
 		while ( msgRunning ) {
 			common->GUIFrame( true, network );
 #ifdef __EMSCRIPTEN__
+      // Yield case: local graphic update inside subloop
       emscripten_sleep_with_yield( 1000.0/60.0 );
 #endif
 		}
@@ -1411,6 +1418,7 @@ void idSessionLocal::DownloadProgressBox( backgroundDownload_t *bgl, const char 
 		while ( msgRunning ) {
 			common->GUIFrame( true, false );
 #ifdef __EMSCRIPTEN__
+      // Yield case: local graphic update inside subloop
       emscripten_sleep_with_yield( 1000.0/60.0 );
 #endif
 			if ( bgl->completed ) {

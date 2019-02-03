@@ -528,7 +528,8 @@ void idSessionLocal::CompleteWipe() {
 #endif
     UpdateScreen(true);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(1000.0/60.0);   // Yields to the browser so that the screen updated at each tic
+    // Yield case: local graphic update inside subloop
+    emscripten_sleep_with_yield(1000.0/60.0);
 #endif
 #ifdef NOMT
     common->Async();                          // com_ticNumber is used locally, be sure to run the timer to make things move on
@@ -558,7 +559,8 @@ void idSessionLocal::ShowLoadingGui() {
     session->Frame();
     session->UpdateScreen(false);
 #ifdef __EMSCRIPTEN__
-    emscripten_sleep_with_yield(1000.0/60.0);   // Yields to the browser so that the screen updated at each tic
+    // Yield case: local graphic update inside subloop
+    emscripten_sleep_with_yield(1000.0/60.0);
 #endif
   }
 }
@@ -1591,7 +1593,8 @@ void idSessionLocal::ExecuteMapChange(bool noFadeWipe) {
       UpdateScreen();
       pct += 0.05f;
 #ifdef __EMSCRIPTEN__
-      emscripten_sleep_with_yield(1000.0/60);   // Yields to the browser so that the screen updated at each tic
+      // Yield case: local graphic update inside subloop
+      emscripten_sleep_with_yield(1000.0/60);
 #endif
     }
   }
@@ -2111,9 +2114,6 @@ Draw the fade material over everything that has been drawn
 ===============
 */
 void idSessionLocal::DrawWipeModel() {
-#ifdef NOMT
-  common->Async();                // com_ticNumber is used locally, be sure to run the timer to make things move on
-#endif
   int latchedTic = com_ticNumber;
 
   if ( wipeStartTic >= wipeStopTic ) {

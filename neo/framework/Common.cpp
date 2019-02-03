@@ -92,7 +92,7 @@ idCVar com_memoryMarker("com_memoryMarker", "-1", CVAR_INTEGER | CVAR_SYSTEM | C
                         "used as a marker for memory stats");
 idCVar com_preciseTic("com_preciseTic", "1", CVAR_BOOL | CVAR_SYSTEM, "run one game tick every async thread update");
 idCVar com_asyncInput("com_asyncInput", "0", CVAR_BOOL | CVAR_SYSTEM, "sample input from the async thread");
-idCVar com_asyncSound("com_asyncSound", "3", CVAR_INTEGER | CVAR_SYSTEM,
+idCVar com_asyncSound("com_asyncSound", "0", CVAR_INTEGER | CVAR_SYSTEM,
                       "0: mix sound inline, 1: memory mapped async mix, 2: callback mixing, 3: write async mix");
 idCVar com_forceGenericSIMD("com_forceGenericSIMD", "0", CVAR_BOOL | CVAR_SYSTEM | CVAR_NOCHEAT,
                             "force generic platform independent SIMD");
@@ -126,7 +126,7 @@ int time_backend;            // renderSystem backend time
 
 int com_frameTime;            // time for the current frame in milliseconds
 int com_frameNumber;        // variable frame number
-volatile int com_ticNumber;            // 60 hz tics
+/*volatile */int com_ticNumber;            // 60 hz tics
 int com_editors;            // currently opened editor(s)
 bool com_editorActive;        //  true if an editor has focus
 
@@ -2098,7 +2098,7 @@ void idCommonLocal::PrintLoadingMessage(const char* msg) {
   renderSystem->EndFrame(NULL, NULL);
 
 #ifdef __EMSCRIPTEN__
-  // Yields to the browser immediately so that the Loading Screen can be displayed on the canvas
+  // Yield case: local graphics update outside of the main loop
   emscripten_sleep_with_yield(0);
 #endif
 }
@@ -2127,14 +2127,6 @@ void idCommonLocal::Frame(void) {
   try {
 #endif
 
-#ifdef NOMT
-  // In single threaded mode, manually call the async timer update code at each frame
-  common->Async();
-
-  // D3WASM: Disable background download thread for now (not really used)
-  //fileSystem->RunThread();
-#endif
-
   // pump all the events
   Sys_GenerateEvents();
 
@@ -2151,6 +2143,14 @@ void idCommonLocal::Frame(void) {
 #endif
 
   eventLoop->RunEventLoop();               // EMTERPRETIFY function (might yields)
+
+#ifdef NOMT
+    // In single threaded mode, manually call the async timer update code at each frame
+    common->Async();
+
+    // D3WASM: Disable background download thread for now (not really used)
+    //fileSystem->RunThread();
+#endif
 
   com_frameTime = com_ticNumber * USERCMD_MSEC;
 
@@ -2202,14 +2202,14 @@ EMSCRIPTEN Note: This is an EMTERPRETIFY function
 =================
 */
 void idCommonLocal::GUIFrame(bool execCmd, bool network) {
+  Sys_GenerateEvents();
+  eventLoop->RunEventLoop(execCmd);    // EMTERPRETIFY function (might yields)
+
 #ifdef NOMT
   // In Single Threaded mode manually update the async timer here, as com_ticNumber is used locally
   // This is to try to get things correctly in sync
   common->Async();
 #endif
-
-  Sys_GenerateEvents();
-  eventLoop->RunEventLoop(execCmd);    // EMTERPRETIFY function (might yields)
 
   com_frameTime = com_ticNumber * USERCMD_MSEC;
   if ( network ) {
@@ -2818,6 +2818,7 @@ void idCommonLocal::InitGame(void) {
 
         while (f == NULL) {
           // Wait for the next chunk to be loaded
+				  // Yield case: local graphics update outside of main loop
           emscripten_sleep_with_yield(333);
 
           f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
