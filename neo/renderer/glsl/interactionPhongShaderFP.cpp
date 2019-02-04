@@ -45,7 +45,6 @@ uniform sampler2D u_fragmentMap4; // u_specularTexture
   
 void main(void)
 {
-  
   vec3 L = normalize(var_L);
   vec3 V = normalize(var_V);
   vec3 N = normalize(2.0 * texture2D(u_fragmentMap0, var_TexNormal.st).agb - 1.0);

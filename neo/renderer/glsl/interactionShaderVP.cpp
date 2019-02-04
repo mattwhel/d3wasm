@@ -42,7 +42,7 @@ uniform vec4 u_diffuseMatrixS;
 uniform vec4 u_diffuseMatrixT;
 uniform vec4 u_specularMatrixS;
 uniform vec4 u_specularMatrixT;
-  
+
 // Out
 // gl_Position
 varying vec2 var_TexDiffuse;
@@ -78,7 +78,7 @@ void main(void)
   var_L = L * M;
   var_H = H * M;
   
-  var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd, u_colorAdd, u_colorAdd, u_colorAdd);
+  var_Color = (attr_Color * u_colorModulate) + vec4(u_colorAdd);
   
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
