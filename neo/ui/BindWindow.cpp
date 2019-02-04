@@ -67,7 +67,11 @@ const char *idBindWindow::HandleEvent(const sysEvent_t *event, bool *updateVisua
 
 	if (waitingOnKey) {
 		waitingOnKey = false;
-		if (key == K_ESCAPE) {
+#ifdef __EMSCRIPTEN__
+    if ( key == K_HOME ) {
+#else
+    if ( key == K_ESCAPE ) {
+#endif
 			idStr::snPrintf( ret, sizeof( ret ), "clearbind \"%s\"", bindName.GetName());
 		} else {
 			idStr::snPrintf( ret, sizeof( ret ), "bind %i \"%s\"", key, bindName.GetName());

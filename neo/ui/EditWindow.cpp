@@ -227,8 +227,11 @@ const char *idEditWindow::HandleEvent(const sysEvent_t *event, bool *updateVisua
 			RunScript( ON_ENTER );
 			return cmd;
 		}
-
-		if ( key == K_ESCAPE ) {
+#ifdef __EMSCRIPTEN__
+    if ( key == K_HOME ) {
+#else
+    if ( key == K_ESCAPE ) {
+#endif
 			RunScript( ON_ESC );
 			return cmd;
 		}
@@ -354,7 +357,11 @@ const char *idEditWindow::HandleEvent(const sysEvent_t *event, bool *updateVisua
 			return ret;
 		}
 
-		if ( key == K_HOME ) {
+#ifdef __EMSCRIPTEN__
+    if ( key == K_HOME ) {
+#else
+    if ( key == K_ESCAPE ) {
+#endif
 			if ( idKeyInput::IsDown( K_CTRL ) || cursorLine <= 0 || ( cursorLine >= breaks.Num() ) ) {
 				cursorPos = 0;
 			} else {
@@ -411,7 +418,7 @@ const char *idEditWindow::HandleEvent(const sysEvent_t *event, bool *updateVisua
 			return cmd;
 		}
 
-		if ( key == K_ESCAPE ) {
+		if ( key == K_HOME ) {
 			RunScript( ON_ESC );
 			return cmd;
 		}

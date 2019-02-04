@@ -889,8 +889,12 @@ const char *idWindow::HandleEvent(const sysEvent_t *event, bool *updateVisuals) 
 						}
 					}
 				}
-			} else if (event->evValue == K_ESCAPE && event->evValue2) {
-				if (GetFocusedChild()) {
+#ifdef __EMSCRIPTEN__
+			} else if (event->evValue == K_HOME && event->evValue2) {
+#else
+      } else if (event->evValue == K_ESCAPE && event->evValue2) {
+#endif
+			  if (GetFocusedChild()) {
 					const char *childRet = GetFocusedChild()->HandleEvent(event, updateVisuals);
 					if (childRet && *childRet) {
 						return childRet;
