@@ -22,8 +22,8 @@ const char * const zfillClipShaderVP = R"(
 precision mediump float;
         
 // In
-attribute vec4 attr_TexCoord;
 attribute highp vec4 attr_Vertex;
+attribute vec4 attr_TexCoord;
         
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
