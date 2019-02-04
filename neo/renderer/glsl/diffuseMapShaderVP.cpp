@@ -41,7 +41,7 @@ void main(void)
 {
   var_TexCoord = u_textureMatrix * attr_TexCoord;
   
-  var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd, u_colorAdd, u_colorAdd, u_colorAdd);
+  var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd);
   
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }

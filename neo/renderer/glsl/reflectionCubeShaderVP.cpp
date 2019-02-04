@@ -44,8 +44,8 @@ void main(void)
                                             // This suppose the modelView matrix is orthogonal
                                             // Otherwise, we should use the inverse transpose
                                             u_modelViewMatrix * vec4(attr_TexCoord.xyz,0.0) ) ;
-    
-  var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd, u_colorAdd, u_colorAdd, u_colorAdd);
+
+  var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd);
     
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
