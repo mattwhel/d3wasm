@@ -22,15 +22,15 @@ const char * const diffuseMapShaderVP = R"(
 precision mediump float;
   
 // In
+attribute highp vec4 attr_Vertex;
 attribute lowp vec4 attr_Color;
 attribute vec4 attr_TexCoord;
-attribute highp vec4 attr_Vertex;
   
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_textureMatrix;
-uniform lowp float u_colorAdd;
-uniform lowp float u_colorModulate;
+uniform float u_colorAdd;
+uniform float u_colorModulate;
   
 // Out
 // gl_Position
@@ -42,8 +42,12 @@ void main(void)
   vec4 tc = u_textureMatrix * attr_TexCoord;
   var_TexCoord = tc.xy / tc.w;
 
-  var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd);
-  
+  if (u_colorModulate == 0.0) {
+    var_Color = vec4(u_colorAdd);
+  } else {
+    var_Color = (attr_Color * u_colorModulate) + vec4(u_colorAdd);
+  }
+
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
 )";

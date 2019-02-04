@@ -22,18 +22,18 @@ const char * const interactionShaderVP = R"(
 precision mediump float;
   
 // In
+attribute highp vec4 attr_Vertex;
+attribute lowp vec4 attr_Color;
 attribute vec4 attr_TexCoord;
 attribute vec3 attr_Tangent;
 attribute vec3 attr_Bitangent;
 attribute vec3 attr_Normal;
-attribute highp vec4 attr_Vertex;
-attribute lowp vec4 attr_Color;
-  
+
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_lightProjection;
-uniform lowp float u_colorModulate;
-uniform lowp float u_colorAdd;
+uniform float u_colorModulate;
+uniform float u_colorAdd;
 uniform vec4 u_lightOrigin;
 uniform vec4 u_viewOrigin;
 uniform vec4 u_bumpMatrixS;
@@ -77,8 +77,12 @@ void main(void)
   
   var_L = L * M;
   var_H = H * M;
-  
-  var_Color = (attr_Color * u_colorModulate) + vec4(u_colorAdd);
+
+  if (u_colorModulate == 0.0) {
+    var_Color = vec4(u_colorAdd);
+  } else {
+    var_Color = (attr_Color * u_colorModulate) + vec4(u_colorAdd);
+  }
   
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
