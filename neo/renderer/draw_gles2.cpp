@@ -278,20 +278,19 @@ static void RB_GLSL_GetUniformLocations(shaderProgram_t* shader) {
     GL_UniformMatrix4fv(offsetof(shaderProgram_t, textureMatrix), mat4_identity.ToFloatPtr());
   }
 
+  static const GLfloat one[1] = { 1.0f };
   if (shader->alphaTest >= 0) {
     // Alpha test always pass by default
-    static const GLfloat one[1] = { 1 };
     GL_Uniform1fv(offsetof(shaderProgram_t, alphaTest), one);
   }
 
   if (shader->colorModulate >= 0) {
-    static const GLfloat oneScaled[1] = { 1 / 255.0f };
-    GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+    static const GLfloat zero[1] = { 0.0f };
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
   }
 
   if (shader->colorAdd >= 0) {
-    static const GLfloat zero[1] = { 0 };
-    GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
   }
 
   GL_CheckErrors();
@@ -528,17 +527,19 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   GL_Uniform4fv(offsetof(shaderProgram_t, specularMatrixT), din->specularMatrix[1].ToFloatPtr());
 
   switch ( din->vertexColor ) {
-    default:
-    case SVC_MODULATE:
-      // Default values already set (oneScaled, zero), as it is the most common case
+    case SVC_MODULATE: {
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+      GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
       break;
-    case SVC_INVERSE_MODULATE:
+    }
+    case SVC_INVERSE_MODULATE: {
       GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), negOneScaled);
       GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
       break;
+    }
+    default:
     case SVC_IGNORE:
-      GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
-      GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
+      // This is already the default values (zero, one)
       break;
   }
 
@@ -575,9 +576,9 @@ static void RB_GLSL_DrawInteraction(const drawInteraction_t* din) {
   RB_DrawElementsWithCounters(din->surf->geo);
 
   // Restore color modulation state to default values
-  if ( din->vertexColor != SVC_MODULATE ) {
-    GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
-    GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+  if ( din->vertexColor != SVC_IGNORE ) {
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
+    GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
   }
 }
 
@@ -1953,17 +1954,19 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
 
       // Setup the Color modulation
       switch ( pStage->vertexColor ) {
-        default:
-        case SVC_MODULATE:
-          // This is already the default values
+        case SVC_MODULATE: {
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
+          GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
           break;
-        case SVC_INVERSE_MODULATE:
+        }
+        case SVC_INVERSE_MODULATE: {
           GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), negOneScaled);
           GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
           break;
+        }
+        default:
         case SVC_IGNORE:
-          GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
-          GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
+          // This is already the default values (zero, one)
           break;
       }
 
@@ -2037,9 +2040,9 @@ void RB_GLSL_T_RenderShaderPasses(const drawSurf_t* surf, const float mvp[16]) {
       }
 
       // Restore color modulation state to default values
-      if ( pStage->vertexColor != SVC_MODULATE ) {
-        GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), oneScaled);
-        GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), zero);
+      if ( pStage->vertexColor != SVC_IGNORE ) {
+        GL_Uniform1fv(offsetof(shaderProgram_t, colorModulate), zero);
+        GL_Uniform1fv(offsetof(shaderProgram_t, colorAdd), one);
       }
 
       // Don't touch the rest, as this will either reset by the next stage, or handled by end of this method
