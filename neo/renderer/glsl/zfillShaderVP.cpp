@@ -31,11 +31,12 @@ uniform mat4 u_textureMatrix;
         
 // Out
 // gl_Position
-varying vec4 var_TexDiffuse;
+varying vec2 var_TexDiffuse;
         
 void main(void)
 {
-  var_TexDiffuse = u_textureMatrix * attr_TexCoord;
+  vec4 tc = u_textureMatrix * attr_TexCoord;
+  var_TexDiffuse = tc.xy / tc. w;
         
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }

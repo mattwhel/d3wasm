@@ -32,14 +32,15 @@ uniform vec4 u_clipPlane;
         
 // Out
 // gl_Position
-varying vec4 var_TexDiffuse;
+varying vec2 var_TexDiffuse;
 varying vec2 var_TexClip;
         
 void main(void)
 {
   var_TexClip = vec2( dot( u_clipPlane, attr_Vertex), 0 );
-        
-  var_TexDiffuse = (u_textureMatrix * attr_TexCoord);
+
+  vec4 tc = (u_textureMatrix * attr_TexCoord);
+  var_TexDiffuse = tc.xy / tc.w;
         
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }

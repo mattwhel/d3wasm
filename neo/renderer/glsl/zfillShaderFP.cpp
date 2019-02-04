@@ -22,7 +22,7 @@ const char * const zfillShaderFP = R"(
 precision mediump float;
         
 // In
-varying vec4 var_TexDiffuse;
+varying vec2 var_TexDiffuse;
         
 // Uniforms
 uniform sampler2D u_fragmentMap0;
@@ -34,7 +34,7 @@ uniform lowp vec4 u_glColor;
         
 void main(void)
 {
-  if (u_alphaTest > texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w).a) {
+  if (u_alphaTest > texture2D(u_fragmentMap0, var_TexDiffuse).a) {
     discard;
   }
         

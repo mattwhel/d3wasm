@@ -22,7 +22,7 @@ const char * const zfillClipShaderFP = R"(
 precision mediump float;
         
 // In
-varying vec4 var_TexDiffuse;
+varying vec2 var_TexDiffuse;
 varying vec2 var_TexClip;
         
 // Uniforms
@@ -36,7 +36,7 @@ uniform lowp vec4 u_glColor;
         
 void main(void)
 {
-  if (u_alphaTest > (texture2D(u_fragmentMap0, var_TexDiffuse.xy / var_TexDiffuse.w).a * texture2D(u_fragmentMap1, var_TexClip).a) ) {
+  if (u_alphaTest > (texture2D(u_fragmentMap0, var_TexDiffuse).a * texture2D(u_fragmentMap1, var_TexClip).a) ) {
     discard;
   }
         
