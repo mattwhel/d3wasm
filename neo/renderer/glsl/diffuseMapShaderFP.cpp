@@ -22,7 +22,7 @@ const char * const diffuseMapShaderFP = R"(
 precision mediump float;
 
 // In
-varying vec4 var_TexCoord;
+varying vec2 var_TexCoord;
 varying lowp vec4 var_Color;
 
 // Uniforms
@@ -34,6 +34,6 @@ uniform lowp vec4 u_glColor;
 
 void main(void)
 {
-  gl_FragColor = texture2D(u_fragmentMap0, var_TexCoord.xy / var_TexCoord.w) * u_glColor * var_Color;
+  gl_FragColor = texture2D(u_fragmentMap0, var_TexCoord) * u_glColor * var_Color;
 }
 )";

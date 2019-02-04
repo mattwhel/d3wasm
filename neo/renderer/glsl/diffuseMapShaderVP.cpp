@@ -34,13 +34,14 @@ uniform lowp float u_colorModulate;
   
 // Out
 // gl_Position
-varying vec4 var_TexCoord;
+varying vec2 var_TexCoord;
 varying lowp vec4 var_Color;
   
 void main(void)
 {
-  var_TexCoord = u_textureMatrix * attr_TexCoord;
-  
+  vec4 tc = u_textureMatrix * attr_TexCoord;
+  var_TexCoord = tc.xy / tc.w;
+
   var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd);
   
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;

@@ -34,12 +34,12 @@ uniform vec4 u_viewOrigin;
   
 // Out
 // gl_Position
-varying vec4 var_TexCoord;
+varying vec3 var_TexCoord;
 varying lowp vec4 var_Color;
   
 void main(void)
 {
-  var_TexCoord = u_textureMatrix * (attr_Vertex - u_viewOrigin);
+  var_TexCoord = (u_textureMatrix * (attr_Vertex - u_viewOrigin)).xyz;
 
   var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd);
     

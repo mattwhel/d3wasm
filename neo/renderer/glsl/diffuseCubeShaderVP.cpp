@@ -34,12 +34,12 @@ uniform lowp float u_colorModulate;
   
 // Out
 // gl_Position
-varying vec4 var_TexCoord;
+varying vec3 var_TexCoord;
 varying lowp vec4 var_Color;
   
 void main(void)
 {
-  var_TexCoord = u_textureMatrix * vec4(attr_TexCoord.xyz, 0.0);
+  var_TexCoord = (u_textureMatrix * vec4(attr_TexCoord.xyz, 0.0)).xyz;
 
   var_Color = attr_Color * u_colorModulate + vec4(u_colorAdd);
   
