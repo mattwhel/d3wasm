@@ -2400,8 +2400,8 @@ void RB_GLSL_FogAllLights(void) {
 
   // Re-enable TexCoord array
   // Re-enable Color array
-  GL_DisableVertexAttribArray(ATTR_TEXCOORD);
-  GL_DisableVertexAttribArray(ATTR_COLOR);
+  GL_EnableVertexAttribArray(ATTR_TEXCOORD);
+  GL_EnableVertexAttribArray(ATTR_COLOR);
 
   // Re-enable Stencil Test
   qglEnable(GL_STENCIL_TEST);
