@@ -31,7 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include <AL/al.h>
 #include <AL/alc.h>
-#ifdef __EMSCRIPTEN__
+#ifdef NOEFX
 #else
 #include <AL/alext.h>
 #endif
@@ -532,6 +532,10 @@ public:
 	virtual void			UnPause( void );
 	virtual bool			IsPaused( void );
 
+	// D3Wasm Note: AVI playback/recording have been removed
+	// virtual void			AVIOpen( const char *path, const char *name );
+	// virtual void			AVIClose( void );
+
 	// SaveGame Support
 	virtual void			WriteToSaveGame( idFile *savefile );
 	virtual void			ReadFromSaveGame( idFile *savefile );
@@ -718,7 +722,6 @@ public:
 	LPALDELETEAUXILIARYEFFECTSLOTS	alDeleteAuxiliaryEffectSlots;
 	LPALISAUXILIARYEFFECTSLOT		alIsAuxiliaryEffectSlot;
 	LPALAUXILIARYEFFECTSLOTI		alAuxiliaryEffectSloti;
-#endif
 
 	idEFXFile				EFXDatabase;
 	bool					efxloaded;
@@ -726,6 +729,7 @@ public:
 	static bool				useEFXReverb;
 							// mark available during initialization, or through an explicit test
 	static int				EFXAvailable;
+#endif
 
 	static idCVar			s_noSound;
 	static idCVar			s_device;

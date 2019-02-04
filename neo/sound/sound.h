@@ -241,6 +241,10 @@ public:
 	virtual void			UnPause( void ) = 0;
 	virtual bool			IsPaused( void ) = 0;
 
+  // D3Wasm Note: AVI playback/recording have been removed
+  //virtual void			AVIOpen( const char *path, const char *name ) = 0;
+	//virtual void			AVIClose( void ) = 0;
+
 	// SaveGame / demo Support
 	virtual void			WriteToSaveGame( idFile *savefile ) = 0;
 	virtual void			ReadFromSaveGame( idFile *savefile ) = 0;

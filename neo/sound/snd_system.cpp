@@ -64,17 +64,15 @@ idCVar idSoundSystemLocal::s_reverbTime( "s_reverbTime", "1000", CVAR_SOUND | CV
 idCVar idSoundSystemLocal::s_reverbFeedback( "s_reverbFeedback", "0.333", CVAR_SOUND | CVAR_FLOAT, "" );
 idCVar idSoundSystemLocal::s_enviroSuitVolumeScale( "s_enviroSuitVolumeScale", "0.9", CVAR_SOUND | CVAR_FLOAT, "" );
 idCVar idSoundSystemLocal::s_skipHelltimeFX( "s_skipHelltimeFX", "0", CVAR_SOUND | CVAR_BOOL, "" );
-
-#if !defined(NOEFX)
-idCVar idSoundSystemLocal::s_useEAXReverb( "s_useEAXReverb", "1", CVAR_SOUND | CVAR_BOOL | CVAR_ARCHIVE, "use EFX reverb" );
 idCVar idSoundSystemLocal::s_decompressionLimit( "s_decompressionLimit", "6", CVAR_SOUND | CVAR_INTEGER | CVAR_ARCHIVE, "specifies maximum uncompressed sample length in seconds" );
-#else
-idCVar idSoundSystemLocal::s_useEAXReverb( "s_useEAXReverb", "0", CVAR_SOUND | CVAR_BOOL | CVAR_ROM, "EFX not available in this build" );
-idCVar idSoundSystemLocal::s_decompressionLimit( "s_decompressionLimit", "6", CVAR_SOUND | CVAR_INTEGER | CVAR_ROM, "specifies maximum uncompressed sample length in seconds" );
-#endif
 
+#ifdef NOEFX
+idCVar idSoundSystemLocal::s_useEAXReverb( "s_useEAXReverb", "0", CVAR_SOUND | CVAR_BOOL | CVAR_ROM, "EFX not available in this build" );
+#else
+idCVar idSoundSystemLocal::s_useEAXReverb( "s_useEAXReverb", "1", CVAR_SOUND | CVAR_BOOL | CVAR_ARCHIVE, "use EFX reverb" );
 bool idSoundSystemLocal::useEFXReverb = false;
 int idSoundSystemLocal::EFXAvailable = -1;
+#endif
 
 idSoundSystemLocal	soundSystemLocal;
 idSoundSystem	*soundSystem  = &soundSystemLocal;
@@ -362,8 +360,6 @@ void idSoundSystemLocal::Init() {
 
 #ifdef NOEFX
 	common->Printf( "OpenAL: EFX extension not found\n" );
-	EFXAvailable = 0;
-	idSoundSystemLocal::s_useEAXReverb.SetBool( false );
 #else
 	// try to obtain EFX extensions
 	if (alcIsExtensionPresent(openalDevice, "ALC_EXT_EFX")) {
@@ -437,8 +433,11 @@ void idSoundSystemLocal::Init() {
 	// adjust source count to allow for at least eight stereo sounds to play
 	openalSourceCount -= 8;
 
+#ifdef NOEFX
+#else
 	useEFXReverb = idSoundSystemLocal::s_useEAXReverb.GetBool();
 	efxloaded = false;
+#endif
 
 	cmdSystem->AddCommand( "listSounds", ListSounds_f, CMD_FL_SOUND, "lists all sounds" );
 	cmdSystem->AddCommand( "listSoundDecoders", ListSoundDecoders_f, CMD_FL_SOUND, "list active sound decoders" );
@@ -455,10 +454,13 @@ idSoundSystemLocal::Shutdown
 void idSoundSystemLocal::Shutdown() {
 	ShutdownHW();
 
+#ifdef NOEFX
+#else
 	// EFX or not, the list needs to be cleared
 	EFXDatabase.Clear();
 
 	efxloaded = false;
+#endif
 
 	// adjust source count back up to allow for freeing of all resources
 	openalSourceCount += 8;
@@ -1018,10 +1020,13 @@ void idSoundSystemLocal::BeginLevelLoad() {
 	}
 	soundCache->BeginLevelLoad();
 
+#ifdef NOEFX
+#else
 	if ( efxloaded ) {
 		EFXDatabase.Clear();
 		efxloaded = false;
 	}
+#endif
 }
 
 /*
@@ -1035,6 +1040,9 @@ void idSoundSystemLocal::EndLevelLoad( const char *mapstring ) {
 	}
 	soundCache->EndLevelLoad();
 
+#ifdef NOEFX
+	return;
+#else
 	if (!useEFXReverb)
 		return;
 
@@ -1052,6 +1060,7 @@ void idSoundSystemLocal::EndLevelLoad( const char *mapstring ) {
 	} else {
 		common->Printf("sound: missing %s\n", efxname.c_str() );
 	}
+#endif
 }
 
 /*
@@ -1327,5 +1336,9 @@ idSoundSystemLocal::IsEFXAvailable
 ===============
 */
 int idSoundSystemLocal::IsEFXAvailable( void ) {
+#ifdef NOEFX
+  return -1;
+#else
 	return EFXAvailable;
+#endif
 }
