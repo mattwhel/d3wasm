@@ -331,9 +331,9 @@ static int vidModeCmp(const void* vm1, const void* vm2)
 	const vidModePtr* v1 = static_cast<const vidModePtr*>(vm1);
 	const vidModePtr* v2 = static_cast<const vidModePtr*>(vm2);
 
-	// sort primarily by width, secondarily by height
-	int wdiff = v1->vidMode->width - v2->vidMode->width;
-	return (wdiff != 0) ? wdiff : (v1->vidMode->height - v2->vidMode->height);
+	// D3Wasm: sort primarily by height, secondarily by width
+	int wdiff = v1->vidMode->height - v2->vidMode->height;
+	return (wdiff != 0) ? wdiff : (v1->vidMode->width - v2->vidMode->width);
 }
 
 static void initSortedVidModes()
