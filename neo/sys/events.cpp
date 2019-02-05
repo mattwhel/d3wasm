@@ -421,8 +421,14 @@ sysEvent_t Sys_GetEvent() {
 
 		case SDL_KEYDOWN:
 			if (ev.key.keysym.sym == SDLK_RETURN && (ev.key.keysym.mod & KMOD_ALT) > 0) {
-				//cvarSystem->SetCVarBool("r_fullscreen", !renderSystem->IsFullScreen());
-				//PushConsoleEvent("vid_restart");
+#ifdef __EMSCRIPTEN__
+			  // Don't try to handle fullscreen from game on emscripten
+        // Nevertheless restart video
+        PushConsoleEvent("vid_restart");
+#else
+        cvarSystem->SetCVarBool("r_fullscreen", !renderSystem->IsFullScreen());
+        PushConsoleEvent("vid_restart");
+#endif
 				return res_none;
 			}
 
