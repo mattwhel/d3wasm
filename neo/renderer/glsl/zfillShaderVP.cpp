@@ -35,9 +35,8 @@ varying vec2 var_TexDiffuse;
         
 void main(void)
 {
-  vec4 tc = u_textureMatrix * attr_TexCoord;
-  var_TexDiffuse = tc.xy / tc.w;
-        
+  var_TexDiffuse = (u_textureMatrix * attr_TexCoord).xy;  // Homogeneous coordinates of textureMatrix supposed to be 1
+
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
 )";

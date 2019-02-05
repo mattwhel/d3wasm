@@ -29,8 +29,8 @@ attribute vec4 attr_TexCoord;
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_textureMatrix;
-uniform float u_colorAdd;
-uniform float u_colorModulate;
+uniform lowp float u_colorAdd;
+uniform lowp float u_colorModulate;
   
 // Out
 // gl_Position
@@ -39,8 +39,7 @@ varying lowp vec4 var_Color;
   
 void main(void)
 {
-  vec4 tc = u_textureMatrix * attr_TexCoord;
-  var_TexCoord = tc.xy / tc.w;
+  var_TexCoord = (u_textureMatrix * attr_TexCoord).xy;  // Homogeneous coordinates of textureMatrix supposed to be 1
 
   if (u_colorModulate == 0.0) {
     var_Color = vec4(u_colorAdd);

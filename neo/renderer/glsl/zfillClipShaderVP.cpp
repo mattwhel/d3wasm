@@ -37,11 +37,10 @@ varying vec2 var_TexClip;
         
 void main(void)
 {
-  var_TexClip = vec2( dot( u_clipPlane, attr_Vertex), 0 );
+  var_TexDiffuse = (u_textureMatrix * attr_TexCoord).xy;  // Homogeneous coordinates of textureMatrix supposed to be 1
 
-  vec4 tc = u_textureMatrix * attr_TexCoord;
-  var_TexDiffuse = tc.xy / tc.w;
-        
+  var_TexClip = vec2( dot( u_clipPlane, attr_Vertex), 0.5 );
+
   gl_Position = u_modelViewProjectionMatrix * attr_Vertex;
 }
 )";

@@ -26,7 +26,7 @@ attribute highp vec4 attr_Vertex;
         
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
-uniform highp vec4 u_lightOrigin;
+uniform vec4 u_lightOrigin;
         
 // Out
 // gl_Position

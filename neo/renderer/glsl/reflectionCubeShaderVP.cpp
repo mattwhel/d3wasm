@@ -30,8 +30,8 @@ attribute vec3 attr_TexCoord;
 uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_modelViewMatrix;
 uniform mat4 u_textureMatrix;
-uniform float u_colorAdd;
-uniform float u_colorModulate;
+uniform lowp float u_colorAdd;
+uniform lowp float u_colorModulate;
   
 // Out
 // gl_Position

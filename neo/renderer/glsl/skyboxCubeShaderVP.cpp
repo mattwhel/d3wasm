@@ -28,8 +28,8 @@ attribute lowp vec4 attr_Color;
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_textureMatrix;
-uniform float u_colorAdd;
-uniform float u_colorModulate;
+uniform lowp float u_colorAdd;
+uniform lowp float u_colorModulate;
 uniform vec4 u_viewOrigin;
   
 // Out

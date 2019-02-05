@@ -32,8 +32,8 @@ attribute vec3 attr_Normal;
 // Uniforms
 uniform highp mat4 u_modelViewProjectionMatrix;
 uniform mat4 u_lightProjection;
-uniform float u_colorModulate;
-uniform float u_colorAdd;
+uniform lowp float u_colorModulate;
+uniform lowp float u_colorAdd;
 uniform vec4 u_lightOrigin;
 uniform vec4 u_viewOrigin;
 uniform vec4 u_bumpMatrixS;
