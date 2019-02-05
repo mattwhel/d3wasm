@@ -157,8 +157,7 @@
     <div id="title">
         <b><a href="http://www.continuation-labs.com/projects/d3wasm" style="color: rgb(128,128,255)">D3wasm</a></b> -
         An experimental port of <a href="https://en.wikipedia.org/wiki/Id_Tech_4" style="color: rgb(200,200,200)">id Tech 4</a> engine to
-        <a href="https://en.wikipedia.org/wiki/WebAssembly" style="color: rgb(200,200,200)">WebAssembly</a> and
-        <a href="https://en.wikipedia.org/wiki/WebGL" style="color: rgb(200,200,200)">WebGL</a>
+        <a href="https://en.wikipedia.org/wiki/WebAssembly" style="color: rgb(200,200,200)">WebAssembly</a>
     </div>
     <div id="buttons">
         <input type="button" value="Fullscreen" onclick="Module.requestFullscreen(true, false)"></input>
@@ -185,13 +184,15 @@
     </div>
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
 </div>
-<div class="emscripten" style="text-align: justify; margin:auto; width: 75%">
-    Disclaimer: <br>The D3wasm project and this online demonstration are in no way associated with or supported by ID Software,
+<div class="emscripten" id="infos" style="display: none">
+    All information about this port, including purposes, source code, technical details, and legal info can be found on the <a href="http://www.continuation-labs.com/projects/d3wasm">project</a> page.
+</div>
+<div class="emscripten" id="disclaimer" style="text-align: justify; margin:auto; width: 75%; display: none">
+    <br>Disclaimer: <br>The D3wasm project and this online demonstration are in no way associated with or supported by ID Software,
     Bethesda Softworks or ZeniMax Media. Doom 3 and Doom 3 Demo are registered trademarks of ZeniMax Media. All Rights Reserved.
     <br><br>
     The D3wasm source code is a derivative work of the General Public License source code release of Doom 3.
     <br><br>
-    All information about this port, including purposes, source code, technical details, and Doom 3 Demo license can be found on the <a href="http://www.continuation-labs.com/projects/d3wasm">project</a> page.
 </div>
 
 <!--<textarea id="output" rows="8"></textarea> -->
@@ -210,9 +211,20 @@
     }
   }
 
+  function showDisclaimer() {
+    var infosElement = document.getElementById('infos');
+    if (infosElement.style.display != "block") {
+      infosElement.style.display = "block";
+    }
+    var disclaimerElement = document.getElementById('disclaimer');
+    if (disclaimerElement.style.display != "block") {
+      disclaimerElement.style.display = "block";
+    }
+  }
+
   var Module = {
     preRun: [],
-    postRun: [],
+    postRun: [showDisclaimer],
     print: (function () {
       var element = document.getElementById('output');
       if (element) element.value = ''; // clear browser cache
