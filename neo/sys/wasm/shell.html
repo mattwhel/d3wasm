@@ -108,6 +108,7 @@
             position: absolute;
             background-color: black;
             right: 10px;
+            top:   10px;
             border-width: 1px;
             border-color: gray;
             border-style: solid;
@@ -260,6 +261,12 @@
 
       return canvas;
     })(),
+    hideStatus: function() {
+      statusElement.style.display = "none";
+    },
+    showStatus: function() {
+      statusElement.style.display = "inline-block";
+    },
     setStatus: function (text) {
       if (!Module.setStatus.last) Module.setStatus.last = {time: Date.now(), text: ''};
       if (text === Module.setStatus.last.text) return;
@@ -286,6 +293,12 @@
     monitorRunDependencies: function (left) {
       this.totalDependencies = Math.max(this.totalDependencies, left);
       Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+      if (!left) {
+        Module.hideStatus();
+      }
+      else {
+        Module.showStatus();
+      }
     }
   };
   Module.setStatus('Downloading...');
