@@ -206,7 +206,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   #set(ldflags "${ldflags} -s MODULARIZE=1")
   #set(ldflags "${ldflags} --closure 1")
-  set(ldflags "${ldflags} --llvm-lto 3")
+  #set(ldflags "${ldflags} --llvm-lto 3")
   set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=js")
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
   set(ldflags "${ldflags} -s EMTERPRETIFY=1")
