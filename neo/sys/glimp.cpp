@@ -88,8 +88,12 @@ bool GLimp_Init(glimpParms_t parms) {
 
   Uint32 flags = SDL_WINDOW_OPENGL;
 
+#ifdef __EMSCRIPTEN__
+  // Fullscreen disabled for now
+#else
   if (parms.fullScreen)
     flags |= SDL_WINDOW_FULLSCREEN;
+#endif
 
   int colorbits = 24;
   int depthbits = 24;
