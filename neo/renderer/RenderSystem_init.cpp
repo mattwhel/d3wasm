@@ -253,35 +253,26 @@ typedef struct vidmode_s {
 } vidmode_t;
 
 vidmode_t r_vidModes[] = {
-	{ "Mode  0: 320x240",		320,	240 },
-	{ "Mode  1: 400x300",		400,	300 },
-	{ "Mode  2: 512x384",		512,	384 },
-	{ "Mode  3: 640x480",		640,	480 },
-  { "Mode  4: 800x600",		800,	600 },
-  // GAB: usefull widescreen modes for web viewing
-  { "Mode  5: 960x640 (DVGA 3:2)",    960, 640 },
-  { "Mode  6: 1280x720 (WXGA-H 16:9)",	1280,	720 },
-  // Other classic D3 modes
-	{ "Mode  7: 1024x768",		1024,	768 },
-	{ "Mode  8: 1152x864",		1152,	864 },
-	{ "Mode  9: 1280x1024",		1280,	1024 },
-	{ "Mode  10: 1600x1200",	1600,	1200 },
-	// DG: from here on: modes I added.
-	{ "Mode 11: 1280x720",		1280,	720 },
-	{ "Mode 12: 1366x768",		1366,	768 },
-	{ "Mode 13: 1440x900",		1440,	900 },
-	{ "Mode 14: 1400x1050",		1400,	1050 },
-	{ "Mode 15: 1600x900",		1600,	900 },
-	{ "Mode 16: 1680x1050",		1680,	1050 },
-	{ "Mode 17: 1920x1080",		1920,	1080 },
-	{ "Mode 18: 1920x1200",		1920,	1200 },
-	{ "Mode 19: 2048x1152",		2048,	1152 },
-	{ "Mode 20: 2560x1600",		2560,	1600 },
-	{ "Mode 21: 3200x2400",		3200,	2400 },
-	{ "Mode 22: 3840x2160",		3840,   2160 },
-	{ "Mode 23: 4096x2304",		4096,   2304 },
-	{ "Mode 24: 2880x1800",		2880,   1800 },
-	{ "Mode 25: 2560x1440",		2560,   1440 },
+  // Useless modes (UI will not fit)
+	{ "Mode  0: 320x240",		 320,	240 },
+	{ "Mode  1: 400x300",		 400,	300 },
+	{ "Mode  2: 512x384",		 512,	384 },
+	// Usable modes (UI will be OK)
+	{ "Mode  3: 640x480",		 640,	480 },
+  { "Mode  4: 800x600",		 800,	600 },
+  { "Mode  5: 960x640",    960, 640 },
+  { "Mode  6: 1280x720",	1280,	720 },
+  { "Mode  7: 1024x768",	1024,	768 },
+  { "Mode  8: 1366x768",	1366,	768 },
+	{ "Mode  9: 1152x864",	1152,	864 },
+  { "Mode 10: 1440x900",	1440,	900 },
+  { "Mode 11: 1600x900",	1600,	900 },
+	{ "Mode 12: 1280x1024",	1280,	1024 },
+  { "Mode 13: 1400x1050",	1400,	1050 },
+  { "Mode 14: 1680x1050",	1680,	1050 },
+  { "Mode 15: 1920x1080",	1920,	1080 },
+	{ "Mode 16: 1600x1200",	1600,	1200 },
+	{ "Mode 17: 1920x1200",	1920,	1200 },
 };
 // DG: made this an enum so even stupid compilers accept it as array length below
 enum {	s_numVidModes = sizeof( r_vidModes ) / sizeof( r_vidModes[0] ) };
