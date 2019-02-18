@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 project(d3wasm)
+
+cmake_minimum_required(VERSION 3.0.0 FATAL_ERROR)
 
 # don't add these as options, but document them?
 # IDNET_HOST		-DIDNET_HOST=\\"%s\\"' % IDNET_HOST
@@ -7,19 +8,7 @@ project(d3wasm)
 # LIBC_MALLOC		-DUSE_LIBC_MALLOC=0
 # ID_NOLANADDRESS	-DID_NOLANADDRESS
 
-# fallback for cmake versions without add_compile_options
-if (NOT COMMAND add_compile_options)
-  function(add_compile_options)
-    foreach (arg ${ARGN})
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${arg}" PARENT_SCOPE)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${arg}" PARENT_SCOPE)
-    endforeach ()
-  endfunction()
-endif ()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/sys/cmake")
-
-set(CMAKE_SKIP_RPATH ON CACHE BOOL "Skip RPATH" FORCE)
 
 set(D3WASMBINARY "d3wasm")
 
@@ -130,6 +119,12 @@ else ()
   set(JPEG_LIBRARY jpeg)
   include_directories("renderer/libjpeg/")
 
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_VORBIS=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_OGG=1")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_ZLIB=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
+
   # fix for OpenAL include dir
   include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
 endif ()
@@ -191,11 +186,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_VORBIS=1")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_OGG=1")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
-
   include(sys/wasm/emwhitelist.cmake)
 
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
