@@ -116,6 +116,7 @@ else ()
   set(BUILD_EXECUTABLES OFF CACHE BOOL "" FORCE)
   set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
   add_subdirectory(renderer/libjpeg)
+  include_directories (${CMAKE_BINARY_DIR}/renderer/libjpeg)
   set(JPEG_LIBRARY jpeg)
   include_directories("renderer/libjpeg/")
 
