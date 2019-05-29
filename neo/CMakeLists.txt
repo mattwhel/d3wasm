@@ -25,13 +25,13 @@ option(NOEFX "Do not use OpenAL EFX" OFF)
 # Enforce some options for Emscripten
 if (EMSCRIPTEN)
   set(NOEFX ON)
-  set(NOMT ON)
+  set(NOMT  ON)
   set(NODLL ON)
   set(WEBGL ON)
   SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
 else ()
   set(NOEFX ON)
-  set(NOMT ON)
+  set(NOMT  ON)
   set(NODLL ON)
   set(WEBGL OFF)
 endif ()
@@ -110,20 +110,11 @@ if (NOT EMSCRIPTEN)
   list(APPEND CMAKE_REQUIRED_INCLUDES ${JPEG_INCLUDE_DIR})
   list(APPEND CMAKE_REQUIRED_LIBRARIES ${JPEG_LIBRARY})
 else ()
-  # Embedded libjpeg handling
-  # Be sure to init git submodules
-  set(BUILD_STATIC ON CACHE BOOL "" FORCE)
-  set(BUILD_EXECUTABLES OFF CACHE BOOL "" FORCE)
-  set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  add_subdirectory(renderer/libjpeg)
-  include_directories (${CMAKE_BINARY_DIR}/renderer/libjpeg)
-  set(JPEG_LIBRARY jpeg)
-  include_directories("renderer/libjpeg/")
-
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_VORBIS=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_OGG=1")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_ZLIB=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_LIBJPEG=1")
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -s USE_ZLIB=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
 
   # fix for OpenAL include dir
@@ -194,12 +185,9 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
   set(ldflags "${ldflags} -o d3wasm.html")
   #set(ldflags "${ldflags} --profiling-funcs")
-  set(ldflags "${ldflags} -s EXTRA_EXPORTED_RUNTIME_METHODS=[\"Pointer_stringify\"]")
-  set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
-  #set(ldflags "${ldflags} -s MODULARIZE=1")
-  #set(ldflags "${ldflags} --closure 1")
   #set(ldflags "${ldflags} --llvm-lto 3")
   set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=js")
+  set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")     # Needed because we use the file_packager (use FS.* functions)
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
   set(ldflags "${ldflags} -s EMTERPRETIFY=1")
   set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
@@ -213,8 +201,17 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s USE_ZLIB=1")
   set(ldflags "${ldflags} -s USE_VORBIS=1")
   set(ldflags "${ldflags} -s USE_OGG=1")
-  set(ldflags "${ldflags} -lopenal")
-  #set(ldflags "${ldflags} -s STRICT=1")
+  set(ldflags "${ldflags} -s USE_LIBJPEG=1")
+  set(ldflags "${ldflags} -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0") # Because of SDL2 port still use the deprecated behavior
+  #set(ldflags "${ldflags} -s STRICT=1") # can't enable this due to DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR that have to be 0
+  #nevertheless be explicit on the libs to link to in strict mode
+  set(ldflags "${ldflags} -lopenal.js") # OpenAL
+  set(ldflags "${ldflags} -lwebgl.js")  # WebGL (NB: USE_SDL=2 will automatically do this)
+  set(ldflags "${ldflags} -legl.js")    # EGL, because used internally by SDL2 (NB: USE_SDL=2 will automatically do this)
+  set(ldflags "${ldflags} -lfs.js")     # Filesystem core functionality
+  set(ldflags "${ldflags} -lmemfs.js")  # in-memory filesystem
+  set(ldflags "${ldflags} -lidbfs.js")  # in-memory filesystem + idb persistency (used in pre.js for "web_user" folder)
+  set(ldflags "${ldflags} -lsockfs.js") # needed internally by emscripten runtime because of libc socket implementation
 endif ()
 
 # fallback for cmake versions without GNUInstallDirs
