@@ -2099,7 +2099,7 @@ void idCommonLocal::PrintLoadingMessage(const char* msg) {
 
 #ifdef __EMSCRIPTEN__
   // Yield case: local graphics update outside of the main loop
-  emscripten_sleep_with_yield(0);
+  //emscripten_sleep_with_yield(0);
 #endif
 }
 
@@ -2819,7 +2819,7 @@ void idCommonLocal::InitGame(void) {
         while (f == NULL) {
           // Wait for the next chunk to be loaded
 				  // Yield case: local graphics update outside of main loop
-          emscripten_sleep_with_yield(333);
+          //emscripten_sleep_with_yield(333);
 
           f = fopen("/usr/local/share/d3wasm/base/demo_game00.pk4", "r");
         }

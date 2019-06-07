@@ -1878,7 +1878,7 @@ void idImageManager::EndLevelLoad() {
 			if ( ( loadCount & 15 ) == 0 ) {
 				session->PacifierUpdate();
 #ifdef __EMSCRIPTEN__
-				emscripten_sleep_with_yield(0);
+				//emscripten_sleep_with_yield(0);
 #endif
 			}
 		}
