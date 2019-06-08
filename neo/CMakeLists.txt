@@ -117,6 +117,8 @@ else ()
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -s USE_ZLIB=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
 
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")    SIMD/Autovectorization: Not yet enabled due to remaining issues
+
   # fix for OpenAL include dir
   include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
 endif ()
