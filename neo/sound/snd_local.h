@@ -286,6 +286,7 @@ class SoundFX_LowpassFast : public SoundFX {
 	float				b1, b2;
 
 public:
+  SoundFX_LowpassFast() : SoundFX(), freq(0), res(0), a1(0), a2(0), a3(0), b1(0), b2(0) {}
 	virtual void		ProcessSample( float* in, float* out );
 	void				SetParms( float p1 = 0, float p2 = 0, float p3 = 0 );
 };

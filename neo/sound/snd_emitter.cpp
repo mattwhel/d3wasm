@@ -1088,7 +1088,10 @@ idSlowChannel::Reset
 ===================
 */
 void idSlowChannel::Reset() {
-	memset( this, 0, sizeof( *this ) );
+  active = false;
+  playbackState = 0;
+
+  lowpass = SoundFX_LowpassFast();
 
 	this->chan = chan;
 
