@@ -117,6 +117,8 @@ else ()
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -s USE_ZLIB=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
 
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")    SIMD/Autovectorization: Not yet enabled due to remaining issues
+
   # fix for OpenAL include dir
   include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
 endif ()
@@ -590,9 +592,12 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 add_library(idlib STATIC ${src_idlib})
 
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
-  set_target_properties(idlib PROPERTIES COMPILE_FLAGS "-fPIC")
-endif ()
+# fPIC have issues with latest Emscripten LLVM backend
+if (NOT EMSCRIPTEN)
+  if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set_target_properties(idlib PROPERTIES COMPILE_FLAGS "-fPIC")
+  endif ()
+endif()
 
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} PREFIX neo FILES ${src_idlib})
 
