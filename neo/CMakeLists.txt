@@ -80,6 +80,55 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 endif ()
 
+# compiler specific flags
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTEN)
+  add_compile_options(-pipe)
+  add_compile_options(-Wall)
+
+  set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
+  set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
+  set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs --D_DEBUG -O1 -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+
+  set(CMAKE_CXX_FLAGS_DEBUGALL ${CMAKE_C_FLAGS_DEBUGALL})
+  set(CMAKE_CXX_FLAGS_PROFILE ${CMAKE_C_FLAGS_PROFILE})
+
+  add_compile_options(-fno-strict-aliasing)
+
+  CHECK_CXX_COMPILER_FLAG("-fvisibility=hidden" cxx_has_fvisibility)
+  if (NOT cxx_has_fvisibility)
+    message(FATAL_ERROR "Compiler does not support -fvisibility")
+  endif ()
+  add_compile_options(-fvisibility=hidden)
+
+  # TODO fix these warnings
+  add_compile_options(-Wno-sign-compare)
+  add_compile_options(-Wno-switch)
+  add_compile_options(-Wno-format-security)
+  if (EMSCRIPTEN)
+    add_compile_options(-Wno-unused-variable)
+    add_compile_options(-Wno-enum-compare)
+    add_compile_options(-Wno-self-assign-field)
+    add_compile_options(-Wno-unused-function)
+    add_compile_options(-Wno-unused-const-variable)
+    add_compile_options(-Wno-unused-private-field)
+  else ()
+    add_compile_options(-Wno-misleading-indentation)
+  endif ()
+
+  CHECK_CXX_COMPILER_FLAG("-Woverloaded-virtual" cxx_has_Woverload_virtual)
+  if (cxx_has_Woverload_virtual)
+    add_compile_options(-Woverloaded-virtual)
+  endif ()
+  if (os STREQUAL "linux")
+    set(sys_libs ${sys_libs} dl)
+  endif ()
+else ()
+  message(FATAL_ERROR "Unsupported compiler")
+endif ()
+
 # libs
 if (NOT EMSCRIPTEN)
   find_package(ZLIB REQUIRED)
@@ -112,65 +161,15 @@ if (NOT EMSCRIPTEN)
 else ()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_VORBIS=1")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_OGG=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_OGG=1")      # Already done with USE_VORBIS=1
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_LIBJPEG=1")
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -s USE_ZLIB=1")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_ZLIB=1")
 
-  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")    SIMD/Autovectorization: Not yet enabled due to remaining issues
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")    SIMD/Autovectorization: Not yet enabled in all browsers (only chrome for now)
 
   # fix for OpenAL include dir
   include_directories("${OPENAL_INCLUDE_DIR}/AL") # AL headers are not in a standard location
-endif ()
-
-# compiler specific flags
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTEN)
-  add_compile_options(-pipe)
-  add_compile_options(-Wall)
-
-  set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
-  set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
-  set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs --D_DEBUG -O1 -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-
-  set(CMAKE_CXX_FLAGS_DEBUGALL ${CMAKE_C_FLAGS_DEBUGALL})
-  set(CMAKE_CXX_FLAGS_PROFILE ${CMAKE_C_FLAGS_PROFILE})
-
-  add_compile_options(-fno-strict-aliasing)
-
-  CHECK_CXX_COMPILER_FLAG("-fvisibility=hidden" cxx_has_fvisibility)
-  if (NOT cxx_has_fvisibility)
-    message(FATAL_ERROR "Compiler does not support -fvisibility")
-  endif ()
-  add_compile_options(-fvisibility=hidden)
-
-  # TODO fix these warnings
-  #add_compile_options(--profiling-funcs)
-  add_compile_options(-Wno-sign-compare)
-  add_compile_options(-Wno-switch)
-  add_compile_options(-Wno-format-security)
-  if (EMSCRIPTEN)
-    add_compile_options(-Wno-unused-variable)
-    add_compile_options(-Wno-enum-compare)
-    add_compile_options(-Wno-self-assign-field)
-    add_compile_options(-Wno-unused-function)
-    add_compile_options(-Wno-unused-const-variable)
-    add_compile_options(-Wno-unused-private-field)
-  else ()
-    add_compile_options(-Wno-misleading-indentation)
-  endif ()
-
-  CHECK_CXX_COMPILER_FLAG("-Woverloaded-virtual" cxx_has_Woverload_virtual)
-  if (cxx_has_Woverload_virtual)
-    add_compile_options(-Woverloaded-virtual)
-  endif ()
-  if (os STREQUAL "linux")
-    set(sys_libs ${sys_libs} dl)
-  endif ()
-else ()
-  message(FATAL_ERROR "Unsupported compiler")
 endif ()
 
 set(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
@@ -180,36 +179,29 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-  include(sys/wasm/emwhitelist.cmake)
-
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
   set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
   set(ldflags "${ldflags} -o d3wasm.html")
-  #set(ldflags "${ldflags} --profiling-funcs")
   #set(ldflags "${ldflags} --llvm-lto 3")
-  set(ldflags "${ldflags} -s BINARYEN_TRAP_MODE=js")
-  set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")     # Needed because we use the file_packager (use FS.* functions)
+  set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
-  #set(ldflags "${ldflags} -s EMTERPRETIFY=1")
-  #set(ldflags "${ldflags} -s EMTERPRETIFY_ASYNC=1")
-  #set(ldflags "${ldflags} -s EMTERPRETIFY_FILE=d3wasm.embin")
-  #set(ldflags "${ldflags} -s EMTERPRETIFY_WHITELIST=${EMWHITELIST}")
-  set(ldflags "${ldflags} -s EXIT_RUNTIME=0")
-  set(ldflags "${ldflags} -s ASSERTIONS=0")
-  set(ldflags "${ldflags} -s MALLOC=emmalloc")
+  set(ldflags "${ldflags} -s ASYNCIFY=1")       #
+  set(ldflags "${ldflags} -s EXIT_RUNTIME=0")   # Don't exit the runtime
+  set(ldflags "${ldflags} -s ASSERTIONS=0")     # Disabling assertion slightly reduce binary size
+  set(ldflags "${ldflags} -s MALLOC=emmalloc")  # D3 mostly uses its own memory allocator. Let's use emmalloc as the default allocator instead of dmalloc as it is smaller.
   set(ldflags "${ldflags} -s ENVIRONMENT=web")
   set(ldflags "${ldflags} -s USE_SDL=2")
   set(ldflags "${ldflags} -s USE_ZLIB=1")
   set(ldflags "${ldflags} -s USE_VORBIS=1")
-  set(ldflags "${ldflags} -s USE_OGG=1")
+  set(ldflags "${ldflags} -s USE_OGG=1")      # Already done with USE_VORBIS=1
   set(ldflags "${ldflags} -s USE_LIBJPEG=1")
   set(ldflags "${ldflags} -s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0") # Because of SDL2 port still use the deprecated behavior
   #set(ldflags "${ldflags} -s STRICT=1") # can't enable this due to DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR that have to be 0
   #nevertheless be explicit on the libs to link to in strict mode
   set(ldflags "${ldflags} -lopenal.js") # OpenAL
-  set(ldflags "${ldflags} -lwebgl.js")  # WebGL (NB: USE_SDL=2 will automatically do this)
-  set(ldflags "${ldflags} -legl.js")    # EGL, because used internally by SDL2 (NB: USE_SDL=2 will automatically do this)
+  set(ldflags "${ldflags} -lwebgl.js")  # WebGL (NB: Already done with USE_SDL=2)
+  set(ldflags "${ldflags} -legl.js")    # EGL (NB: Already done with USE_SDL=2)
   set(ldflags "${ldflags} -lfs.js")     # Filesystem core functionality
   set(ldflags "${ldflags} -lmemfs.js")  # in-memory filesystem
   set(ldflags "${ldflags} -lidbfs.js")  # in-memory filesystem + idb persistency (used in pre.js for "web_user" folder)
