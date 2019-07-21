@@ -28,7 +28,7 @@ if (EMSCRIPTEN)
   set(NOMT  ON)
   set(NODLL ON)
   set(WEBGL ON)
-  SET(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
+  set(CMAKE_EXECUTABLE_SUFFIX ".html") # use the HTML suffix (will emit .html, .js and .wasm)
 else ()
   set(NOEFX ON)
   set(NOMT  ON)
@@ -205,7 +205,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -lfs.js")     # Filesystem core functionality
   set(ldflags "${ldflags} -lmemfs.js")  # in-memory filesystem
   set(ldflags "${ldflags} -lidbfs.js")  # in-memory filesystem + idb persistency (used in pre.js for "web_user" folder)
-  set(ldflags "${ldflags} -lsockfs.js") # needed internally by emscripten runtime because of libc socket implementation
+  set(ldflags "${ldflags} -lsockfs.js") # needed because of libc socket implementation (D3 use sockets)
 endif ()
 
 # fallback for cmake versions without GNUInstallDirs
