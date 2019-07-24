@@ -238,9 +238,16 @@ if (GNUINSTALLDIRS MATCHES "NOTFOUND")
   endforeach ()
 endif ()
 
-set(bindir "${CMAKE_INSTALL_FULL_BINDIR}")
-set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}/d3wasm")
-set(datadir "${CMAKE_INSTALL_FULL_DATADIR}/d3wasm")
+if (EMSCRIPTEN)
+  set(bindir "/usr/local/bin")
+  set(libdir "/usr/local/lib/d3wasm")
+  set(datadir "/usr/local/share/d3wasm")
+else()
+  set(bindir "${CMAKE_INSTALL_FULL_BINDIR}")
+  set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}/d3wasm")
+  set(datadir "${CMAKE_INSTALL_FULL_DATADIR}/d3wasm")
+endif()
+
 
 configure_file(
     "${CMAKE_SOURCE_DIR}/config.h.in"
