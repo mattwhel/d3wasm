@@ -20,9 +20,6 @@ if (Module['preRun'] instanceof Array) {
 //python $EMSCRIPTEN/tools/file_packager.py demo_bootstrap.data --preload data/chunked/demo_bootstrap.pk4@/usr/local/share/d3wasm/base/ --js-output=demo_bootstrap.js --use-preload-cache --no-heap-copy
 // + see post.js
 
-// For full demo data
-//python $EMSCRIPTEN/tools/file_packager.py demo00.data --preload data/demo/demo00.pk4@/usr/local/share/d3wasm/base/ --js-output=demo00.js --use-preload-cache --no-heap-copy
-
 // For full game data
 //python $EMSCRIPTEN/tools/file_packager.py pak.data --preload data/full@/usr/local/share/d3wasm/base/ --js-output=pak.js --use-preload-cache --no-heap-copy
 
