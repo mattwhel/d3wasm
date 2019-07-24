@@ -193,7 +193,6 @@ if (EMSCRIPTEN)
 
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
   set(ldflags "${ldflags} -o d3wasm.html")
-  #set(ldflags "${ldflags} --llvm-lto 3")
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
   set(ldflags "${ldflags} -s ASYNCIFY=1")       #
