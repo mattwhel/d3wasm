@@ -12,7 +12,7 @@ if (Module['preRun'] instanceof Array) {
   script.onload = function(){
     // remote script has loaded
   };
-  script.src = 'demo00.js';
+  script.src = 'demo_bootstrap.js';
   d.getElementsByTagName('head')[0].appendChild(script);
 }(document));
 

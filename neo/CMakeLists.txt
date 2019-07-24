@@ -179,10 +179,18 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-  add_custom_target(package_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_demo_data.sh data/demo/demo00.pk4)
+  add_custom_target(package_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_demo_data.sh data/demo)
+  add_custom_target(package_full_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_full_data.sh data/base)
+  add_custom_target(package_chunked_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_chunked_demo_data.sh data/chunked)
 
+  # demo data preload
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
-  #set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post.js")        # only needed with chunked loading
+  # chunked demo data preload
+  #set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre-chunked.js")
+  #set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post-chunked.js")
+  # full data preload
+  #set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre-full.js")
+
   set(ldflags "${ldflags} --shell-file ../neo/sys/wasm/shell.html")
   set(ldflags "${ldflags} -o d3wasm.html")
   #set(ldflags "${ldflags} --llvm-lto 3")
