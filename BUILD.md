@@ -1,8 +1,8 @@
 
 # Building on Ubuntu 18.04
 
-##### 1) Install Emscripten
-a) Get the SDK and install Emscripten "upstream" variant:
+#### 1) Install Emscripten
+a) Get the Emscripten SDK and install Emscripten "upstream" variant:
 ```
 git clone https://github.com/emscripten-core/emsdk.git
 ./emsdk/emsdk install latest-upstream
@@ -13,13 +13,13 @@ b) Enable Emscripten tools from the command line
 source ./emsdk/emsdk_env.sh
 ```
 
-##### 2) Build d3wasm
+#### 2) Build d3wasm
 a) Get d3wasm source code 
 ```
 git clone https://github.com/gabrielcuvillier/d3wasm.git
 cd d3wasm
 ```
-b) Build d3wasm
+b) Build the project
 ```
 mkdir build-wasm
 cd build-wasm
@@ -28,7 +28,7 @@ emmake make
 ```
 Normaly, this should have generated *d3wasm.html*, *d3wasm.js*, and *d3wasm.wasm* files.
 
-##### 4) Package the game demo data
+#### 4) Package the game demo data
 a) Get the Doom 3 Demo from Fileplanet (or other sources): https://www.fileplanet.com/archive/p-15998/DOOM-3-Demo
 
 b) Install the Demo (using wine on Linux)
@@ -41,7 +41,7 @@ make package_demo_data
 ```
 Normally, this should have generated *demo00.data* and *demo00.js* files
 
-##### 5) Deploy locally
+#### 5) Deploy locally
 a) Run a local web server from the build directory. The simplest is to use python SimpleHTTPServer:
 ```
 python -m SimpleHTTPServer 8080
@@ -52,9 +52,9 @@ python -m http.server 8080
 ```
 b) open your favorite Browser to http://localhost:8080/d3wasm.html
 
-##### 6) Enjoy!
+#### 6) Enjoy!
 
-**NB**: it is possible to do a native-build also, to compare the performance for example. 
+**NB**: it is possible to do a native build also, to compare the performance for example. 
 To do so:
 ```
   mkdir build-native
@@ -62,10 +62,10 @@ To do so:
   cmake ../neo -DCMAKE_BUILD_TYPE=Release
   make
 ```
-Packaging the data works differently. Have a look at https://github.com/dhewm/dhewm3/wiki/FAQ
+Packaging the data works differently for native builds. Have a look at https://github.com/dhewm/dhewm3/wiki/FAQ
 
 # Building on Windows 10
 
-While it is possible to build it using the Windows version of Emscripten toolchain, it is a bit more tedious to do (require to manually install Windows version of Cmake, GNU Make or Ninja, and setup environment paths).
+While it is possible to build using the Windows version of Emscripten toolchain, it is a bit more tedious to do (require to manually install Windows version of Cmake, GNU Make or Ninja, and setup environment paths).
 
 A simpler way is to use **WSL** (*Windows Subsystem for Linux*) with Ubuntu 18.04 installed: the instructions are then exactly the same as the Ubuntu build. Nice!

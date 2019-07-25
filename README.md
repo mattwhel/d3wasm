@@ -8,4 +8,6 @@ Full technical details and online demonstration here:
 
 http://www.continuation-labs.com/projects/d3wasm/
 
+See BUILD.md for build instructions.
+
 Enjoy!
