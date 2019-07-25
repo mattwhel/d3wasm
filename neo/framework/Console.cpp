@@ -796,7 +796,8 @@ bool	idConsoleLocal::ProcessEvent( const sysEvent_t *event, bool forceAccept ) {
 	if(event->evType == SE_KEY)
 	{
 		if( event->evValue == Sys_GetConsoleKey( false ) || event->evValue == Sys_GetConsoleKey( true )
-		    || (event->evValue == K_ESCAPE && idKeyInput::IsDown( K_SHIFT )) ) // shift+esc should also open console
+		    || (event->evValue == K_ESCAPE && idKeyInput::IsDown( K_SHIFT ))  // shift+esc should also open console
+		    || (event->evValue == K_INS ) )
 		{
 			consoleKey = true;
 		}
