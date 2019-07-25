@@ -179,9 +179,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
-  add_custom_target(package_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_demo_data.sh data/demo)
-  add_custom_target(package_full_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_full_data.sh data/base)
-  add_custom_target(package_chunked_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_chunked_demo_data.sh data/chunked)
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    add_custom_target(package_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_demo_data.bat data/demo)
+    add_custom_target(package_full_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_full_data.bat data/base)
+    add_custom_target(package_chunked_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_chunked_demo_data.bat data/chunked)
+  else()
+    add_custom_target(package_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_demo_data.sh data/demo)
+    add_custom_target(package_full_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_full_data.sh data/base)
+    add_custom_target(package_chunked_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_chunked_demo_data.sh data/chunked)
+  endif()
 
   # demo data preload
   set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
