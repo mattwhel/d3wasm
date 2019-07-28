@@ -1,4 +1,6 @@
 /build*
+/cmake-build*
+/neo/cmake-build*
 *~
 .*.swp
 *.pyc
@@ -6,4 +8,3 @@
 .project
 .settings/
 .idea/
-
