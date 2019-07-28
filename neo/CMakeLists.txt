@@ -87,10 +87,10 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID STREQUAL "Clang" OR EMSCRIPTE
 
   set(CMAKE_C_FLAGS_DEBUG "-g -D_DEBUG -O0")
   set(CMAKE_C_FLAGS_DEBUGALL "-g -D_DEBUG")
-  set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs --D_DEBUG -O1 -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELEASE "-O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
-  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS_MINSIZEREL "-Os -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  set(CMAKE_C_FLAGS_PROFILE "-g --profiling-funcs -D_DEBUG -O1 -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELEASE "-O2 --profiling-funcs -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
+  set(CMAKE_C_FLAGS_RELWITHDEBINFO "-g --profiling-funcs -O2 -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS_MINSIZEREL "-Os --profiling-funcs -fno-unsafe-math-optimizations -fno-math-errno -fno-trapping-math -fomit-frame-pointer")
 
   set(CMAKE_CXX_FLAGS_DEBUGALL ${CMAKE_C_FLAGS_DEBUGALL})
   set(CMAKE_CXX_FLAGS_PROFILE ${CMAKE_C_FLAGS_PROFILE})
@@ -179,6 +179,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_MINSIZEREL "-DNDEBUG ${CMAKE_C_FLAGS_MINSIZEREL}")
 
 if (EMSCRIPTEN)
+  include(sys/wasm/asyncwhitelist.cmake)
+
   if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     add_custom_target(package_demo_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_demo_data.bat data/demo)
     add_custom_target(package_full_data ${CMAKE_SOURCE_DIR}/sys/wasm/package_full_data.bat data/base)
@@ -190,10 +192,10 @@ if (EMSCRIPTEN)
   endif()
 
   # demo data preload
-  set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
+  #set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre.js")
   # chunked demo data preload
-  #set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre-chunked.js")
-  #set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post-chunked.js")
+  set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre-chunked.js")
+  set(ldflags "${ldflags} --post-js ../neo/sys/wasm/post-chunked.js")
   # full data preload
   #set(ldflags "${ldflags} --pre-js ../neo/sys/wasm/pre-full.js")
 
@@ -201,7 +203,8 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -o d3wasm.html")
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
-  set(ldflags "${ldflags} -s ASYNCIFY=1")       #
+  set(ldflags "${ldflags} -s ASYNCIFY=1")
+  set(ldflags "${ldflags} -s ASYNCIFY_WHITELIST=${ASYNCWHITELIST}")
   set(ldflags "${ldflags} -s EXIT_RUNTIME=0")   # Don't exit the runtime
   set(ldflags "${ldflags} -s ASSERTIONS=0")     # Disabling assertion slightly reduce binary size
   set(ldflags "${ldflags} -s MALLOC=emmalloc")  # D3 mostly uses its own memory allocator. Let's use emmalloc as the default allocator instead of dmalloc as it is smaller.
