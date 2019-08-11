@@ -149,7 +149,7 @@ sysEvent_t idEventLoop::GetEvent( void ) {
 idEventLoop::ProcessEvent
 =================
 */
-void idEventLoop::ProcessEvent( sysEvent_t ev ) {
+__attribute__((noinline)) void idEventLoop::ProcessEvent( sysEvent_t ev ) {
 	// track key up / down states
 	if ( ev.evType == SE_KEY ) {
 		idKeyInput::PreliminaryKeyEvent( ev.evValue, ( ev.evValue2 != 0 ) );

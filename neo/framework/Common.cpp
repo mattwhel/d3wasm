@@ -2071,7 +2071,7 @@ void idCommonLocal::InitCommands(void) {
 idCommonLocal::InitRenderSystem
 =================
 */
-void idCommonLocal::InitRenderSystem(void) {
+__attribute__((noinline)) void idCommonLocal::InitRenderSystem(void) {
   if ( com_skipRenderer.GetBool()) {
     return;
   }

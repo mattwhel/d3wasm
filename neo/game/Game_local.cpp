@@ -1160,7 +1160,7 @@ void idGameLocal::NextMap_f( const idCmdArgs &args ) {
 idGameLocal::MapPopulate
 ===================
 */
-void idGameLocal::MapPopulate( void ) {
+__attribute__((noinline)) void idGameLocal::MapPopulate( void ) {
 
 	if ( isMultiplayer ) {
 		cvarSystem->SetCVarBool( "r_skipSpecular", false );
