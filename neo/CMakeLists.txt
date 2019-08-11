@@ -202,6 +202,7 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s FORCE_FILESYSTEM=1")
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
   set(ldflags "${ldflags} -s ASYNCIFY=1")
+  set(ldflags "${ldflags} -s MINIFY_HTML=0")
   file(READ ../neo/sys/wasm/asyncify.json ASYNCIFY_WHITELIST)
   set(ldflags "${ldflags} -s 'ASYNCIFY_WHITELIST=${ASYNCIFY_WHITELIST}'")
   set(ldflags "${ldflags} -s EXIT_RUNTIME=0")   # Don't exit the runtime
