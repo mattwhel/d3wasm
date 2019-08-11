@@ -204,7 +204,11 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s ASYNCIFY=1")
   set(ldflags "${ldflags} -s MINIFY_HTML=0")
   file(READ ../neo/sys/wasm/asyncify.json ASYNCIFY_WHITELIST)
-  set(ldflags "${ldflags} -s 'ASYNCIFY_WHITELIST=${ASYNCIFY_WHITELIST}'")
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    message("WARNING: can't use ASYNCIFY_WHITELIST while building on windows")
+  else()
+    set(ldflags "${ldflags} -s 'ASYNCIFY_WHITELIST=${ASYNCIFY_WHITELIST}'")
+  endif()
   set(ldflags "${ldflags} -s EXIT_RUNTIME=0")   # Don't exit the runtime
   set(ldflags "${ldflags} -s ASSERTIONS=0")     # Disabling assertion slightly reduce binary size
   set(ldflags "${ldflags} -s MALLOC=emmalloc")  # D3 mostly uses its own memory allocator. Let's use emmalloc as the default allocator instead of dmalloc as it is smaller.
