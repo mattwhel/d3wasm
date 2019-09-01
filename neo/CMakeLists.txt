@@ -240,7 +240,9 @@ if (EMSCRIPTEN)
   endif()
   set(ldflags "${ldflags} -s EXIT_RUNTIME=0")   # Don't exit the runtime
   set(ldflags "${ldflags} -s ASSERTIONS=0")     # Disabling assertion slightly reduce binary size
-  set(ldflags "${ldflags} -s MALLOC=emmalloc")  # D3 mostly uses its own memory allocator. Let's use emmalloc as the default allocator instead of dmalloc as it is smaller.
+  # D3 uses its own optimized memory allocator, build on top of malloc.
+  # while dlmalloc might be a bit bigger in size than emmalloc, it is more efficient with the optimized memory allocator
+  set(ldflags "${ldflags} -s MALLOC=dlmalloc")
   set(ldflags "${ldflags} -s ENVIRONMENT=web")
   set(ldflags "${ldflags} -s USE_SDL=2")
   set(ldflags "${ldflags} -s USE_ZLIB=1")
