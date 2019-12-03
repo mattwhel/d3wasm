@@ -2880,7 +2880,9 @@ idEntity *idGameLocal::SpawnEntityType( const idTypeInfo &classdef, const idDict
 		Error( "Attempted to spawn non-entity class '%s'", classdef.classname );
 	}
 
-	try {
+#if !defined(__EMSCRIPTEN__)
+  try {
+#endif
 		if ( args ) {
 			spawnArgs = *args;
 		} else {
@@ -2888,11 +2890,14 @@ idEntity *idGameLocal::SpawnEntityType( const idTypeInfo &classdef, const idDict
 		}
 		obj = classdef.CreateInstance();
 		obj->CallSpawn();
+
+#if !defined(__EMSCRIPTEN__)
 	}
 
-	catch( idAllocError & ) {
+  catch( idAllocError & ) {
 		obj = NULL;
 	}
+#endif
 	spawnArgs.Clear();
 
 	return static_cast<idEntity *>(obj);

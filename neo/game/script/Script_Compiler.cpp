@@ -256,7 +256,7 @@ void idCompiler::Error( const char *message, ... ) const {
 	vsprintf( string, message, argptr );
 	va_end( argptr );
 
-	throw idCompileError( string );
+	//throw idCompileError( string );
 }
 
 /*
@@ -2616,15 +2616,17 @@ void idCompiler::CompileFile( const char *text, const char *filename, bool toCon
 	token.line = 1;
 
 	error = false;
-	try {
+#if !defined(__EMSCRIPTEN__)
+  try {
+#endif
 		// read first token
 		NextToken();
 		while( !eof && !error ) {
 			// parse from global namespace
 			ParseNamespace( &def_namespace );
 		}
+#if !defined(__EMSCRIPTEN__)
 	}
-
 	catch( idCompileError &err ) {
 		idStr error;
 
@@ -2639,7 +2641,7 @@ void idCompiler::CompileFile( const char *text, const char *filename, bool toCon
 
 		throw idCompileError( error );
 	}
-
+#endif
 	parser.FreeSource();
 
 	compile_time.Stop();

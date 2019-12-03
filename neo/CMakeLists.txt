@@ -56,6 +56,10 @@ if (NODLL)
   add_compile_options("-DNODLL")
 endif ()
 
+if (EMSCRIPTEN)
+  add_compile_options(-fno-exceptions)
+endif()
+
 if (NOT CMAKE_SYSTEM_PROCESSOR)
   message(FATAL_ERROR "No target CPU architecture set")
 endif ()
@@ -231,6 +235,8 @@ if (EMSCRIPTEN)
   set(ldflags "${ldflags} -s TOTAL_MEMORY=402653184") # 384MB. Going below 320MB lead to crashes after a couple of levels played.
   set(ldflags "${ldflags} -s ASYNCIFY=1")
   set(ldflags "${ldflags} -s MINIFY_HTML=0")
+  set(ldflags "${ldflags} -s ENVIRONMENT=web")
+
   if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
     file(READ ../neo/sys/wasm/asyncify.win.json ASYNCIFY_WHITELIST)
     set(ldflags "${ldflags} -s \"ASYNCIFY_WHITELIST=${ASYNCIFY_WHITELIST}\"")

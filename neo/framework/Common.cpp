@@ -715,17 +715,17 @@ void idCommonLocal::Error(const char* fmt, ...) {
 
   if ( code == ERP_DISCONNECT ) {
     com_errorEntered = 0;
-    throw idException(errorMessage);
+    //throw idException(errorMessage);
     // The gui editor doesnt want thing to com_error so it handles exceptions instead
   }
   else if ( com_editors & ( EDITOR_GUI | EDITOR_DEBUGGER )) {
     com_errorEntered = 0;
-    throw idException(errorMessage);
+    //throw idException(errorMessage);
   }
   else if ( code == ERP_DROP ) {
     Printf("********************\nERROR: %s\n********************\n", errorMessage);
     com_errorEntered = 0;
-    throw idException(errorMessage);
+    //throw idException(errorMessage);
   }
   else {
     Printf("********************\nERROR: %s\n********************\n", errorMessage);
@@ -2532,7 +2532,9 @@ void idCommonLocal::Init(int argc, char** argv) {
 
   Sys_InitThreads();
 
+#if !defined(__EMSCRIPTEN__)
   try {
+#endif
 
     // set interface pointers used by idLib
     idLib::sys = sys;
@@ -2617,11 +2619,12 @@ void idCommonLocal::Init(int argc, char** argv) {
     console->LoadHistory();
 
     com_fullyInitialized = true;
+#if !defined(__EMSCRIPTEN__)
   }
-
   catch ( idException& ) {
     Sys_Error("Error during initialization");
   }
+#endif
 
 #ifdef NOMT
 #else
