@@ -70,7 +70,8 @@ b) Install the Demo (using wine on Linux) Following this guide:   https://linuxi
 
 c) Copy __<D3Demo_install_path>/demo/demo00.pk4__ to __<D3wasm_path>/build-wasm/data/demo__ folder
 ```
-cp -r "/mnt/c/Program Files (x86)/Doom 3 Demo/demo/" .
+mkdir ./data/
+cp -r "/mnt/c/Program Files (x86)/Doom 3 Demo/demo/" ./data/
 ```
 
 
