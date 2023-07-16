@@ -1,7 +1,17 @@
 
-# Building on Ubuntu 18.04
+# Building from fresh Ubuntu 18.04
 
 #### 1) Install Emscripten
+-1) update repos
+```
+sudo apt update
+```
+
+0) Install cmake
+```
+sudo apt install cmake
+```
+
 a) Get the Emscripten SDK and install Emscripten "upstream" variant:
 ```
 git clone https://github.com/emscripten-core/emsdk.git
