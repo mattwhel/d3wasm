@@ -40,6 +40,9 @@ Normaly, this should have generated *d3wasm.html*, *d3wasm.js*, and *d3wasm.wasm
 
 #### 4) Package the game demo data
 a) Get the Doom 3 Demo from Fileplanet (or other sources): https://www.fileplanet.com/archive/p-15998/DOOM-3-Demo
+```
+cp -r "/mnt/c/Program Files (x86)/Doom 3 Demo/demo/" .
+```
 
 b) Install the Demo (using wine on Linux) Following this guide:   https://linuxize.com/post/how-to-install-wine-on-ubuntu-18-04/
   1) Enable 32-bit arch
