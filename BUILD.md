@@ -26,7 +26,7 @@ source ./emsdk/emsdk_env.sh
 #### 2) Build d3wasm
 a) Get d3wasm source code 
 ```
-git clone https://github.com/gabrielcuvillier/d3wasm.git
+git clone https://github.com/mattwhel/d3wasm
 cd d3wasm
 ```
 b) Build the project
