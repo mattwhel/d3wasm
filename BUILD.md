@@ -55,11 +55,11 @@ b) Install the Demo (using wine on Linux) Following this guide:   https://linuxi
   sudo apt-add-repository 'https://dl.winehq.org/wine-builds/ubuntu/'
   sudo apt update
   sudo apt install --install-recommends -y winehq-staging
-  sudo apt install winetricks
+  sudo apt install winetricks -y
   ``` 
   2) Install Wine
   ```
-  sudo apt install wine64 wine32
+  sudo apt install -y wine64 wine32
   ```
   3) Verify Install
   ```
