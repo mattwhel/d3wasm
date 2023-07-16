@@ -47,14 +47,6 @@ b) Install the Demo (using wine on Linux) Following this guide:   https://linuxi
   sudo dpkg --add-architecture i386
   sudo apt update
   ```
-  2) Install Wine
-  ```
-  sudo apt install wine64 wine32
-  ```
-  3) Verify Install
-  ```
-  wine --version
-  ```
   4) Install "optional" Wine dependencies. Following this guide: https://www.gloriouseggroll.tv/how-to-get-out-of-wine-dependency-hell/
   ```
   sudo dpkg --add-architecture i386
@@ -64,7 +56,16 @@ b) Install the Demo (using wine on Linux) Following this guide:   https://linuxi
   sudo apt update
   sudo apt install --install-recommends winehq-staging
   sudo apt install winetricks
+  ``` 
+  2) Install Wine
   ```
+  sudo apt install wine64 wine32
+  ```
+  3) Verify Install
+  ```
+  wine --version
+  ```
+
 
 c) Copy __<D3Demo_install_path>/demo/demo00.pk4__ to __<D3wasm_path>/build-wasm/data/demo__ folder
 
