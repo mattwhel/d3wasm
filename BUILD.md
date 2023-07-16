@@ -9,7 +9,7 @@ sudo apt update
 
 0) Install cmake
 ```
-sudo apt install cmake
+sudo apt install -y cmake 
 ```
 
 a) Get the Emscripten SDK and install Emscripten "upstream" variant:
