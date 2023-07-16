@@ -88,7 +88,7 @@ python -m SimpleHTTPServer 8080
 ```
 or (python 3)
 ```
-python -m http.server 8080
+python3 -m http.server 8080
 ```
 b) open your favorite Browser to http://localhost:8080/d3wasm.html
 
